@@ -41,15 +41,37 @@ export function AICoachCard() {
   const [applyingAction, setApplyingAction] = useState(false);
   const [appliedResult, setAppliedResult] = useState<any>(null);
 
-  // Apply intervention with real backend action
+  // Apply intervention with real backend action - creates agent_actions and executes real mutations
   const handleApply = async (interventionId: string) => {
     setApplyingAction(true);
     try {
+      // 1. Record the agent_action in database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      await supabase.from('agent_actions').insert({
+        user_id: user.id,
+        type: 'ai_intervention_applied',
+        status: 'proposed',
+        proposed_payload: { intervention_id: interventionId },
+        source: 'ai_coach',
+        confidence_score: 0.85
+      });
+
+      // 2. Execute the real intervention
       const { data, error } = await supabase.functions.invoke('apply-ai-intervention', {
         body: { interventionId }
       });
 
       if (error) throw error;
+
+      // 3. Update agent_action to executed
+      await supabase.from('agent_actions')
+        .update({ status: 'executed', executed_at: new Date().toISOString() })
+        .eq('type', 'ai_intervention_applied')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       setAppliedResult(data);
       toast.success(data?.message || 'Action appliquée !');
@@ -68,6 +90,48 @@ export function AICoachCard() {
       toast.error('Erreur lors de l\'application');
     } finally {
       setApplyingAction(false);
+    }
+  };
+
+  // Handle ignore - also records in agent_actions
+  const handleIgnore = async (interventionId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('agent_actions').insert({
+          user_id: user.id,
+          type: 'ai_intervention_ignored',
+          status: 'executed',
+          proposed_payload: { intervention_id: interventionId },
+          source: 'ai_coach',
+          executed_at: new Date().toISOString()
+        });
+      }
+      ignore(interventionId);
+    } catch (err) {
+      console.error('Ignore error:', err);
+      ignore(interventionId);
+    }
+  };
+
+  // Handle reject - also records in agent_actions
+  const handleReject = async (interventionId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('agent_actions').insert({
+          user_id: user.id,
+          type: 'ai_intervention_rejected',
+          status: 'executed',
+          proposed_payload: { intervention_id: interventionId },
+          source: 'ai_coach',
+          executed_at: new Date().toISOString()
+        });
+      }
+      reject(interventionId);
+    } catch (err) {
+      console.error('Reject error:', err);
+      reject(interventionId);
     }
   };
 
@@ -197,7 +261,7 @@ export function AICoachCard() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => ignore(intervention.id)}
+                onClick={() => handleIgnore(intervention.id)}
                 disabled={isResponding || applyingAction}
                 className="gap-2"
               >
@@ -207,7 +271,7 @@ export function AICoachCard() {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => reject(intervention.id)}
+                onClick={() => handleReject(intervention.id)}
                 disabled={isResponding || applyingAction}
                 className="gap-2 text-muted-foreground"
               >

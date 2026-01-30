@@ -63,7 +63,26 @@ export function WeatherCard() {
   }
 
   if (!weather) {
-    return null;
+    // Show explicit "not configured" state instead of hiding the card
+    return (
+      <Card className="border-2 border-border bg-gradient-to-br from-background to-muted/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <Cloud className="h-4 w-4" />
+            Météo & Impact Comportemental
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/30 border border-dashed border-border">
+            <Cloud className="h-10 w-10 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Météo non disponible</p>
+              <p className="text-xs text-muted-foreground/70">Synchronisation en attente ou API non configurée</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   const moodIndex = Number(weather.mood_index) || 50;

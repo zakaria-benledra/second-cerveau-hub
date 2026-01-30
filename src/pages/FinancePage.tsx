@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useCategories, useCreateCategory, useTransactions, useCreateTransaction, useDeleteTransaction, useBudgets, useCreateBudget, useMonthlySpending } from '@/hooks/useFinance';
-import { useDocuments, useUploadStatement, useDeleteDocument } from '@/hooks/useDocuments';
+import { useDocuments, useDeleteDocument } from '@/hooks/useDocuments';
 import { useGoals } from '@/hooks/useProjects';
 import { useSavingsGoals, useCreateSavingsGoal, useContributeToGoal, useDeleteSavingsGoal } from '@/hooks/useSavingsGoals';
 import { SavingsGoalCard } from '@/components/finance/SavingsGoalCard';
@@ -53,14 +53,11 @@ export default function FinancePage() {
   const [isTransactionOpen, setIsTransactionOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isBudgetOpen, setIsBudgetOpen] = useState(false);
-  const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('transactions');
   const [newTransaction, setNewTransaction] = useState({ amount: '', description: '', category_id: '', type: 'expense', date: format(new Date(), 'yyyy-MM-dd'), goal_id: '' });
   const [newCategory, setNewCategory] = useState({ name: '', type: 'expense' });
   const [newBudget, setNewBudget] = useState({ category_id: '', monthly_limit: '' });
-  const [uploadForm, setUploadForm] = useState({ accountLabel: '', dateFrom: '', dateTo: '' });
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: categories = [] } = useCategories();
   const { data: transactions = [], isLoading } = useTransactions(currentMonth);
@@ -73,7 +70,6 @@ export default function FinancePage() {
   const deleteTransaction = useDeleteTransaction();
   const createCategory = useCreateCategory();
   const createBudget = useCreateBudget();
-  const uploadStatement = useUploadStatement();
   const deleteDocument = useDeleteDocument();
   const contributeToGoal = useContributeToGoal();
   const deleteSavingsGoal = useDeleteSavingsGoal();
@@ -151,23 +147,7 @@ export default function FinancePage() {
     });
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    uploadStatement.mutate({
-      file,
-      accountLabel: uploadForm.accountLabel || undefined,
-      dateFrom: uploadForm.dateFrom || undefined,
-      dateTo: uploadForm.dateTo || undefined,
-    }, {
-      onSuccess: () => {
-        setUploadForm({ accountLabel: '', dateFrom: '', dateTo: '' });
-        setIsUploadOpen(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      }
-    });
-  };
+  // File upload handling is now in FinanceImportWizard
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -206,50 +186,14 @@ export default function FinancePage() {
               <Download className="h-4 w-4" />
               Exporter
             </Button>
-            <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Upload className="h-4 w-4" />
-                  Importer
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="glass-strong">
-                <DialogHeader>
-                  <DialogTitle>Importer un relevé bancaire</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label>Fichier (CSV ou PDF)</Label>
-                    <Input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".csv,.pdf"
-                      onChange={handleFileUpload}
-                      disabled={uploadStatement.isPending}
-                      className="glass-hover"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      L'upload catégorise automatiquement vos transactions
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Compte (optionnel)</Label>
-                    <Input
-                      value={uploadForm.accountLabel}
-                      onChange={(e) => setUploadForm({ ...uploadForm, accountLabel: e.target.value })}
-                      placeholder="Compte courant, Livret A..."
-                      className="glass-hover"
-                    />
-                  </div>
-                  {uploadStatement.isPending && (
-                    <div className="flex items-center gap-2 text-primary">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Analyse en cours...
-                    </div>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => setActiveTab('import')}
+            >
+              <Upload className="h-4 w-4" />
+              Importer
+            </Button>
             <Dialog open={isTransactionOpen} onOpenChange={setIsTransactionOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2 gradient-primary">
@@ -712,7 +656,7 @@ export default function FinancePage() {
                     Aucun relevé importé.<br />
                     Importez vos relevés bancaires pour analyser vos transactions.
                   </p>
-                  <Button onClick={() => setIsUploadOpen(true)} className="gap-2">
+                  <Button onClick={() => setActiveTab('import')} className="gap-2">
                     <Upload className="h-4 w-4" />
                     Importer un relevé
                   </Button>
