@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,9 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useCalendarEvents, useCreateCalendarEvent, useDeleteCalendarEvent } from '@/hooks/useCalendar';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Trash2 } from 'lucide-react';
+import { useGoogleConnectionStatus, useConnectGoogle, useDisconnectGoogle, useSyncGoogleCalendar } from '@/hooks/useGoogleCalendar';
+import { useToast } from '@/hooks/use-toast';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Clock, MapPin, Trash2, RefreshCw, Link2, Unlink, Loader2 } from 'lucide-react';
 
 export default function CalendarPage() {
+  const [searchParams] = useSearchParams();
+  const { toast } = useToast();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -23,6 +28,24 @@ export default function CalendarPage() {
     end_time: '',
     all_day: false,
   });
+
+  // Google Calendar integration
+  const { data: googleStatus, isLoading: isLoadingGoogle } = useGoogleConnectionStatus();
+  const connectGoogle = useConnectGoogle();
+  const disconnectGoogle = useDisconnectGoogle();
+  const syncGoogle = useSyncGoogleCalendar();
+
+  // Show toast on successful connection
+  useEffect(() => {
+    if (searchParams.get('connected') === 'google') {
+      toast({
+        title: 'Google Calendar connecté !',
+        description: 'Vos événements seront synchronisés automatiquement.',
+      });
+      // Clean URL
+      window.history.replaceState({}, '', '/calendar');
+    }
+  }, [searchParams, toast]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -79,16 +102,59 @@ export default function CalendarPage() {
             </p>
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                Nouvel événement
+          <div className="flex items-center gap-2">
+            {/* Google Calendar Integration */}
+            {isLoadingGoogle ? (
+              <Button variant="outline" disabled>
+                <Loader2 className="w-4 h-4 animate-spin" />
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Créer un événement</DialogTitle>
+            ) : googleStatus?.connected ? (
+              <>
+                <Badge variant="secondary" className="gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  Google connecté
+                </Badge>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => syncGoogle.mutate()}
+                  disabled={syncGoogle.isPending}
+                  title="Synchroniser"
+                >
+                  <RefreshCw className={`w-4 h-4 ${syncGoogle.isPending ? 'animate-spin' : ''}`} />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => disconnectGoogle.mutate()}
+                  disabled={disconnectGoogle.isPending}
+                  title="Déconnecter"
+                >
+                  <Unlink className="w-4 h-4" />
+                </Button>
+              </>
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={() => connectGoogle.mutate()}
+                disabled={connectGoogle.isPending}
+                className="gap-2"
+              >
+                <Link2 className="w-4 h-4" />
+                Connecter Google
+              </Button>
+            )}
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Nouvel événement
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Créer un événement</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -137,8 +203,9 @@ export default function CalendarPage() {
                   {createEvent.isPending ? 'Création...' : 'Créer'}
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -232,15 +299,22 @@ export default function CalendarPage() {
                       className="p-3 rounded-lg bg-accent/50 border border-border/50 space-y-2"
                     >
                       <div className="flex items-start justify-between">
-                        <h4 className="font-medium">{event.title}</h4>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-destructive"
-                          onClick={() => deleteEvent.mutate(event.id)}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{event.title}</h4>
+                          {(event as any).provider === 'google' && (
+                            <Badge variant="outline" className="text-xs">Google</Badge>
+                          )}
+                        </div>
+                        {(event as any).provider !== 'google' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive"
+                            onClick={() => deleteEvent.mutate(event.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
                       </div>
                       {!event.all_day && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">

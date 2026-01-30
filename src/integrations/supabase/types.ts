@@ -401,6 +401,74 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_connections: {
+        Row: {
+          access_token: string | null
+          account_ids: string[] | null
+          created_at: string
+          error_message: string | null
+          expires_at: string | null
+          id: string
+          institution_id: string | null
+          institution_name: string | null
+          last_sync_at: string | null
+          metadata: Json | null
+          provider: string
+          refresh_token: string | null
+          requisition_id: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          account_ids?: string[] | null
+          created_at?: string
+          error_message?: string | null
+          expires_at?: string | null
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          last_sync_at?: string | null
+          metadata?: Json | null
+          provider: string
+          refresh_token?: string | null
+          requisition_id?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          account_ids?: string[] | null
+          created_at?: string
+          error_message?: string | null
+          expires_at?: string | null
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          last_sync_at?: string | null
+          metadata?: Json | null
+          provider?: string
+          refresh_token?: string | null
+          requisition_id?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_connections_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_events: {
         Row: {
           created_at: string | null
@@ -503,49 +571,123 @@ export type Database = {
       calendar_events: {
         Row: {
           all_day: boolean | null
+          calendar_id: string | null
           color: string | null
           created_at: string
           description: string | null
           end_time: string
+          external_id: string | null
           id: string
           location: string | null
+          provider: string | null
           source: string | null
           start_time: string
+          sync_token: string | null
+          timezone: string | null
           title: string
+          updated_at: string | null
+          updated_at_provider: string | null
           user_id: string
           workspace_id: string | null
         }
         Insert: {
           all_day?: boolean | null
+          calendar_id?: string | null
           color?: string | null
           created_at?: string
           description?: string | null
           end_time: string
+          external_id?: string | null
           id?: string
           location?: string | null
+          provider?: string | null
           source?: string | null
           start_time: string
+          sync_token?: string | null
+          timezone?: string | null
           title: string
+          updated_at?: string | null
+          updated_at_provider?: string | null
           user_id: string
           workspace_id?: string | null
         }
         Update: {
           all_day?: boolean | null
+          calendar_id?: string | null
           color?: string | null
           created_at?: string
           description?: string | null
           end_time?: string
+          external_id?: string | null
           id?: string
           location?: string | null
+          provider?: string | null
           source?: string | null
           start_time?: string
+          sync_token?: string | null
+          timezone?: string | null
           title?: string
+          updated_at?: string | null
+          updated_at_provider?: string | null
           user_id?: string
           workspace_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "calendar_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      connected_accounts: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          provider: string
+          provider_account_id: string | null
+          refresh_token: string | null
+          scopes: string[] | null
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          provider: string
+          provider_account_id?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          provider?: string
+          provider_account_id?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connected_accounts_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -602,6 +744,86 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "daily_stats_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          account_label: string | null
+          created_at: string
+          date_from: string | null
+          date_to: string | null
+          deleted_at: string | null
+          document_type: string | null
+          file_size: number | null
+          filename: string
+          id: string
+          metadata: Json | null
+          mime_type: string | null
+          parse_errors: Json | null
+          parsed_at: string | null
+          parsed_status: string | null
+          provider: string | null
+          source: string | null
+          storage_path: string
+          transactions_count: number | null
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          account_label?: string | null
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          deleted_at?: string | null
+          document_type?: string | null
+          file_size?: number | null
+          filename: string
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          parse_errors?: Json | null
+          parsed_at?: string | null
+          parsed_status?: string | null
+          provider?: string | null
+          source?: string | null
+          storage_path: string
+          transactions_count?: number | null
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          account_label?: string | null
+          created_at?: string
+          date_from?: string | null
+          date_to?: string | null
+          deleted_at?: string | null
+          document_type?: string | null
+          file_size?: number | null
+          filename?: string
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          parse_errors?: Json | null
+          parsed_at?: string | null
+          parsed_status?: string | null
+          provider?: string | null
+          source?: string | null
+          storage_path?: string
+          transactions_count?: number | null
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -694,10 +916,13 @@ export type Database = {
       finance_transactions: {
         Row: {
           amount: number
+          bank_connection_id: string | null
           category_id: string | null
           created_at: string
           date: string
           description: string | null
+          document_id: string | null
+          external_id: string | null
           id: string
           source: string | null
           type: string
@@ -706,10 +931,13 @@ export type Database = {
         }
         Insert: {
           amount: number
+          bank_connection_id?: string | null
           category_id?: string | null
           created_at?: string
           date?: string
           description?: string | null
+          document_id?: string | null
+          external_id?: string | null
           id?: string
           source?: string | null
           type?: string
@@ -718,10 +946,13 @@ export type Database = {
         }
         Update: {
           amount?: number
+          bank_connection_id?: string | null
           category_id?: string | null
           created_at?: string
           date?: string
           description?: string | null
+          document_id?: string | null
+          external_id?: string | null
           id?: string
           source?: string | null
           type?: string
@@ -730,10 +961,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "finance_transactions_bank_connection_id_fkey"
+            columns: ["bank_connection_id"]
+            isOneToOne: false
+            referencedRelation: "bank_connections"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "finance_transactions_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_transactions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
             referencedColumns: ["id"]
           },
           {
@@ -2284,8 +2529,11 @@ export type Database = {
           estimate_min: number | null
           goal_id: string | null
           id: string
+          kanban_column: string | null
+          kanban_status: Database["public"]["Enums"]["kanban_status"] | null
           priority: string
           project_id: string | null
+          sort_order: number | null
           source: string | null
           start_date: string | null
           status: string
@@ -2305,8 +2553,11 @@ export type Database = {
           estimate_min?: number | null
           goal_id?: string | null
           id?: string
+          kanban_column?: string | null
+          kanban_status?: Database["public"]["Enums"]["kanban_status"] | null
           priority?: string
           project_id?: string | null
+          sort_order?: number | null
           source?: string | null
           start_date?: string | null
           status?: string
@@ -2326,8 +2577,11 @@ export type Database = {
           estimate_min?: number | null
           goal_id?: string | null
           id?: string
+          kanban_column?: string | null
+          kanban_status?: Database["public"]["Enums"]["kanban_status"] | null
           priority?: string
           project_id?: string | null
+          sort_order?: number | null
           source?: string | null
           start_date?: string | null
           status?: string
@@ -2721,6 +2975,7 @@ export type Database = {
         | "ai"
         | "integration"
         | "system"
+      kanban_status: "backlog" | "todo" | "doing" | "done"
       plan_tier: "free" | "pro" | "enterprise"
     }
     CompositeTypes: {
@@ -2851,6 +3106,7 @@ export const Constants = {
     Enums: {
       app_role: ["owner", "admin", "member"],
       event_source: ["ui", "api", "automation", "ai", "integration", "system"],
+      kanban_status: ["backlog", "todo", "doing", "done"],
       plan_tier: ["free", "pro", "enterprise"],
     },
   },
