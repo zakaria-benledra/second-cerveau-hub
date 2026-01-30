@@ -23,12 +23,23 @@ async function getUserWorkspaceId(supabase: any, userId: string): Promise<string
   return membership?.workspace_id || null;
 }
 
-// ============= TOKEN ENCRYPTION =============
+// ============= TOKEN ENCRYPTION (Production-Grade) =============
 
-async function getEncryptionKey(): Promise<CryptoKey> {
-  const secret = Deno.env.get('TOKEN_ENCRYPTION_KEY') || 'default-key-change-in-production-32b';
+const CURRENT_ENCRYPTION_VERSION = 2;
+
+/**
+ * Get encryption key - FAILS if not configured (no default fallback)
+ */
+async function getEncryptionKey(version: number = CURRENT_ENCRYPTION_VERSION): Promise<CryptoKey> {
+  const keyEnvName = version === 1 ? 'TOKEN_ENCRYPTION_KEY_V1' : 'TOKEN_ENCRYPTION_KEY';
+  const secret = Deno.env.get(keyEnvName);
+  
+  if (!secret || secret.length < 32) {
+    throw new Error(`Encryption key ${keyEnvName} not configured or too short (min 32 chars)`);
+  }
+  
   const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret.padEnd(32, '0').slice(0, 32));
+  const keyData = encoder.encode(secret.slice(0, 32));
   
   return crypto.subtle.importKey(
     'raw',
@@ -39,7 +50,7 @@ async function getEncryptionKey(): Promise<CryptoKey> {
   );
 }
 
-async function encryptToken(token: string): Promise<string> {
+async function encryptToken(token: string): Promise<{ ciphertext: string; version: number }> {
   const key = await getEncryptionKey();
   const encoder = new TextEncoder();
   const data = encoder.encode(token);
@@ -55,27 +66,60 @@ async function encryptToken(token: string): Promise<string> {
   combined.set(iv);
   combined.set(new Uint8Array(encrypted), iv.length);
   
-  return btoa(String.fromCharCode(...combined));
+  return {
+    ciphertext: btoa(String.fromCharCode(...combined)),
+    version: CURRENT_ENCRYPTION_VERSION
+  };
 }
 
-async function decryptToken(encrypted: string): Promise<string> {
-  try {
-    const key = await getEncryptionKey();
-    const combined = Uint8Array.from(atob(encrypted), c => c.charCodeAt(0));
-    const iv = combined.slice(0, 12);
-    const data = combined.slice(12);
-    
-    const decrypted = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv },
-      key,
-      data
-    );
-    
-    return new TextDecoder().decode(decrypted);
-  } catch (e) {
-    // Fallback to unencrypted (for migration)
-    return encrypted;
+async function decryptToken(encrypted: string, version: number = CURRENT_ENCRYPTION_VERSION): Promise<string> {
+  const key = await getEncryptionKey(version);
+  const combined = Uint8Array.from(atob(encrypted), c => c.charCodeAt(0));
+  const iv = combined.slice(0, 12);
+  const data = combined.slice(12);
+  
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    data
+  );
+  
+  return new TextDecoder().decode(decrypted);
+}
+
+/**
+ * Get user's workspace - bootstraps one if none exists
+ */
+async function getRequiredWorkspaceId(supabase: any, userId: string): Promise<string> {
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('workspace_id')
+    .eq('user_id', userId)
+    .limit(1)
+    .single();
+
+  if (membership?.workspace_id) {
+    return membership.workspace_id;
   }
+
+  // Bootstrap personal workspace
+  const { data: workspace, error } = await supabase
+    .from('workspaces')
+    .insert({ name: 'Mon espace', plan: 'free', owner_id: userId })
+    .select()
+    .single();
+
+  if (error || !workspace) {
+    throw new Error(`Failed to bootstrap workspace: ${error?.message}`);
+  }
+
+  await supabase.from('memberships').insert({
+    user_id: userId,
+    workspace_id: workspace.id,
+    role: 'owner'
+  });
+
+  return workspace.id;
 }
 
 // ============= MAIN HANDLER =============
@@ -134,20 +178,46 @@ Deno.serve(async (req) => {
 
     for (const account of accounts || []) {
       try {
-        // Get workspace_id for multi-tenant inserts
-        const workspaceId = await getUserWorkspaceId(supabase, account.user_id)
+        // Get workspace_id (required, never null)
+        const workspaceId = await getRequiredWorkspaceId(supabase, account.user_id)
         
-        // ========== DECRYPT TOKEN ==========
+        // ========== DECRYPT TOKEN (with version support) ==========
         let accessToken = account.access_token
         let refreshToken = account.refresh_token
+        const encryptionVersion = account.encryption_version || 1
         
-        // Try to use encrypted token if available
+        // Use encrypted token if available (with version)
         if (account.refresh_token_encrypted) {
           try {
-            refreshToken = await decryptToken(account.refresh_token_encrypted)
+            refreshToken = await decryptToken(account.refresh_token_encrypted, encryptionVersion)
           } catch (e) {
-            console.error('Failed to decrypt token, using plaintext')
+            console.error(`Failed to decrypt token (v${encryptionVersion}):`, e)
+            // If decryption fails and we have plaintext, migrate it
+            if (account.refresh_token) {
+              console.log('Migrating plaintext token to encrypted format')
+              const encrypted = await encryptToken(account.refresh_token)
+              await supabase.from('connected_accounts').update({
+                refresh_token_encrypted: encrypted.ciphertext,
+                encryption_version: encrypted.version,
+                token_migrated_at: new Date().toISOString(),
+                refresh_token: null // Clear plaintext after migration
+              }).eq('id', account.id)
+              refreshToken = account.refresh_token
+            } else {
+              failedAccounts++
+              continue
+            }
           }
+        } else if (account.refresh_token) {
+          // Migrate plaintext token
+          console.log('Migrating plaintext token for account:', account.id)
+          const encrypted = await encryptToken(account.refresh_token)
+          await supabase.from('connected_accounts').update({
+            refresh_token_encrypted: encrypted.ciphertext,
+            encryption_version: encrypted.version,
+            token_migrated_at: new Date().toISOString()
+          }).eq('id', account.id)
+          refreshToken = account.refresh_token
         }
 
         // Check if token needs refresh
@@ -173,16 +243,22 @@ Deno.serve(async (req) => {
           if (tokens.access_token) {
             accessToken = tokens.access_token
             
-            // ========== ENCRYPT AND STORE NEW TOKEN ==========
-            const encryptedRefresh = tokens.refresh_token 
-              ? await encryptToken(tokens.refresh_token)
-              : account.refresh_token_encrypted
+            // ========== ENCRYPT AND STORE NEW TOKEN (versioned) ==========
+            let encryptedRefresh = account.refresh_token_encrypted
+            let newVersion = account.encryption_version || CURRENT_ENCRYPTION_VERSION
+            
+            if (tokens.refresh_token) {
+              const encrypted = await encryptToken(tokens.refresh_token)
+              encryptedRefresh = encrypted.ciphertext
+              newVersion = encrypted.version
+            }
 
             await supabase
               .from('connected_accounts')
               .update({
                 access_token: tokens.access_token,
                 refresh_token_encrypted: encryptedRefresh,
+                encryption_version: newVersion,
                 expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString()
               })
               .eq('id', account.id)
