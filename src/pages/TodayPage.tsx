@@ -15,12 +15,15 @@ import { useCompleteTask } from '@/hooks/useTasks';
 import { useToggleHabitLog } from '@/hooks/useHabits';
 import { useAICoach } from '@/hooks/useAICoach';
 import { useSound } from '@/hooks/useSound';
-import { Loader2, Settings2, CheckCircle } from 'lucide-react';
+import { useActiveInterventions } from '@/hooks/useAIInterventions';
+import { Loader2, Settings2, CheckCircle, Brain } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { SoundSettings } from '@/components/sound/SoundSettings';
 import { toast } from 'sonner';
 
@@ -50,6 +53,7 @@ export default function TodayPage() {
   const toggleHabit = useToggleHabitLog();
   const { refetchBriefing, briefingLoading } = useAICoach();
   const { play } = useSound();
+  const { data: activeInterventions } = useActiveInterventions();
 
   // BUG #1 FIX: Prevent race conditions with refs
   const completingTaskRef = useRef<string | null>(null);
@@ -166,7 +170,33 @@ export default function TodayPage() {
           </AnimatedContainer>
         )}
 
-        {/* SECTION 0: AI Coach - Behavioral Message */}
+        {/* SECTION 0: AI Active Interventions */}
+        {activeInterventions && activeInterventions.length > 0 && (
+          <AnimatedContainer delay={25} animation="fade-up">
+            <Alert 
+              variant={activeInterventions[0].severity === 'critical' ? 'destructive' : 'default'}
+              className="border-2"
+            >
+              <Brain className="h-5 w-5" />
+              <AlertTitle className="flex items-center gap-2">
+                <span>Intervention IA Active</span>
+                <Badge variant="outline">{activeInterventions[0].severity}</Badge>
+              </AlertTitle>
+              <AlertDescription>
+                <p className="mt-2">{activeInterventions[0].reason || activeInterventions[0].ai_message}</p>
+                <Button 
+                  variant="link" 
+                  className="px-0 mt-2"
+                  onClick={() => navigate('/observability?tab=interventions')}
+                >
+                  Voir détails et historique →
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </AnimatedContainer>
+        )}
+
+        {/* SECTION 1: AI Coach - Behavioral Message */}
         <AnimatedContainer delay={50} animation="fade-up">
           <AICoachCard />
         </AnimatedContainer>
