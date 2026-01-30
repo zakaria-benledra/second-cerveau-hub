@@ -116,3 +116,20 @@ export async function getUserWorkspaceId(
 // NOTE: Do NOT re-export from idempotency.ts here.
 // Each edge function should import directly from the module it needs.
 // This prevents circular dependencies and makes dependencies explicit.
+
+/**
+ * Get workspace context including workspaceId.
+ * Returns object with workspaceId or null.
+ */
+export async function getWorkspaceContext(
+  supabase: any,
+  userId: string
+): Promise<{ workspaceId: string | null }> {
+  try {
+    const workspaceId = await getRequiredWorkspaceId(supabase, userId);
+    return { workspaceId };
+  } catch (error) {
+    console.error('[WORKSPACE] Context resolution failed:', error);
+    return { workspaceId: null };
+  }
+}

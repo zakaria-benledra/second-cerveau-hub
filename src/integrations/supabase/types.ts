@@ -642,6 +642,44 @@ export type Database = {
           },
         ]
       }
+      churn_risk_scores: {
+        Row: {
+          last_activity_at: string | null
+          risk_level: string
+          risk_score: number
+          signals: Json | null
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          last_activity_at?: string | null
+          risk_level?: string
+          risk_score?: number
+          signals?: Json | null
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          last_activity_at?: string | null
+          risk_level?: string
+          risk_score?: number
+          signals?: Json | null
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "churn_risk_scores_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       connected_accounts: {
         Row: {
           access_token: string
@@ -922,6 +960,65 @@ export type Database = {
           },
         ]
       }
+      finance_documents: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          file_type: string
+          filename: string
+          id: string
+          parsed_at: string | null
+          status: string
+          storage_path: string | null
+          summary: Json | null
+          transactions_imported: number | null
+          updated_at: string
+          uploaded_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          file_type: string
+          filename: string
+          id?: string
+          parsed_at?: string | null
+          status?: string
+          storage_path?: string | null
+          summary?: Json | null
+          transactions_imported?: number | null
+          updated_at?: string
+          uploaded_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          file_type?: string
+          filename?: string
+          id?: string
+          parsed_at?: string | null
+          status?: string
+          storage_path?: string | null
+          summary?: Json | null
+          transactions_imported?: number | null
+          updated_at?: string
+          uploaded_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_documents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_rules: {
         Row: {
           category_id: string | null
@@ -1056,6 +1153,59 @@ export type Database = {
           },
         ]
       }
+      finance_visual_snapshots: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          date: string
+          expenses: number | null
+          id: string
+          income: number | null
+          metadata: Json | null
+          snapshot_type: string
+          trend_index: number | null
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          date: string
+          expenses?: number | null
+          id?: string
+          income?: number | null
+          metadata?: Json | null
+          snapshot_type: string
+          trend_index?: number | null
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          date?: string
+          expenses?: number | null
+          id?: string
+          income?: number | null
+          metadata?: Json | null
+          snapshot_type?: string
+          trend_index?: number | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_visual_snapshots_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flashcards: {
         Row: {
           back: string
@@ -1150,6 +1300,62 @@ export type Database = {
           },
           {
             foreignKeyName: "focus_sessions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funnel_daily: {
+        Row: {
+          activated_users: number | null
+          activation_rate: number | null
+          ai_engaged_users: number | null
+          churned_users: number | null
+          created_at: string
+          date: string
+          finance_connected_users: number | null
+          retained_users: number | null
+          retention_rate: number | null
+          signups: number | null
+          updated_at: string
+          visits: number | null
+          workspace_id: string
+        }
+        Insert: {
+          activated_users?: number | null
+          activation_rate?: number | null
+          ai_engaged_users?: number | null
+          churned_users?: number | null
+          created_at?: string
+          date: string
+          finance_connected_users?: number | null
+          retained_users?: number | null
+          retention_rate?: number | null
+          signups?: number | null
+          updated_at?: string
+          visits?: number | null
+          workspace_id: string
+        }
+        Update: {
+          activated_users?: number | null
+          activation_rate?: number | null
+          ai_engaged_users?: number | null
+          churned_users?: number | null
+          created_at?: string
+          date?: string
+          finance_connected_users?: number | null
+          retained_users?: number | null
+          retention_rate?: number | null
+          signups?: number | null
+          updated_at?: string
+          visits?: number | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funnel_daily_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -3023,6 +3229,50 @@ export type Database = {
           },
         ]
       }
+      user_journey_events: {
+        Row: {
+          created_at: string
+          entity: string | null
+          entity_id: string | null
+          event_id: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          event_id?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          event_id?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_journey_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -3043,6 +3293,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      weather_snapshots: {
+        Row: {
+          created_at: string
+          date: string
+          humidity: number | null
+          id: string
+          location: string | null
+          mood_index: number | null
+          productivity_correlation: number | null
+          temp: number | null
+          user_id: string
+          weather: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          humidity?: number | null
+          id?: string
+          location?: string | null
+          mood_index?: number | null
+          productivity_correlation?: number | null
+          temp?: number | null
+          user_id: string
+          weather?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          humidity?: number | null
+          id?: string
+          location?: string | null
+          mood_index?: number | null
+          productivity_correlation?: number | null
+          temp?: number | null
+          user_id?: string
+          weather?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weather_snapshots_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       weekly_stats: {
         Row: {
