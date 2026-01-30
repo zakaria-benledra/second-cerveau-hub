@@ -7,6 +7,8 @@ import { ImpactTasksCard } from '@/components/today/ImpactTasksCard';
 import { DriftSignalsCard } from '@/components/today/DriftSignalsCard';
 import { AIInsightCard } from '@/components/today/AIInsightCard';
 import { QuickStatsFooter } from '@/components/today/QuickStatsFooter';
+import { AICoachCard } from '@/components/today/AICoachCard';
+import { WeatherCard } from '@/components/today/WeatherCard';
 import { AnimatedContainer } from '@/components/ui/animated-container';
 import { useTodayCommand } from '@/hooks/useTodayCommand';
 import { useCompleteTask } from '@/hooks/useTasks';
@@ -124,8 +126,18 @@ export default function TodayPage() {
           </AnimatedContainer>
         )}
 
-        {/* SECTION 1: Global State Bar - Each KPI clickable */}
+        {/* SECTION 0: AI Coach - Behavioral Message */}
         <AnimatedContainer delay={50} animation="fade-up">
+          <AICoachCard />
+        </AnimatedContainer>
+
+        {/* Weather Card - Contextual Signal */}
+        <AnimatedContainer delay={75} animation="fade-up">
+          <WeatherCard />
+        </AnimatedContainer>
+
+        {/* SECTION 1: Global State Bar - Each KPI clickable */}
+        <AnimatedContainer delay={100} animation="fade-up">
           <GlobalStateCard
             disciplineScore={disciplineScore}
             energyLevel={energyLevel}

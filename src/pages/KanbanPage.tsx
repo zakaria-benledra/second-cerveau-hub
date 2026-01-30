@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useKanbanTasks, useMoveKanbanTask, type KanbanStatus, type KanbanTask } from '@/hooks/useKanban';
 import { useCreateTask } from '@/hooks/useTasks';
 import { useProjects, useGoals } from '@/hooks/useProjects';
@@ -9,8 +10,11 @@ import { useRecentUndos } from '@/hooks/useUndo';
 import { TaskDialog } from '@/components/tasks/TaskDialog';
 import { KanbanHeader } from '@/components/kanban/KanbanHeader';
 import { KanbanColumn } from '@/components/kanban/KanbanColumn';
-import { Loader2, Undo2 } from 'lucide-react';
+import { KanbanMetricsPanel } from '@/components/kanban/KanbanMetricsPanel';
+import { GlobalTimeFilter, type TimeRange } from '@/components/filters/GlobalTimeFilter';
+import { Loader2, Undo2, LayoutGrid, BarChart3 } from 'lucide-react';
 import type { CreateTaskInput, UpdateTaskInput } from '@/lib/api/tasks';
+
 const COLUMNS: { id: KanbanStatus; title: string; accent: string; glow: string }[] = [
   { id: 'backlog', title: 'Backlog', accent: 'border-muted/50', glow: 'shadow-muted/20' },
   { id: 'todo', title: 'À Faire', accent: 'border-info/30', glow: 'shadow-info/20' },
