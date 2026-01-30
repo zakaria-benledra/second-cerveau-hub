@@ -1,16 +1,29 @@
 # 🧠 SECOND CERVEAU
 
-> Decision Intelligence System for Human Behavior - Système personnel d'exécution, d'apprentissage et de pilotage.
+> Behavioral Intelligence System - Transform Your Actions Into Your Best Self
 
 ## 🎯 Vision
 
-**"SECOND CERVEAU is not a productivity app. It is a Decision Intelligence System for Human Behavior. It measures who the user is becoming — and actively shapes who they become next."**
+**SECOND BRAIN is not a productivity app. It is a Behavioral Intelligence System.**
 
-Design dual-mode system:
-- **(A) Executive Dashboard** — productivité, projets, métriques, risques, décisions
-- **(B) Motivational Coach** — habitudes, énergie, clarté, croissance personnelle
+It doesn't help you get organized. It helps you become someone disciplined, consistent, and predictable in your results.
 
-**OPERATING MODEL**: OBSERVE → MEASURE → SCORE → RECOMMEND → DECIDE → EXECUTE → AUDIT → LEARN
+### What We Really Sell
+
+A **BEHAVIORAL TRANSFORMATION SYSTEM** that:
+
+- Observes what you plan, what you actually do, and what you avoid
+- Measures your discipline, consistency, and momentum
+- Intervenes automatically when you drift
+- Proves your transformation with measurable results
+
+### Product Promise
+
+> "Transform Your Actions Into Your Best Self"
+
+### Operating Model
+
+**OBSERVE → MEASURE → SCORE → RECOMMEND → DECIDE → EXECUTE → AUDIT → LEARN**
 
 ## 🚀 Features
 
