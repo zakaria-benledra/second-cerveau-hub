@@ -24,6 +24,7 @@ import {
   Heart,
   Zap,
   Award,
+  TestTube2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -78,8 +79,9 @@ const navGroups = [
     items: [
       { icon: Award, label: 'Scores', path: '/scores' },
       { icon: Zap, label: 'Automations', path: '/automation' },
-      { icon: Brain, label: 'Agent IA', path: '/agent' },
+      { icon: Brain, label: 'AI Coach', path: '/ai-coach' },
       { icon: BarChart3, label: 'Dashboard', path: '/dashboard' },
+      { icon: BarChart3, label: 'BI Executive', path: '/bi/executive' },
     ],
   },
   {
@@ -92,6 +94,7 @@ const navGroups = [
 ];
 
 const bottomItems = [
+  { icon: TestTube2, label: 'QA Dashboard', path: '/qa' },
   { icon: Bell, label: 'Notifications', path: '/notifications' },
   { icon: Settings, label: 'Paramètres', path: '/settings' },
 ];
