@@ -53,8 +53,8 @@ export function ScoreRing({
   return (
     <div 
       className={cn(
-        'relative flex flex-col items-center justify-center',
-        onClick && 'cursor-pointer hover:scale-105 transition-transform duration-200',
+        'relative flex flex-col items-center justify-center group',
+        onClick && 'cursor-pointer transition-transform duration-300 hover:scale-105',
         className
       )}
       onClick={onClick}
@@ -64,7 +64,7 @@ export function ScoreRing({
       <svg
         width={config.ring}
         height={config.ring}
-        className={cn('transform -rotate-90', glowClass)}
+        className={cn('transform -rotate-90 transition-all duration-500', glowClass)}
       >
         {/* Background circle */}
         <circle
@@ -76,7 +76,7 @@ export function ScoreRing({
           strokeWidth={config.stroke}
           className="opacity-30"
         />
-        {/* Progress circle */}
+        {/* Progress circle with animation */}
         <circle
           cx={config.ring / 2}
           cy={config.ring / 2}
@@ -87,9 +87,10 @@ export function ScoreRing({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          className="transition-all duration-700 ease-out"
+          className="transition-all duration-1000 ease-out"
           style={{
-            filter: `drop-shadow(0 0 6px ${color})`
+            filter: `drop-shadow(0 0 8px ${color})`,
+            transformOrigin: 'center',
           }}
         />
       </svg>

@@ -63,20 +63,20 @@ export function DriftSignalsCard({ signals }: DriftSignalsCardProps) {
 
   return (
     <Card className={cn(
-      'glass-hover transition-all duration-300',
-      !hasSignals && 'border-success/30 bg-success/5'
+      'glass-hover transition-all duration-500 group hover:shadow-lg',
+      !hasSignals && 'border-success/30 bg-success/5 hover:border-success/50'
     )}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={cn(
-              'p-1.5 rounded-lg',
+              'p-1.5 rounded-lg transition-all duration-300 group-hover:scale-110',
               hasSignals ? 'bg-warning/15' : 'bg-success/15'
             )}>
               {hasSignals ? (
                 <AlertTriangle className="h-4 w-4 text-warning" />
               ) : (
-                <CheckCircle2 className="h-4 w-4 text-success" />
+                <CheckCircle2 className="h-4 w-4 text-success animate-bounce-soft" />
               )}
             </div>
             <CardTitle className="text-base">Signaux de Dérive</CardTitle>
@@ -84,7 +84,7 @@ export function DriftSignalsCard({ signals }: DriftSignalsCardProps) {
           {hasSignals ? (
             <div className="flex gap-1">
               {dangerCount > 0 && (
-                <Badge className="bg-destructive/15 text-destructive border-0 text-xs">
+                <Badge className="bg-destructive/15 text-destructive border-0 text-xs animate-pulse-soft">
                   {dangerCount} critique
                 </Badge>
               )}
@@ -114,7 +114,7 @@ export function DriftSignalsCard({ signals }: DriftSignalsCardProps) {
           </div>
         ) : (
           <>
-            {signals.slice(0, 3).map((signal) => {
+            {signals.slice(0, 3).map((signal, index) => {
               const Icon = categoryIcons[signal.category];
               const style = typeStyles[signal.type];
               
@@ -122,11 +122,12 @@ export function DriftSignalsCard({ signals }: DriftSignalsCardProps) {
                 <div
                   key={signal.id}
                   className={cn(
-                    'p-3 rounded-xl border transition-all duration-200',
+                    'p-3 rounded-xl border transition-all duration-300',
                     style.border,
                     style.bg,
-                    signal.action && 'hover:shadow-md cursor-pointer'
+                    signal.action && 'hover:shadow-md hover:translate-x-1 cursor-pointer'
                   )}
+                  style={{ animationDelay: `${index * 75}ms` }}
                 >
                   <div className="flex items-start gap-3">
                     <div className={cn('mt-0.5', style.icon)}>

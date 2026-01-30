@@ -51,19 +51,26 @@ export function NextBestActionCard({
   const energy = task.energyLevel ? energyConfig[task.energyLevel] : null;
 
   return (
-    <Card className="command-card glass-strong border-primary/30 overflow-hidden group">
+    <Card className="command-card glass-strong border-primary/30 overflow-hidden group hover:border-primary/50 transition-all duration-500 hover:shadow-glow">
       {/* Animated top gradient bar */}
-      <div className="h-1 w-full gradient-primary" />
+      <div className="h-1 w-full gradient-primary relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_2s_infinite]" 
+          style={{ 
+            transform: 'translateX(-100%)',
+            animation: 'shimmer 2s infinite',
+          }} 
+        />
+      </div>
       
       <CardContent className="p-6">
         <div className="flex flex-col lg:flex-row lg:items-center gap-6">
           {/* Icon and header */}
           <div className="flex items-start gap-4 flex-1">
             <div className="relative">
-              <div className="p-3 rounded-2xl gradient-primary shadow-lg glow animate-float">
+              <div className="p-3 rounded-2xl gradient-primary shadow-lg glow animate-float transition-all duration-300 group-hover:scale-110">
                 <Zap className="h-6 w-6 text-primary-foreground" />
               </div>
-              <div className="absolute -inset-1 rounded-2xl bg-primary/20 blur-xl opacity-50" />
+              <div className="absolute -inset-1 rounded-2xl bg-primary/20 blur-xl opacity-50 group-hover:opacity-75 transition-opacity duration-500" />
             </div>
             
             <div className="flex-1 min-w-0">
@@ -126,13 +133,13 @@ export function NextBestActionCard({
           <div className="flex flex-row lg:flex-col gap-2 lg:gap-3">
             <Button
               size="lg"
-              className="gradient-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex-1 lg:flex-none"
+              className="gradient-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 active:scale-100 transition-all duration-300 flex-1 lg:flex-none group/btn"
               onClick={onStart}
               disabled={isLoading}
             >
-              <Play className="h-4 w-4 mr-2" />
+              <Play className="h-4 w-4 mr-2 transition-transform duration-300 group-hover/btn:scale-110" />
               Commencer
-              <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
+              <ChevronRight className="h-4 w-4 ml-1 transition-transform duration-300 group-hover/btn:translate-x-1" />
             </Button>
             
             {onSkip && (

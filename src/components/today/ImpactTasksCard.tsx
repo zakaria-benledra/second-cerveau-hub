@@ -50,11 +50,11 @@ export function ImpactTasksCard({ tasks, onComplete, isLoading }: ImpactTasksCar
   const totalToday = tasks.length;
 
   return (
-    <Card className="glass-hover group">
+    <Card className="glass-hover group hover:shadow-lg transition-all duration-500">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-primary/15">
+            <div className="p-1.5 rounded-lg bg-primary/15 transition-transform duration-300 group-hover:scale-110">
               <Target className="h-4 w-4 text-primary" />
             </div>
             <CardTitle className="text-base">Tâches à Impact</CardTitle>
@@ -63,10 +63,10 @@ export function ImpactTasksCard({ tasks, onComplete, isLoading }: ImpactTasksCar
             to="/history?metric=tasks&range=7"
             className="flex items-center gap-1 group-hover:text-primary transition-colors"
           >
-            <Badge variant="outline" className="text-muted-foreground">
+            <Badge variant="outline" className="text-muted-foreground transition-all duration-300 group-hover:border-primary/50">
               {completedToday}/{totalToday}
             </Badge>
-            <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:translate-x-0.5" />
           </Link>
         </div>
       </CardHeader>
@@ -91,16 +91,18 @@ export function ImpactTasksCard({ tasks, onComplete, isLoading }: ImpactTasksCar
               <div
                 key={task.id}
                 className={cn(
-                  'flex items-center gap-3 p-3 rounded-xl transition-all duration-200 cursor-pointer group',
+                  'flex items-center gap-3 p-3 rounded-xl transition-all duration-300 cursor-pointer group/task',
                   'hover:bg-muted/50 border border-transparent hover:border-border/50',
+                  'hover:translate-x-1 hover:shadow-sm',
                   index === 0 && 'bg-primary/5 border-primary/20'
                 )}
+                style={{ animationDelay: `${index * 50}ms` }}
                 onClick={() => !isLoading && onComplete(task.id)}
               >
                 <Checkbox
                   checked={task.status === 'done'}
                   disabled={isLoading}
-                  className="rounded-lg"
+                  className="rounded-lg transition-all duration-300"
                 />
                 
                 {/* Priority indicator */}

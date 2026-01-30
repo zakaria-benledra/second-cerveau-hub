@@ -27,18 +27,19 @@ export function CriticalHabitsCard({ habits, onToggle, isToggling }: CriticalHab
 
   return (
     <Card className={cn(
-      'glass-hover transition-all duration-300 group',
-      allCompleted && 'border-success/30 bg-success/5'
+      'glass-hover transition-all duration-500 group hover:shadow-lg',
+      allCompleted && 'border-success/30 bg-success/5 hover:border-success/50'
     )}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={cn(
-              'p-1.5 rounded-lg',
-              allCompleted ? 'bg-success/15' : 'bg-warning/15'
+              'p-1.5 rounded-lg transition-all duration-300',
+              allCompleted ? 'bg-success/15' : 'bg-warning/15',
+              'group-hover:scale-110'
             )}>
               {allCompleted ? (
-                <Sparkles className="h-4 w-4 text-success" />
+                <Sparkles className="h-4 w-4 text-success animate-pulse-soft" />
               ) : (
                 <Flame className="h-4 w-4 text-warning" />
               )}
@@ -77,23 +78,24 @@ export function CriticalHabitsCard({ habits, onToggle, isToggling }: CriticalHab
           </div>
         ) : (
           <>
-            {criticalHabits.map((habit) => (
+            {criticalHabits.map((habit, index) => (
               <div
                 key={habit.id}
                 className={cn(
-                  'flex items-center gap-3 p-3 rounded-xl transition-all duration-200 cursor-pointer group',
+                  'flex items-center gap-3 p-3 rounded-xl transition-all duration-300 cursor-pointer group/item',
                   habit.completed 
-                    ? 'bg-success/10 border border-success/20' 
-                    : 'hover:bg-muted/50 border border-transparent hover:border-border/50'
+                    ? 'bg-success/10 border border-success/20 scale-[0.98]' 
+                    : 'hover:bg-muted/50 border border-transparent hover:border-border/50 hover:translate-x-1'
                 )}
+                style={{ animationDelay: `${index * 50}ms` }}
                 onClick={() => !isToggling && onToggle(habit.id)}
               >
                 <Checkbox
                   checked={habit.completed}
                   disabled={isToggling}
                   className={cn(
-                    'rounded-lg transition-all duration-200',
-                    habit.completed && 'bg-success border-success'
+                    'rounded-lg transition-all duration-300',
+                    habit.completed && 'bg-success border-success scale-110'
                   )}
                 />
                 
