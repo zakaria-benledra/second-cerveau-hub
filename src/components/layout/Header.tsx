@@ -1,8 +1,9 @@
-import { Menu, Bell, Plus, Search } from 'lucide-react';
+import { Menu, Bell, Plus, Search, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/stores/useAppStore';
+import { useState, useEffect } from 'react';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -11,16 +12,27 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   const { inboxItems } = useAppStore();
   const unreadCount = inboxItems.filter((i) => i.status === 'new').length;
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    setIsDark(isDarkMode);
+  }, []);
+
+  const toggleTheme = () => {
+    document.documentElement.classList.toggle('dark');
+    setIsDark(!isDark);
+  };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b-2 border-border bg-background px-4 md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur-lg px-4 md:px-6">
       {/* Left Section */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="icon"
           onClick={onMenuClick}
-          className="md:hidden border-2 border-transparent hover:border-border"
+          className="md:hidden rounded-lg"
         >
           <Menu className="h-5 w-5" />
         </Button>
@@ -29,8 +41,8 @@ export function Header({ onMenuClick }: HeaderProps) {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search..."
-              className="w-64 pl-9 border-2 focus:shadow-xs"
+              placeholder="Rechercher..."
+              className="w-64 pl-10 bg-muted/50 border-transparent focus:bg-background focus:border-border"
             />
           </div>
         </div>
@@ -38,12 +50,16 @@ export function Header({ onMenuClick }: HeaderProps) {
 
       {/* Right Section */}
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="hidden sm:flex gap-2 border-2 shadow-xs hover:shadow-sm">
+        <Button variant="gradient" size="sm" className="hidden sm:flex gap-2">
           <Plus className="h-4 w-4" />
-          <span>Quick Add</span>
+          <span>Ajouter</span>
         </Button>
 
-        <Button variant="ghost" size="icon" className="relative border-2 border-transparent hover:border-border">
+        <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-lg">
+          {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </Button>
+
+        <Button variant="ghost" size="icon" className="relative rounded-lg">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge
@@ -55,9 +71,9 @@ export function Header({ onMenuClick }: HeaderProps) {
           )}
         </Button>
 
-        <Button variant="ghost" size="icon" className="border-2 border-transparent hover:border-border">
-          <div className="h-8 w-8 border-2 border-foreground bg-accent flex items-center justify-center font-bold text-sm">
-            JD
+        <Button variant="ghost" size="icon" className="rounded-lg">
+          <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center font-semibold text-sm text-primary-foreground">
+            U
           </div>
         </Button>
       </div>

@@ -27,6 +27,9 @@ export function useAllTasks() {
   });
 }
 
+// Alias for backward compatibility
+export const useTasks = useAllTasks;
+
 export function useNextBestAction() {
   return useQuery({
     queryKey: ['tasks', 'nextBestAction'],
