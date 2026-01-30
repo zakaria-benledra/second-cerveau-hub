@@ -12,10 +12,12 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Zap,
   Brain,
   Timer,
   TrendingUp,
+  PenLine,
+  Bell,
+  ListChecks,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,16 +30,20 @@ interface SidebarProps {
 
 const navItems = [
   { icon: Home, label: 'Aujourd\'hui', path: '/', color: 'text-primary' },
-  { icon: CheckSquare, label: 'Tâches', path: '/tasks', color: 'text-info' },
-  { icon: Target, label: 'Habitudes', path: '/habits', color: 'text-success' },
-  { icon: Inbox, label: 'Inbox', path: '/inbox', color: 'text-warning' },
-  { icon: FolderKanban, label: 'Projets', path: '/projects', color: 'text-accent' },
-  { icon: Timer, label: 'Focus', path: '/focus', color: 'text-destructive' },
+  { icon: CheckSquare, label: 'Tâches', path: '/tasks', color: 'text-primary' },
+  { icon: Target, label: 'Habitudes', path: '/habits', color: 'text-primary' },
+  { icon: ListChecks, label: 'Routines', path: '/routines', color: 'text-primary' },
+  { icon: Inbox, label: 'Inbox', path: '/inbox', color: 'text-primary' },
+  { icon: FolderKanban, label: 'Projets', path: '/projects', color: 'text-primary' },
+  { icon: Timer, label: 'Focus', path: '/focus', color: 'text-primary' },
   { icon: TrendingUp, label: 'Objectifs', path: '/goals', color: 'text-primary' },
-  { icon: BookOpen, label: 'Apprentissage', path: '/learning', color: 'text-success' },
-  { icon: Wallet, label: 'Finances', path: '/finance', color: 'text-warning' },
-  { icon: BarChart3, label: 'Dashboard', path: '/dashboard', color: 'text-accent' },
+  { icon: Calendar, label: 'Calendrier', path: '/calendar', color: 'text-primary' },
+  { icon: BookOpen, label: 'Apprentissage', path: '/learning', color: 'text-primary' },
+  { icon: PenLine, label: 'Journal', path: '/journal', color: 'text-primary' },
+  { icon: Wallet, label: 'Finances', path: '/finance', color: 'text-primary' },
+  { icon: BarChart3, label: 'Dashboard', path: '/dashboard', color: 'text-primary' },
   { icon: Brain, label: 'Agent IA', path: '/agent', color: 'text-primary' },
+  { icon: Bell, label: 'Notifications', path: '/notifications', color: 'text-primary' },
 ];
 
 const bottomItems = [
