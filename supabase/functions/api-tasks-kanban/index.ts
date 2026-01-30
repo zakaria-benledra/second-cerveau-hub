@@ -144,7 +144,7 @@ Deno.serve(async (req) => {
 
       if (error) throw error
 
-      // Log to audit
+      // Log to audit_log
       await supabase.from('audit_log').insert({
         user_id: user.id,
         action: 'KANBAN_MOVE',
@@ -152,6 +152,30 @@ Deno.serve(async (req) => {
         entity_id: taskId,
         old_value: { kanban_status: oldTask.kanban_status, sort_order: oldTask.sort_order },
         new_value: { kanban_status: newStatus, sort_order: sortOrder }
+      })
+
+      // Write to task_events for timeline history
+      await supabase.from('task_events').insert({
+        user_id: user.id,
+        task_id: taskId,
+        event_type: newStatus === 'done' ? 'completed' : 'status_changed',
+        payload: { 
+          from_status: oldTask.kanban_status, 
+          to_status: newStatus,
+          from_sort: oldTask.sort_order,
+          to_sort: sortOrder
+        }
+      })
+
+      // Write to undo_stack for reversibility
+      await supabase.from('undo_stack').insert({
+        user_id: user.id,
+        entity: 'tasks',
+        entity_id: taskId,
+        operation: 'KANBAN_MOVE',
+        previous_state: { kanban_status: oldTask.kanban_status, sort_order: oldTask.sort_order, status: oldTask.status },
+        current_state: { kanban_status: newStatus, sort_order: sortOrder, status: updates.status || oldTask.status },
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h expiry
       })
 
       return new Response(JSON.stringify({ success: true, task: data }), {

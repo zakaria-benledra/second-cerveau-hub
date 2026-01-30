@@ -7,6 +7,8 @@ import {
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTaskEvents } from '@/hooks/useTaskEvents';
 import { 
   History, 
   Flag, 
@@ -18,7 +20,9 @@ import {
   CheckCircle2,
   Circle,
   PlayCircle,
-  Archive
+  Archive,
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -76,6 +80,9 @@ export function TaskTimelineModal({
   onComplete,
   isCompleting,
 }: TaskTimelineModalProps) {
+  // Fetch real task events from database
+  const { data: events = [], isLoading: eventsLoading } = useTaskEvents(task?.id);
+
   if (!task) return null;
 
   const priority = priorityConfig[task.priority] || priorityConfig.medium;
@@ -84,6 +91,22 @@ export function TaskTimelineModal({
   const impactScore = calculateImpactScore(task);
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.kanban_status !== 'done';
   const StatusIcon = status.icon;
+
+  // Map event types to display config
+  const getEventConfig = (eventType: string) => {
+    switch (eventType) {
+      case 'created':
+        return { color: 'bg-primary', label: 'Créée', icon: Circle };
+      case 'updated':
+        return { color: 'bg-info', label: 'Modifiée', icon: ArrowRight };
+      case 'status_changed':
+        return { color: 'bg-warning', label: 'Statut changé', icon: ArrowRight };
+      case 'completed':
+        return { color: 'bg-success', label: 'Terminée', icon: CheckCircle2 };
+      default:
+        return { color: 'bg-muted', label: eventType, icon: Circle };
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -173,62 +196,76 @@ export function TaskTimelineModal({
             </div>
           </div>
 
-          {/* Timeline */}
+          {/* Timeline - Real events from task_events table */}
           <div className="space-y-3">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <History className="h-4 w-4" />
               Historique
             </h3>
-            <div className="relative pl-4 border-l-2 border-border space-y-4">
-              {/* Created */}
-              <div className="relative">
-                <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-primary border-2 border-background" />
-                <div className="text-sm">
-                  <span className="font-medium">Créée</span>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(task.created_at), 'PPP à HH:mm', { locale: fr })}
-                  </p>
-                </div>
+            
+            {eventsLoading ? (
+              <div className="space-y-3 pl-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
               </div>
-              
-              {/* Status changes would come from audit_log - showing current state */}
-              {task.kanban_status === 'doing' && (
+            ) : events.length > 0 ? (
+              <div className="relative pl-4 border-l-2 border-border space-y-4">
+                {events.map((event) => {
+                  const config = getEventConfig(event.event_type);
+                  const EventIcon = config.icon;
+                  const payload = event.payload as Record<string, unknown> | null;
+                  
+                  return (
+                    <div key={event.id} className="relative">
+                      <div className={cn(
+                        "absolute -left-[21px] w-3 h-3 rounded-full border-2 border-background",
+                        config.color
+                      )} />
+                      <div className="text-sm">
+                        <span className="font-medium flex items-center gap-1.5">
+                          <EventIcon className="h-3 w-3" />
+                          {config.label}
+                          {payload?.from_status && payload?.to_status && (
+                            <span className="text-muted-foreground text-xs">
+                              {String(payload.from_status)} → {String(payload.to_status)}
+                            </span>
+                          )}
+                        </span>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(event.created_at), 'PPP à HH:mm', { locale: fr })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="relative pl-4 border-l-2 border-border space-y-4">
+                {/* Fallback: show creation from task.created_at */}
                 <div className="relative">
-                  <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-warning border-2 border-background" />
+                  <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-primary border-2 border-background" />
                   <div className="text-sm">
-                    <span className="font-medium">Démarrée</span>
+                    <span className="font-medium">Créée</span>
                     <p className="text-xs text-muted-foreground">
-                      En cours de réalisation
+                      {format(new Date(task.created_at), 'PPP à HH:mm', { locale: fr })}
                     </p>
                   </div>
                 </div>
-              )}
-
-              {task.kanban_status === 'done' && (
-                <div className="relative">
-                  <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-success border-2 border-background" />
-                  <div className="text-sm">
-                    <span className="font-medium">Terminée</span>
-                    <p className="text-xs text-muted-foreground">
-                      Tâche complétée
-                    </p>
+                
+                {/* Current Status */}
+                {task.kanban_status !== 'done' && (
+                  <div className="relative">
+                    <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-accent border-2 border-background animate-pulse" />
+                    <div className="text-sm">
+                      <span className="font-medium">Statut actuel</span>
+                      <p className="text-xs text-muted-foreground">
+                        {status.label}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Current Status (if not done) */}
-              {task.kanban_status !== 'done' && (
-                <div className="relative">
-                  <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-accent border-2 border-background animate-pulse" />
-                  <div className="text-sm">
-                    <span className="font-medium">Statut actuel</span>
-                    <p className="text-xs text-muted-foreground">
-                      {status.label}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Actions */}
