@@ -6,19 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
 /**
- * AI COACH - Decision Intelligence Agent
+ * AI COACH - Decision Intelligence Agent with Real AI
  * 
- * Capabilities:
- * - daily_briefing: Generate personalized daily summary
- * - risk_detection: Identify burnout, overload, inactivity risks
- * - opportunity_suggestions: Propose optimizations
- * - weekly_review: Generate weekly performance review
- * - what_if: Simulate scenarios
- * - generate_proposal: Create actionable AI proposal
- * - approve_proposal: Execute approved proposal
- * - reject_proposal: Mark proposal as rejected
- * - undo_action: Revert executed action
+ * Now powered by Lovable AI Gateway (Google Gemini)
  */
 
 interface CoachRequest {
@@ -31,6 +24,44 @@ interface CoachResponse {
   success: boolean;
   data?: unknown;
   error?: string;
+}
+
+async function callLovableAI(
+  systemPrompt: string,
+  userPrompt: string,
+  context?: Record<string, unknown>
+): Promise<string> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) {
+    throw new Error("LOVABLE_API_KEY not configured");
+  }
+
+  const contextStr = context ? `\n\nContext data:\n${JSON.stringify(context, null, 2)}` : "";
+  
+  const response = await fetch(LOVABLE_AI_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt + contextStr }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`AI request failed: ${error}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "";
 }
 
 async function getDailyBriefing(supabase: any, userId: string): Promise<CoachResponse> {
@@ -80,6 +111,31 @@ async function getDailyBriefing(supabase: any, userId: string): Promise<CoachRes
     const todayLog = h.habit_logs?.find((l: any) => l.date === today);
     return !todayLog?.completed;
   }) || [];
+
+  // Generate AI-powered insights
+  const context = {
+    date: today,
+    score: score,
+    tasks_count: tasks?.length || 0,
+    urgent_tasks: urgentTasks.length,
+    pending_habits: pendingHabits.length,
+    events_count: events?.length || 0,
+  };
+
+  let aiInsight = "";
+  try {
+    aiInsight = await callLovableAI(
+      `Tu es un coach de productivité personnel intelligent. Tu analyses les données de l'utilisateur et fournis des conseils personnalisés en français. Sois concis, motivant et actionnable.`,
+      `Génère un briefing matinal personnalisé basé sur ces données. Inclus:
+      1. Un message d'encouragement contextuel
+      2. Les 2-3 priorités clés pour aujourd'hui
+      3. Un conseil pour maintenir l'énergie`,
+      context
+    );
+  } catch (e) {
+    console.error("AI insight error:", e);
+    aiInsight = "Bonne journée ! Concentrez-vous sur vos tâches prioritaires.";
+  }
 
   // Calculate risks
   const risks = [];
@@ -132,6 +188,7 @@ async function getDailyBriefing(supabase: any, userId: string): Promise<CoachRes
   return {
     success: true,
     data: {
+      ai_insight: aiInsight,
       summary: {
         date: today,
         global_score: score?.global_score || 0,
@@ -188,6 +245,33 @@ async function detectRisks(supabase: any, userId: string): Promise<CoachResponse
   const risks = [];
   const latestScore = scores?.[scores.length - 1];
 
+  // Use AI for advanced risk analysis
+  let aiRiskAnalysis = null;
+  try {
+    const analysisResult = await callLovableAI(
+      `Tu es un analyste de risques comportementaux. Analyse les données et identifie les risques potentiels. Réponds en JSON.`,
+      `Analyse ces données pour identifier les risques:
+      - Score actuel: ${latestScore?.global_score || 'N/A'}
+      - Burnout index: ${latestScore?.burnout_index || 0}
+      - Tâches cette semaine: ${recentTasks?.length || 0}
+      - Habitudes loguées: ${recentHabitLogs?.length || 0}
+      
+      Réponds avec un JSON: {"additional_risks": [{"id": "...", "type": "...", "severity": "...", "title": "...", "description": "...", "recommendation": "..."}]}`,
+      { scores, recentTasks: recentTasks?.length, recentLogs: recentHabitLogs?.length }
+    );
+    
+    try {
+      const jsonMatch = analysisResult.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        aiRiskAnalysis = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.error("Failed to parse AI risk analysis:", e);
+    }
+  } catch (e) {
+    console.error("AI risk analysis error:", e);
+  }
+
   // Burnout risk
   if (latestScore?.burnout_index > 70) {
     risks.push({
@@ -211,7 +295,7 @@ async function detectRisks(supabase: any, userId: string): Promise<CoachResponse
   }
 
   // Inactivity risk
-  const lastActivity = recentTasks?.length || 0 + (recentHabitLogs?.length || 0);
+  const lastActivity = (recentTasks?.length || 0) + (recentHabitLogs?.length || 0);
   if (lastActivity < 3) {
     risks.push({
       id: "inactivity",
@@ -254,6 +338,11 @@ async function detectRisks(supabase: any, userId: string): Promise<CoachResponse
     });
   }
 
+  // Add AI-detected risks
+  if (aiRiskAnalysis?.additional_risks) {
+    risks.push(...aiRiskAnalysis.additional_risks);
+  }
+
   return {
     success: true,
     data: {
@@ -270,61 +359,109 @@ async function detectRisks(supabase: any, userId: string): Promise<CoachResponse
 async function generateProposal(supabase: any, userId: string, payload: any): Promise<CoachResponse> {
   const { type, context } = payload;
 
+  // Get user data for AI context
+  const { data: recentScore } = await supabase
+    .from("scores_daily")
+    .select("*")
+    .eq("user_id", userId)
+    .order("date", { ascending: false })
+    .limit(1)
+    .single();
+
+  let aiProposal = null;
+  try {
+    const aiResult = await callLovableAI(
+      `Tu es un assistant de productivité qui génère des propositions d'actions concrètes. Réponds en JSON structuré.`,
+      `Génère une proposition d'action de type "${type}" basée sur:
+      - Score global: ${recentScore?.global_score || 'N/A'}
+      - Burnout: ${recentScore?.burnout_index || 0}%
+      - Momentum: ${recentScore?.momentum_index || 50}%
+      - Contexte additionnel: ${JSON.stringify(context || {})}
+      
+      Réponds avec un JSON: {"title": "...", "description": "...", "reasoning": "...", "confidence": 0.8, "priority": "high|medium|low", "actions": [{"action": "...", "target": "...", "params": {...}}]}`,
+      { score: recentScore, requestedType: type }
+    );
+
+    try {
+      const jsonMatch = aiResult.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        aiProposal = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.error("Failed to parse AI proposal:", e);
+    }
+  } catch (e) {
+    console.error("AI proposal error:", e);
+  }
+
+  // Fallback to rule-based proposals
   let proposalData;
   
-  switch (type) {
-    case "reschedule_overload":
-      proposalData = {
-        title: "Réorganiser les tâches surchargées",
-        description: "L'IA propose de reporter certaines tâches non urgentes à demain.",
-        type: "task_reschedule",
-        proposed_actions: [
-          { action: "reschedule_low_priority", target: "tasks", filter: "priority=low" }
-        ],
-        reasoning: "Votre journée est surchargée. Reporter les tâches basse priorité réduira le stress.",
-        confidence_score: 0.85,
-        priority: "high"
-      };
-      break;
-    
-    case "habit_recovery":
-      proposalData = {
-        title: "Plan de rattrapage habitudes",
-        description: "Créer des tâches de rattrapage pour les habitudes manquées.",
-        type: "habit_catchup",
-        proposed_actions: [
-          { action: "create_catchup_tasks", target: "habits", filter: "missed_today" }
-        ],
-        reasoning: "Des habitudes ont été manquées. Un plan de rattrapage maintient la cohérence.",
-        confidence_score: 0.75,
-        priority: "medium"
-      };
-      break;
+  if (aiProposal) {
+    proposalData = {
+      title: aiProposal.title,
+      description: aiProposal.description,
+      type: type,
+      proposed_actions: aiProposal.actions || [],
+      reasoning: aiProposal.reasoning,
+      confidence_score: aiProposal.confidence || 0.7,
+      priority: aiProposal.priority || "medium"
+    };
+  } else {
+    switch (type) {
+      case "reschedule_overload":
+        proposalData = {
+          title: "Réorganiser les tâches surchargées",
+          description: "L'IA propose de reporter certaines tâches non urgentes à demain.",
+          type: "task_reschedule",
+          proposed_actions: [
+            { action: "reschedule_low_priority", target: "tasks", filter: "priority=low" }
+          ],
+          reasoning: "Votre journée est surchargée. Reporter les tâches basse priorité réduira le stress.",
+          confidence_score: 0.85,
+          priority: "high"
+        };
+        break;
+      
+      case "habit_recovery":
+        proposalData = {
+          title: "Plan de rattrapage habitudes",
+          description: "Créer des tâches de rattrapage pour les habitudes manquées.",
+          type: "habit_catchup",
+          proposed_actions: [
+            { action: "create_catchup_tasks", target: "habits", filter: "missed_today" }
+          ],
+          reasoning: "Des habitudes ont été manquées. Un plan de rattrapage maintient la cohérence.",
+          confidence_score: 0.75,
+          priority: "medium"
+        };
+        break;
 
-    case "budget_alert":
-      proposalData = {
-        title: "Alerte budget dépassé",
-        description: "Votre budget mensuel est proche de la limite.",
-        type: "budget_warning",
-        proposed_actions: [
-          { action: "send_notification", target: "user", message: "Budget à 90%" }
-        ],
-        reasoning: "Prévenir avant dépassement permet d'ajuster les dépenses.",
-        confidence_score: 0.9,
-        priority: "high"
-      };
-      break;
+      case "budget_alert":
+        proposalData = {
+          title: "Alerte budget dépassé",
+          description: "Votre budget mensuel est proche de la limite.",
+          type: "budget_warning",
+          proposed_actions: [
+            { action: "send_notification", target: "user", message: "Budget à 90%" }
+          ],
+          reasoning: "Prévenir avant dépassement permet d'ajuster les dépenses.",
+          confidence_score: 0.9,
+          priority: "high"
+        };
+        break;
 
-    default:
-      proposalData = {
-        title: context?.title || "Proposition AI",
-        description: context?.description || "L'IA suggère une action.",
-        type: type || "general",
-        proposed_actions: context?.actions || [],
-        reasoning: context?.reasoning || "Basé sur l'analyse de vos données.",
-        confidence_score: 0.7,
-        priority: "medium"
-      };
+      default:
+        proposalData = {
+          title: context?.title || "Proposition AI",
+          description: context?.description || "L'IA suggère une action.",
+          type: type || "general",
+          proposed_actions: context?.actions || [],
+          reasoning: context?.reasoning || "Basé sur l'analyse de vos données.",
+          confidence_score: 0.7,
+          priority: "medium"
+        };
+    }
   }
 
   const { data, error } = await supabase
@@ -507,8 +644,7 @@ async function undoAction(supabase: any, userId: string, payload: any): Promise<
     event_type: "ai.action_undone",
     entity: "agent_actions",
     entity_id: action_id,
-    source: "ai",
-    payload: {}
+    source: "ai"
   });
 
   // Create notification
@@ -522,14 +658,14 @@ async function undoAction(supabase: any, userId: string, payload: any): Promise<
 
   return {
     success: true,
-    data: { message: "Action annulée avec succès" }
+    data: { message: "Action annulée" }
   };
 }
 
 async function getWeeklyReview(supabase: any, userId: string): Promise<CoachResponse> {
   const today = new Date();
   const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
+  weekAgo.setDate(today.getDate() - 7);
 
   // Get weekly scores
   const { data: scores } = await supabase
@@ -555,42 +691,71 @@ async function getWeeklyReview(supabase: any, userId: string): Promise<CoachResp
     .eq("completed", true)
     .gte("date", weekAgo.toISOString().split("T")[0]);
 
-  // Calculate averages
-  const avgScore = scores?.length
-    ? scores.reduce((a: number, s: any) => a + s.global_score, 0) / scores.length
+  const avgGlobal = scores?.length 
+    ? scores.reduce((a: number, s: any) => a + Number(s.global_score), 0) / scores.length 
     : 0;
+  
   const avgHabits = scores?.length
-    ? scores.reduce((a: number, s: any) => a + s.habits_score, 0) / scores.length
+    ? scores.reduce((a: number, s: any) => a + Number(s.habits_score), 0) / scores.length
     : 0;
+  
   const avgTasks = scores?.length
-    ? scores.reduce((a: number, s: any) => a + s.tasks_score, 0) / scores.length
+    ? scores.reduce((a: number, s: any) => a + Number(s.tasks_score), 0) / scores.length
     : 0;
 
   // Determine trend
   let trend = "stable";
-  if (scores && scores.length >= 2) {
+  if (scores && scores.length >= 3) {
     const firstHalf = scores.slice(0, Math.floor(scores.length / 2));
     const secondHalf = scores.slice(Math.floor(scores.length / 2));
     const firstAvg = firstHalf.reduce((a: number, s: any) => a + s.global_score, 0) / firstHalf.length;
     const secondAvg = secondHalf.reduce((a: number, s: any) => a + s.global_score, 0) / secondHalf.length;
     
-    if (secondAvg > firstAvg + 5) trend = "improving";
-    else if (secondAvg < firstAvg - 5) trend = "declining";
+    if (secondAvg > firstAvg + 5) trend = "up";
+    else if (secondAvg < firstAvg - 5) trend = "down";
   }
 
-  // Generate insights
-  const insights = [];
-  if (trend === "improving") {
-    insights.push("📈 Excellente progression cette semaine ! Continuez ainsi.");
-  } else if (trend === "declining") {
-    insights.push("📉 Tendance à la baisse détectée. Identifiez les obstacles.");
+  // Generate AI insights
+  let aiInsights: string[] = [];
+  try {
+    const aiResult = await callLovableAI(
+      `Tu es un coach de performance personnel. Génère des insights perspicaces basés sur la semaine de l'utilisateur. Réponds en JSON.`,
+      `Analyse cette semaine et génère 3-5 insights actionables:
+      - Score moyen: ${Math.round(avgGlobal)}%
+      - Tendance: ${trend}
+      - Tâches complétées: ${completedTasks?.length || 0}
+      - Habitudes validées: ${habitLogs?.length || 0}
+      
+      Réponds avec: {"insights": ["...", "...", "..."]}`,
+      { scores, trend }
+    );
+
+    try {
+      const jsonMatch = aiResult.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        aiInsights = parsed.insights || [];
+      }
+    } catch (e) {
+      console.error("Failed to parse AI insights:", e);
+    }
+  } catch (e) {
+    console.error("AI insights error:", e);
   }
-  
-  if (avgHabits > 80) {
-    insights.push("🌟 Vos habitudes sont solides. Belle constance !");
-  }
-  if (completedTasks?.length > 20) {
-    insights.push(`✅ ${completedTasks.length} tâches complétées. Productivité élevée !`);
+
+  // Fallback insights
+  if (aiInsights.length === 0) {
+    if (trend === "up") {
+      aiInsights.push("Excellente progression cette semaine ! Continuez sur cette lancée.");
+    } else if (trend === "down") {
+      aiInsights.push("Semaine difficile. Identifiez un obstacle majeur à surmonter.");
+    }
+    if (avgHabits > 70) {
+      aiInsights.push("Vos habitudes sont solides. C'est la base de votre succès.");
+    }
+    if (completedTasks?.length && completedTasks.length > 10) {
+      aiInsights.push(`${completedTasks.length} tâches complétées. Productivité élevée !`);
+    }
   }
 
   return {
@@ -601,7 +766,7 @@ async function getWeeklyReview(supabase: any, userId: string): Promise<CoachResp
         end: today.toISOString().split("T")[0]
       },
       scores: {
-        average_global: Math.round(avgScore),
+        average_global: Math.round(avgGlobal),
         average_habits: Math.round(avgHabits),
         average_tasks: Math.round(avgTasks),
         trend,
@@ -611,112 +776,62 @@ async function getWeeklyReview(supabase: any, userId: string): Promise<CoachResp
         tasks_completed: completedTasks?.length || 0,
         habits_logged: habitLogs?.length || 0
       },
-      insights
+      insights: aiInsights
     }
   };
 }
 
 async function simulateEvent(supabase: any, userId: string, payload: any): Promise<CoachResponse> {
   const { event_type } = payload;
-
-  let eventData;
-  let notificationData;
-  let proposalType;
-
-  switch (event_type) {
-    case "habit.missed":
-      eventData = {
-        event_type: "habit.missed",
-        entity: "habits",
-        payload: { reason: "simulation", count: 3 }
-      };
-      notificationData = {
-        type: "warning",
-        title: "Habitudes manquées",
-        message: "3 habitudes n'ont pas été complétées hier."
-      };
-      proposalType = "habit_recovery";
-      break;
-
-    case "budget.threshold_reached":
-      eventData = {
-        event_type: "budget.threshold_reached",
-        entity: "budgets",
-        payload: { percentage: 90 }
-      };
-      notificationData = {
-        type: "warning",
-        title: "Budget à 90%",
-        message: "Vous approchez de votre limite budgétaire."
-      };
-      proposalType = "budget_alert";
-      break;
-
-    case "day.overloaded":
-      eventData = {
-        event_type: "day.overloaded",
-        entity: "tasks",
-        payload: { task_count: 15 }
-      };
-      notificationData = {
-        type: "warning",
-        title: "Journée surchargée",
-        message: "15 tâches planifiées aujourd'hui. Risque de surcharge."
-      };
-      proposalType = "reschedule_overload";
-      break;
-
-    case "burnout.risk_high":
-      eventData = {
-        event_type: "burnout.risk_high",
-        entity: "scores",
-        payload: { burnout_index: 75 }
-      };
-      notificationData = {
-        type: "error",
-        title: "Risque de burnout élevé",
-        message: "Votre indice de burnout est critique. Action requise."
-      };
-      proposalType = "reschedule_overload";
-      break;
-
-    default:
-      return { success: false, error: "Type d'événement non reconnu" };
-  }
-
-  // 1. Emit system event
-  const { data: event } = await supabase
+  
+  // Create a system event
+  const { data: event, error: eventError } = await supabase
     .from("system_events")
     .insert({
       user_id: userId,
-      ...eventData,
-      source: "system"
+      event_type: event_type,
+      entity: "simulation",
+      source: "ui",
+      payload: { simulated: true }
     })
     .select()
     .single();
 
-  // 2. Create notification
-  await supabase.from("notifications").insert({
-    user_id: userId,
-    ...notificationData,
-    source: "automation"
-  });
+  if (eventError) throw eventError;
 
-  // 3. Generate AI proposal if applicable
+  // Create a notification
+  const { data: notification } = await supabase
+    .from("notifications")
+    .insert({
+      user_id: userId,
+      type: "info",
+      title: "Événement simulé",
+      message: `Événement "${event_type}" créé pour test.`,
+      source: "ai"
+    })
+    .select()
+    .single();
+
+  // Trigger related proposal
   let proposal = null;
-  if (proposalType) {
-    const proposalResult = await generateProposal(supabase, userId, { type: proposalType });
-    const proposalData = proposalResult.data as { proposal?: unknown } | undefined;
-    proposal = proposalData?.proposal;
+  if (event_type === "habit.missed") {
+    const proposalResult = await generateProposal(supabase, userId, { type: "habit_recovery" });
+    proposal = proposalResult.data;
+  } else if (event_type === "budget.threshold_reached") {
+    const proposalResult = await generateProposal(supabase, userId, { type: "budget_alert" });
+    proposal = proposalResult.data;
+  } else if (event_type === "day.overloaded") {
+    const proposalResult = await generateProposal(supabase, userId, { type: "reschedule_overload" });
+    proposal = proposalResult.data;
   }
 
   return {
     success: true,
     data: {
       event,
-      notification: notificationData,
+      notification,
       proposal,
-      message: `Simulation "${event_type}" exécutée avec succès`
+      message: `Événement "${event_type}" simulé avec succès`
     }
   };
 }
@@ -743,27 +858,35 @@ serve(async (req) => {
       case "daily_briefing":
         result = await getDailyBriefing(supabase, user_id);
         break;
+
       case "detect_risks":
         result = await detectRisks(supabase, user_id);
         break;
+
       case "generate_proposal":
-        result = await generateProposal(supabase, user_id, payload || {});
+        result = await generateProposal(supabase, user_id, payload);
         break;
+
       case "approve_proposal":
-        result = await approveProposal(supabase, user_id, payload || {});
+        result = await approveProposal(supabase, user_id, payload);
         break;
+
       case "reject_proposal":
-        result = await rejectProposal(supabase, user_id, payload || {});
+        result = await rejectProposal(supabase, user_id, payload);
         break;
+
       case "undo_action":
-        result = await undoAction(supabase, user_id, payload || {});
+        result = await undoAction(supabase, user_id, payload);
         break;
+
       case "weekly_review":
         result = await getWeeklyReview(supabase, user_id);
         break;
+
       case "simulate_event":
-        result = await simulateEvent(supabase, user_id, payload || {});
+        result = await simulateEvent(supabase, user_id, payload);
         break;
+
       default:
         result = { success: false, error: `Unknown action: ${action}` };
     }
