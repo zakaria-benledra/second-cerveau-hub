@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef, useCallback } from 'react';
 import {
   getDailyBriefing,
   detectRisks,
@@ -13,8 +14,13 @@ import {
 } from '@/lib/api/ai-coach';
 import { toast } from 'sonner';
 
+// Rate limiting constants
+const MIN_REFETCH_INTERVAL = 30000; // 30 seconds minimum between refetches
+
 export function useAICoach() {
   const queryClient = useQueryClient();
+  const lastBriefingFetchRef = useRef<number>(0);
+  const lastRisksFetchRef = useRef<number>(0);
 
   const briefingQuery = useQuery({
     queryKey: ['ai-briefing'],
@@ -106,15 +112,44 @@ export function useAICoach() {
     },
   });
 
+  // Rate-limited refetch functions
+  const refetchBriefingThrottled = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastBriefingFetchRef.current;
+
+    if (timeSinceLastFetch < MIN_REFETCH_INTERVAL) {
+      const remainingSeconds = Math.ceil((MIN_REFETCH_INTERVAL - timeSinceLastFetch) / 1000);
+      toast.warning(`Veuillez attendre ${remainingSeconds}s avant de rafraîchir`);
+      return Promise.resolve();
+    }
+
+    lastBriefingFetchRef.current = now;
+    return briefingQuery.refetch();
+  }, [briefingQuery]);
+
+  const refetchRisksThrottled = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastRisksFetchRef.current;
+
+    if (timeSinceLastFetch < MIN_REFETCH_INTERVAL) {
+      const remainingSeconds = Math.ceil((MIN_REFETCH_INTERVAL - timeSinceLastFetch) / 1000);
+      toast.warning(`Veuillez attendre ${remainingSeconds}s avant de rafraîchir`);
+      return Promise.resolve();
+    }
+
+    lastRisksFetchRef.current = now;
+    return risksQuery.refetch();
+  }, [risksQuery]);
+
   return {
     // Queries
     briefing: briefingQuery.data,
     briefingLoading: briefingQuery.isLoading,
-    refetchBriefing: briefingQuery.refetch,
+    refetchBriefing: refetchBriefingThrottled,
     
     risks: risksQuery.data,
     risksLoading: risksQuery.isLoading,
-    refetchRisks: risksQuery.refetch,
+    refetchRisks: refetchRisksThrottled,
     
     weeklyReview: weeklyReviewQuery.data,
     weeklyReviewLoading: weeklyReviewQuery.isLoading,

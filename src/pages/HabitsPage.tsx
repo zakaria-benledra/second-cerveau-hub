@@ -34,7 +34,8 @@ import {
   ChevronRight,
   CheckCircle2,
   History,
-  Heart
+  Heart,
+  Snowflake
 } from 'lucide-react';
 import { HabitTimeline } from '@/components/habits/HabitTimeline';
 import type { CreateHabitInput } from '@/lib/api/habits';
@@ -372,11 +373,17 @@ export default function HabitsPage() {
                       <span className="text-2xl">{habit.icon || '✨'}</span>
                       <div className="flex-1">
                         <p className="font-medium">{habit.name}</p>
-                        <div className="flex gap-2 mt-1">
+                        <div className="flex gap-2 mt-1 flex-wrap">
                           {habit.streak && habit.streak.current_streak > 0 && (
                             <Badge className="bg-warning/15 text-warning border-0 text-xs">
                               <Flame className="h-3 w-3 mr-1" />
                               {habit.streak.current_streak} jours
+                            </Badge>
+                          )}
+                          {(habit.streak_freezes_available ?? 0) > 0 && (
+                            <Badge className="bg-primary/15 text-primary border-0 text-xs" title="Freeze disponible - protège votre streak si vous manquez un jour">
+                              <Snowflake className="h-3 w-3 mr-1" />
+                              {habit.streak_freezes_available} freeze
                             </Badge>
                           )}
                         </div>

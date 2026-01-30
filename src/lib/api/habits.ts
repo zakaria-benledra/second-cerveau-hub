@@ -35,6 +35,8 @@ export interface Streak {
 export interface HabitWithLog extends Habit {
   todayLog: HabitLog | null;
   streak: Streak | null;
+  streak_freezes_available?: number;
+  last_freeze_reset_date?: string;
 }
 
 export interface CreateHabitInput {
@@ -239,4 +241,40 @@ export async function deleteHabit(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) throw error;
+}
+
+// Use a streak freeze instead of breaking the streak
+export async function useStreakFreeze(habitId: string): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Call the database function
+  const { data, error } = await supabase
+    .rpc('use_streak_freeze', {
+      p_habit_id: habitId,
+      p_user_id: user.id
+    });
+
+  if (error) throw error;
+  return data as boolean;
+}
+
+// Check if streak freeze is available
+export async function checkStreakFreezeAvailable(habitId: string): Promise<{
+  available: boolean;
+  freezesLeft: number;
+}> {
+  const { data: habit, error } = await supabase
+    .from('habits')
+    .select('streak_freezes_available')
+    .eq('id', habitId)
+    .single();
+
+  if (error) throw error;
+
+  const freezesLeft = (habit as any)?.streak_freezes_available ?? 0;
+  return {
+    available: freezesLeft > 0,
+    freezesLeft
+  };
 }
