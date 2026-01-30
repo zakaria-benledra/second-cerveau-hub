@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -63,7 +64,7 @@ interface FinanceImportWizardProps {
   onCancel?: () => void;
 }
 
-export function FinanceImportWizard({ onComplete, onCancel }: FinanceImportWizardProps) {
+function FinanceImportWizardInner({ onComplete, onCancel }: FinanceImportWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [file, setFile] = useState<File | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(null);
@@ -556,3 +557,9 @@ export function FinanceImportWizard({ onComplete, onCancel }: FinanceImportWizar
     </div>
   );
 }
+
+// Wrap with forwardRef for compatibility with Tab content
+export const FinanceImportWizard = React.forwardRef<HTMLDivElement, FinanceImportWizardProps>(
+  (props, _ref) => <FinanceImportWizardInner {...props} />
+);
+FinanceImportWizard.displayName = 'FinanceImportWizard';
