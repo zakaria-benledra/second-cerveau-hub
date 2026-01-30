@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { useCurrentIdentity } from '@/hooks/useCurrentIdentity';
 import { useScoreHistory } from '@/hooks/useScores';
 import { useTodayTasks } from '@/hooks/useTasks';
+import { IdentityComparison } from '@/components/identity/IdentityComparison';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +28,8 @@ import { useNavigate } from 'react-router-dom';
 
 // Mini sparkline component
 function MiniSparkline({ data, className }: { data: number[]; className?: string }) {
-  if (!data || data.length === 0) return null;
+  // Need at least 2 points for a valid sparkline
+  if (!data || data.length < 2) return null;
   
   const max = Math.max(...data);
   const min = Math.min(...data);
@@ -392,8 +394,20 @@ export default function IdentityDashboard() {
           </Card>
         </AnimatedContainer>
 
+        {/* Identity Comparison - Évolution 30 jours */}
+        <div className="space-y-4">
+          <AnimatedContainer delay={350}>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <span className="text-xl">🔄</span>
+              Ton évolution sur 30 jours
+            </h2>
+          </AnimatedContainer>
+          
+          <IdentityComparison daysAgo={30} />
+        </div>
+
         {/* Quick Links */}
-        <AnimatedContainer delay={350}>
+        <AnimatedContainer delay={400}>
           <div className="flex justify-center gap-3">
             <Button 
               variant="ghost" 

@@ -72,18 +72,23 @@ export function useIdentityComparison(daysAgo = 30) {
       // Build current snapshot
       let current: PersonaSnapshot | null = null;
       if (currentScores) {
+        // Normalize burnout_index: if > 1, assume it's already a percentage
+        const burnout = (currentScores.burnout_index ?? 0) > 1 
+          ? (currentScores.burnout_index ?? 0) / 100 
+          : (currentScores.burnout_index ?? 0);
+        
         const { persona, tagline } = calculatePersona(
           currentScores.global_score ?? 50,
           currentScores.consistency_factor ?? 0.5,
           currentScores.momentum_index ?? 0,
-          currentScores.burnout_index ?? 0
+          burnout
         );
         current = {
           persona,
           tagline,
           disciplineLevel: Math.round(currentScores.global_score ?? 50),
           consistencyLevel: Math.round((currentScores.consistency_factor ?? 0.5) * 100),
-          stabilityLevel: Math.round((1 - (currentScores.burnout_index ?? 0)) * 100),
+          stabilityLevel: Math.round((1 - burnout) * 100),
           date: todayStr
         };
       }
@@ -91,18 +96,23 @@ export function useIdentityComparison(daysAgo = 30) {
       // Build past snapshot
       let pastSnapshot: PersonaSnapshot | null = null;
       if (pastScores) {
+        // Normalize burnout_index
+        const burnout = (pastScores.burnout_index ?? 0) > 1 
+          ? (pastScores.burnout_index ?? 0) / 100 
+          : (pastScores.burnout_index ?? 0);
+        
         const { persona, tagline } = calculatePersona(
           pastScores.global_score ?? 50,
           pastScores.consistency_factor ?? 0.5,
           pastScores.momentum_index ?? 0,
-          pastScores.burnout_index ?? 0
+          burnout
         );
         pastSnapshot = {
           persona,
           tagline,
           disciplineLevel: Math.round(pastScores.global_score ?? 50),
           consistencyLevel: Math.round((pastScores.consistency_factor ?? 0.5) * 100),
-          stabilityLevel: Math.round((1 - (pastScores.burnout_index ?? 0)) * 100),
+          stabilityLevel: Math.round((1 - burnout) * 100),
           date: pastStr
         };
       }

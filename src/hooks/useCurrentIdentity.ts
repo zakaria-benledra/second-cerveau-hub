@@ -32,10 +32,12 @@ export function useCurrentIdentity() {
         .maybeSingle();
 
       // Default values if no scores exist
+      // Normalize burnout_index: if > 1, assume it's already a percentage
       const globalScore = scores?.global_score ?? 50;
       const consistencyFactor = scores?.consistency_factor ?? 0.5;
       const momentumIndex = scores?.momentum_index ?? 0;
-      const burnoutIndex = scores?.burnout_index ?? 0;
+      const rawBurnout = scores?.burnout_index ?? 0;
+      const burnoutIndex = rawBurnout > 1 ? rawBurnout / 100 : rawBurnout;
 
       // 2. Déterminer persona based on available metrics
       let persona = "Explorer";
