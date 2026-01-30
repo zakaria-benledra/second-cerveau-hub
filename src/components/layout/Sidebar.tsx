@@ -18,56 +18,95 @@ import {
   PenLine,
   Bell,
   ListChecks,
+  Sparkles,
+  LayoutDashboard,
+  Lightbulb,
+  Heart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
 }
 
-const navItems = [
-  { icon: Home, label: 'Aujourd\'hui', path: '/', color: 'text-primary' },
-  { icon: CheckSquare, label: 'Tâches', path: '/tasks', color: 'text-primary' },
-  { icon: Target, label: 'Habitudes', path: '/habits', color: 'text-primary' },
-  { icon: ListChecks, label: 'Routines', path: '/routines', color: 'text-primary' },
-  { icon: Inbox, label: 'Inbox', path: '/inbox', color: 'text-primary' },
-  { icon: FolderKanban, label: 'Projets', path: '/projects', color: 'text-primary' },
-  { icon: Timer, label: 'Focus', path: '/focus', color: 'text-primary' },
-  { icon: TrendingUp, label: 'Objectifs', path: '/goals', color: 'text-primary' },
-  { icon: Calendar, label: 'Calendrier', path: '/calendar', color: 'text-primary' },
-  { icon: BookOpen, label: 'Apprentissage', path: '/learning', color: 'text-primary' },
-  { icon: PenLine, label: 'Journal', path: '/journal', color: 'text-primary' },
-  { icon: Wallet, label: 'Finances', path: '/finance', color: 'text-primary' },
-  { icon: BarChart3, label: 'Dashboard', path: '/dashboard', color: 'text-primary' },
-  { icon: Brain, label: 'Agent IA', path: '/agent', color: 'text-primary' },
-  { icon: Bell, label: 'Notifications', path: '/notifications', color: 'text-primary' },
+// Grouped navigation structure
+const navGroups = [
+  {
+    label: 'Quotidien',
+    icon: Sparkles,
+    items: [
+      { icon: Home, label: 'Aujourd\'hui', path: '/' },
+      { icon: CheckSquare, label: 'Tâches', path: '/tasks' },
+      { icon: Inbox, label: 'Inbox', path: '/inbox' },
+      { icon: Calendar, label: 'Calendrier', path: '/calendar' },
+    ],
+  },
+  {
+    label: 'Habitudes & Routines',
+    icon: Heart,
+    items: [
+      { icon: Target, label: 'Habitudes', path: '/habits' },
+      { icon: ListChecks, label: 'Routines', path: '/routines' },
+      { icon: Timer, label: 'Focus', path: '/focus' },
+    ],
+  },
+  {
+    label: 'Projets & Objectifs',
+    icon: TrendingUp,
+    items: [
+      { icon: FolderKanban, label: 'Projets', path: '/projects' },
+      { icon: TrendingUp, label: 'Objectifs', path: '/goals' },
+    ],
+  },
+  {
+    label: 'Croissance',
+    icon: Lightbulb,
+    items: [
+      { icon: BookOpen, label: 'Apprentissage', path: '/learning' },
+      { icon: PenLine, label: 'Journal', path: '/journal' },
+    ],
+  },
+  {
+    label: 'Gestion',
+    icon: LayoutDashboard,
+    items: [
+      { icon: Wallet, label: 'Finances', path: '/finance' },
+      { icon: BarChart3, label: 'Dashboard', path: '/dashboard' },
+      { icon: Brain, label: 'Agent IA', path: '/agent' },
+    ],
+  },
 ];
 
 const bottomItems = [
-  { icon: Settings, label: 'Paramètres', path: '/settings', color: 'text-muted-foreground' },
+  { icon: Bell, label: 'Notifications', path: '/notifications' },
+  { icon: Settings, label: 'Paramètres', path: '/settings' },
 ];
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
 
-  const NavItem = ({ icon: Icon, label, path, color }: typeof navItems[0]) => {
+  const NavItem = ({ icon: Icon, label, path }: { icon: typeof Home; label: string; path: string }) => {
     const isActive = location.pathname === path;
     
     const content = (
       <Link
         to={path}
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
+          'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200',
           isActive
-            ? 'bg-primary/10 text-primary shadow-sm'
+            ? 'bg-sidebar-primary/15 text-sidebar-primary shadow-sm border border-sidebar-primary/20'
             : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
           collapsed && 'justify-center px-2'
         )}
       >
-        <Icon className={cn('h-5 w-5 flex-shrink-0', isActive ? 'text-primary' : color)} />
+        <Icon className={cn(
+          'h-4 w-4 flex-shrink-0 transition-transform',
+          isActive && 'scale-110'
+        )} />
         {!collapsed && <span className="truncate">{label}</span>}
       </Link>
     );
@@ -76,7 +115,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       return (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
-          <TooltipContent side="right" className="rounded-lg shadow-lg">
+          <TooltipContent side="right" className="rounded-lg shadow-lg font-medium">
             {label}
           </TooltipContent>
         </Tooltip>
@@ -86,38 +125,78 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     return content;
   };
 
+  const GroupLabel = ({ icon: Icon, label }: { icon: typeof Home; label: string }) => {
+    if (collapsed) {
+      return (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            <div className="flex justify-center py-2 px-2">
+              <div className="h-6 w-6 rounded-md bg-sidebar-accent/50 flex items-center justify-center">
+                <Icon className="h-3.5 w-3.5 text-sidebar-foreground/50" />
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="rounded-lg shadow-lg font-medium">
+            {label}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+    
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 mt-4 first:mt-0">
+        <Icon className="h-3.5 w-3.5 text-sidebar-foreground/40" />
+        <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+          {label}
+        </span>
+      </div>
+    );
+  };
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-gradient-to-b from-sidebar-background to-sidebar-background/95">
       {/* Logo */}
       <div className={cn(
-        'flex h-16 items-center border-b border-sidebar-border px-4',
+        'flex h-16 items-center border-b border-sidebar-border/50 px-4',
         collapsed && 'justify-center px-2'
       )}>
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary text-primary-foreground font-bold text-sm shadow-md">
-            SC
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="relative">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary text-primary-foreground font-bold text-sm shadow-lg group-hover:shadow-glow transition-all duration-300">
+              SC
+            </div>
+            <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-primary to-accent opacity-0 group-hover:opacity-30 blur transition-opacity duration-300" />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
               <span className="font-bold text-sm text-sidebar-foreground tracking-tight">SECOND</span>
-              <span className="text-xs text-sidebar-foreground/60 -mt-0.5">CERVEAU</span>
+              <span className="text-[10px] text-sidebar-foreground/50 font-medium uppercase tracking-widest -mt-0.5">CERVEAU</span>
             </div>
           )}
-        </div>
+        </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
-        {navItems.map((item) => (
-          <NavItem key={item.path} {...item} />
+      <nav className="flex-1 py-4 px-2 overflow-y-auto scrollbar-thin">
+        {navGroups.map((group, groupIndex) => (
+          <div key={group.label} className={cn(groupIndex > 0 && !collapsed && 'mt-2')}>
+            <GroupLabel icon={group.icon} label={group.label} />
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <NavItem key={item.path} {...item} />
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
       {/* Bottom Section */}
-      <div className="border-t border-sidebar-border p-3 space-y-1">
+      <div className="border-t border-sidebar-border/50 p-2 space-y-1">
         {bottomItems.map((item) => (
           <NavItem key={item.path} {...item} />
         ))}
+        
+        <Separator className="my-2 bg-sidebar-border/30" />
         
         {/* Collapse Toggle */}
         <Button
@@ -125,7 +204,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           size="sm"
           onClick={onToggle}
           className={cn(
-            'w-full justify-center rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent',
+            'w-full justify-center rounded-lg text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-200',
             !collapsed && 'justify-start px-3'
           )}
         >
@@ -134,7 +213,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           ) : (
             <>
               <ChevronLeft className="h-4 w-4 mr-2" />
-              <span>Réduire</span>
+              <span className="text-sm">Réduire</span>
             </>
           )}
         </Button>
