@@ -1,292 +1,267 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
-import {
-  Plus,
-  Inbox as InboxIcon,
-  Mail,
-  FileText,
-  Mic,
-  ArrowRight,
-  Trash2,
-  Archive,
-  CheckSquare,
-  MoreHorizontal,
-} from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAppStore } from '@/stores/useAppStore';
-import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  useInboxItems, 
+  useCreateInboxItem, 
+  useConvertInboxToTask, 
+  useArchiveInboxItem,
+  useDeleteInboxItem 
+} from '@/hooks/useInbox';
+import { 
+  Plus, 
+  Inbox, 
+  Loader2, 
+  ArrowRight, 
+  Archive, 
+  Trash2,
+  Mail,
+  StickyNote,
+  Zap,
+  Calendar
+} from 'lucide-react';
+import type { CreateInboxInput } from '@/lib/api/inbox';
+
+const sourceIcons: Record<string, React.ReactNode> = {
+  email: <Mail className="h-4 w-4" />,
+  note: <StickyNote className="h-4 w-4" />,
+  capture: <Zap className="h-4 w-4" />,
+  agent: <Zap className="h-4 w-4" />,
+  calendar: <Calendar className="h-4 w-4" />,
+};
+
+const sourceLabels: Record<string, string> = {
+  email: 'Email',
+  note: 'Note',
+  capture: 'Capture',
+  agent: 'Agent IA',
+  calendar: 'Calendrier',
+};
 
 export default function InboxPage() {
-  const { inboxItems, addInboxItem, convertInboxToTask, archiveInboxItem } = useAppStore();
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [newItem, setNewItem] = useState({
+  const { data: items, isLoading } = useInboxItems();
+  const createItem = useCreateInboxItem();
+  const convertToTask = useConvertInboxToTask();
+  const archiveItem = useArchiveInboxItem();
+  const deleteItem = useDeleteInboxItem();
+
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newItem, setNewItem] = useState<CreateInboxInput>({
     title: '',
     content: '',
-    source: 'note',
+    source: 'capture',
   });
 
-  const newItems = inboxItems.filter((i) => i.status === 'new');
-  const archivedItems = inboxItems.filter((i) => i.status === 'archived');
-
-  const getSourceIcon = (source: string) => {
-    switch (source) {
-      case 'email':
-        return <Mail className="h-4 w-4" />;
-      case 'capture':
-        return <Mic className="h-4 w-4" />;
-      default:
-        return <FileText className="h-4 w-4" />;
-    }
-  };
-
-  const handleAddItem = () => {
+  const handleCreateItem = async () => {
     if (!newItem.title.trim()) return;
-    addInboxItem({
-      title: newItem.title,
-      content: newItem.content,
-      source: newItem.source,
-      status: 'new',
-    });
-    setNewItem({ title: '', content: '', source: 'note' });
-    setIsAddOpen(false);
+    
+    await createItem.mutateAsync(newItem);
+    setNewItem({ title: '', content: '', source: 'capture' });
+    setIsDialogOpen(false);
   };
 
-  const InboxCard = ({ item }: { item: typeof inboxItems[0] }) => (
-    <div className="group flex items-start gap-3 p-4 border-2 border-border hover:shadow-xs transition-all">
-      <div className="mt-0.5 h-8 w-8 border-2 border-foreground flex items-center justify-center flex-shrink-0">
-        {getSourceIcon(item.source)}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <p className="font-medium">{item.title}</p>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="border-2 shadow-sm">
-              <DropdownMenuItem
-                className="gap-2"
-                onClick={() => convertInboxToTask(item.id)}
-              >
-                <CheckSquare className="h-4 w-4" /> Convert to Task
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="gap-2"
-                onClick={() => archiveInboxItem(item.id)}
-              >
-                <Archive className="h-4 w-4" /> Archive
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-2 text-destructive">
-                <Trash2 className="h-4 w-4" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+  const newItems = items?.filter(i => i.status === 'new') || [];
+  const processedItems = items?.filter(i => i.status === 'processed') || [];
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-        {item.content && (
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-            {item.content}
-          </p>
-        )}
-        <div className="flex items-center gap-2 mt-2">
-          <Badge variant="outline" className="text-xs capitalize">
-            {item.source}
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            {format(new Date(item.createdAt), 'MMM d, h:mm a')}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
             <p className="text-muted-foreground">
-              Capture ideas, process later. {newItems.length} items to review.
+              {newItems.length} élément{newItems.length > 1 ? 's' : ''} à traiter
             </p>
           </div>
 
-          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 border-2 shadow-xs">
-                <Plus className="h-4 w-4" />
-                Quick Capture
+              <Button className="border-2">
+                <Plus className="h-4 w-4 mr-2" />
+                Capturer
               </Button>
             </DialogTrigger>
-            <DialogContent className="border-2 shadow-md">
+            <DialogContent className="border-2">
               <DialogHeader>
-                <DialogTitle>Quick Capture</DialogTitle>
+                <DialogTitle>Capture rapide</DialogTitle>
+                <DialogDescription>
+                  Capturez une idée, une tâche ou une note pour la traiter plus tard
+                </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 pt-4">
+              <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label>What's on your mind?</Label>
+                  <Label htmlFor="title">Titre</Label>
                   <Input
-                    placeholder="Quick note, idea, or task..."
+                    id="title"
                     value={newItem.title}
                     onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
+                    placeholder="Ex: Rappeler le client demain"
                     className="border-2"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Details (optional)</Label>
+                  <Label htmlFor="content">Détails (optionnel)</Label>
                   <Textarea
-                    placeholder="Add more context..."
-                    value={newItem.content}
+                    id="content"
+                    value={newItem.content || ''}
                     onChange={(e) => setNewItem({ ...newItem, content: e.target.value })}
-                    className="border-2 min-h-20"
+                    placeholder="Plus de contexte..."
+                    className="border-2"
                   />
                 </div>
-                <div className="flex gap-2">
-                  {['note', 'email', 'capture'].map((source) => (
-                    <button
-                      key={source}
-                      onClick={() => setNewItem({ ...newItem, source })}
-                      className={cn(
-                        'flex-1 py-2 px-3 border-2 flex items-center justify-center gap-2 transition-all capitalize',
-                        newItem.source === source
-                          ? 'bg-foreground text-background border-foreground'
-                          : 'border-border hover:border-foreground'
-                      )}
-                    >
-                      {getSourceIcon(source)}
-                      {source}
-                    </button>
-                  ))}
-                </div>
-                <Button onClick={handleAddItem} className="w-full border-2 shadow-xs">
-                  Capture
-                </Button>
               </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-2">
+                  Annuler
+                </Button>
+                <Button 
+                  onClick={handleCreateItem} 
+                  disabled={createItem.isPending || !newItem.title.trim()}
+                  className="border-2"
+                >
+                  {createItem.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Capturer
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="inbox" className="space-y-4">
-          <TabsList className="border-2 bg-background p-1">
-            <TabsTrigger
-              value="inbox"
-              className="data-[state=active]:bg-foreground data-[state=active]:text-background"
-            >
-              Inbox ({newItems.length})
-            </TabsTrigger>
-            <TabsTrigger
-              value="archived"
-              className="data-[state=active]:bg-foreground data-[state=active]:text-background"
-            >
-              Archived ({archivedItems.length})
-            </TabsTrigger>
-          </TabsList>
+        {/* New Items */}
+        <Card className="border-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Inbox className="h-5 w-5" />
+              À traiter
+            </CardTitle>
+            <CardDescription>
+              Éléments en attente de traitement
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {newItems.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-start gap-4 p-4 border-2 hover:bg-accent transition-colors group"
+              >
+                <div className="p-2 border-2 bg-muted">
+                  {sourceIcons[item.source]}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium">{item.title}</p>
+                  {item.content && (
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      {item.content}
+                    </p>
+                  )}
+                  <div className="flex gap-2 mt-2">
+                    <Badge variant="outline" className="border-2 text-xs">
+                      {sourceLabels[item.source]}
+                    </Badge>
+                    <Badge variant="outline" className="border-2 text-xs">
+                      {new Date(item.created_at).toLocaleDateString('fr-FR')}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => convertToTask.mutate(item.id)}
+                    disabled={convertToTask.isPending}
+                    title="Convertir en tâche"
+                    className="border-2"
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => archiveItem.mutate(item.id)}
+                    title="Archiver"
+                    className="border-2"
+                  >
+                    <Archive className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => deleteItem.mutate(item.id)}
+                    title="Supprimer"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            ))}
 
-          <TabsContent value="inbox" className="space-y-4">
-            {newItems.length === 0 ? (
-              <Card className="border-2 shadow-sm">
-                <CardContent className="py-12 text-center">
-                  <InboxIcon className="mx-auto h-12 w-12 mb-4 text-muted-foreground opacity-50" />
-                  <p className="font-medium">Inbox Zero!</p>
-                  <p className="text-sm text-muted-foreground">
-                    All caught up. Capture new ideas with Quick Capture.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-2">
-                {newItems.map((item) => (
-                  <InboxCard key={item.id} item={item} />
-                ))}
+            {newItems.length === 0 && (
+              <div className="text-center py-12">
+                <Inbox className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-4">
+                  Inbox vide — bravo ! ✨
+                </p>
+                <Button onClick={() => setIsDialogOpen(true)} variant="outline" className="border-2">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Capturer quelque chose
+                </Button>
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="archived" className="space-y-4">
-            {archivedItems.length === 0 ? (
-              <Card className="border-2 shadow-sm">
-                <CardContent className="py-12 text-center">
-                  <Archive className="mx-auto h-12 w-12 mb-4 text-muted-foreground opacity-50" />
-                  <p className="font-medium">No archived items</p>
-                  <p className="text-sm text-muted-foreground">
-                    Archived items will appear here.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-2">
-                {archivedItems.map((item) => (
-                  <InboxCard key={item.id} item={item} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-
-        {/* Processing Tips */}
-        <Card className="border-2 border-dashed shadow-sm">
-          <CardContent className="py-6">
-            <h3 className="font-bold mb-3">Processing Rules</h3>
-            <div className="grid gap-3 sm:grid-cols-3 text-sm">
-              <div className="flex items-start gap-2">
-                <div className="h-6 w-6 border-2 border-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">
-                  1
-                </div>
-                <p className="text-muted-foreground">
-                  <strong className="text-foreground">2 min rule:</strong> If it takes less than 2
-                  minutes, do it now.
-                </p>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="h-6 w-6 border-2 border-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">
-                  2
-                </div>
-                <p className="text-muted-foreground">
-                  <strong className="text-foreground">Convert:</strong> Transform actionable items
-                  into tasks.
-                </p>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="h-6 w-6 border-2 border-foreground flex items-center justify-center text-xs font-bold flex-shrink-0">
-                  3
-                </div>
-                <p className="text-muted-foreground">
-                  <strong className="text-foreground">Archive:</strong> Reference material goes to
-                  the archive.
-                </p>
-              </div>
-            </div>
           </CardContent>
         </Card>
+
+        {/* Processed Items */}
+        {processedItems.length > 0 && (
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-muted-foreground">
+                <Archive className="h-5 w-5" />
+                Traités récemment
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {processedItems.slice(0, 5).map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 p-3 border-2 bg-muted/50"
+                >
+                  {sourceIcons[item.source]}
+                  <span className="text-sm text-muted-foreground flex-1 truncate">
+                    {item.title}
+                  </span>
+                  <Badge variant="outline" className="border-2 text-xs">
+                    Converti
+                  </Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AppLayout>
   );

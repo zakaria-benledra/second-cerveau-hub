@@ -14,7 +14,998 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agent_actions: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          executed_at: string | null
+          explanation: string | null
+          id: string
+          proposed_payload: Json
+          status: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          executed_at?: string | null
+          explanation?: string | null
+          id?: string
+          proposed_payload: Json
+          status?: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          executed_at?: string | null
+          explanation?: string | null
+          id?: string
+          proposed_payload?: Json
+          status?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_metrics: {
+        Row: {
+          approval_rate: number | null
+          created_at: string
+          date: string
+          id: string
+          latency_ms: number | null
+          rejection_rate: number | null
+          total_requests: number | null
+        }
+        Insert: {
+          approval_rate?: number | null
+          created_at?: string
+          date: string
+          id?: string
+          latency_ms?: number | null
+          rejection_rate?: number | null
+          total_requests?: number | null
+        }
+        Update: {
+          approval_rate?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          latency_ms?: number | null
+          rejection_rate?: number | null
+          total_requests?: number | null
+        }
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_stats: {
+        Row: {
+          clarity_score: number | null
+          created_at: string
+          date: string
+          focus_minutes: number
+          habits_completed: number
+          habits_total: number
+          id: string
+          overload_index: number | null
+          tasks_completed: number
+          tasks_planned: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          clarity_score?: number | null
+          created_at?: string
+          date: string
+          focus_minutes?: number
+          habits_completed?: number
+          habits_total?: number
+          id?: string
+          overload_index?: number | null
+          tasks_completed?: number
+          tasks_planned?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          clarity_score?: number | null
+          created_at?: string
+          date?: string
+          focus_minutes?: number
+          habits_completed?: number
+          habits_total?: number
+          id?: string
+          overload_index?: number | null
+          tasks_completed?: number
+          tasks_planned?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      domains: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      focus_sessions: {
+        Row: {
+          created_at: string
+          duration_min: number | null
+          end_time: string | null
+          id: string
+          start_time: string
+          task_id: string | null
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_min?: number | null
+          end_time?: string | null
+          id?: string
+          start_time: string
+          task_id?: string | null
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_min?: number | null
+          end_time?: string | null
+          id?: string
+          start_time?: string
+          task_id?: string | null
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "focus_sessions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          start_date: string | null
+          status: string
+          target: number | null
+          title: string
+          unit: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          target?: number | null
+          title: string
+          unit?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          target?: number | null
+          title?: string
+          unit?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      habit_logs: {
+        Row: {
+          completed: boolean
+          created_at: string
+          date: string
+          habit_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          date: string
+          habit_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          date?: string
+          habit_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_logs_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          target_frequency: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          target_frequency?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          target_frequency?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      inbox_items: {
+        Row: {
+          content: string | null
+          converted_task_id: string | null
+          created_at: string
+          id: string
+          source: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          converted_task_id?: string | null
+          created_at?: string
+          id?: string
+          source?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          converted_task_id?: string | null
+          created_at?: string
+          id?: string
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_items_converted_task_id_fkey"
+            columns: ["converted_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      metric_registry: {
+        Row: {
+          created_at: string
+          description: string | null
+          formula: string
+          id: string
+          key: string
+          source_tables: string[]
+          status: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          formula: string
+          id?: string
+          key: string
+          source_tables: string[]
+          status?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          formula?: string
+          id?: string
+          key?: string
+          source_tables?: string[]
+          status?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      monthly_stats: {
+        Row: {
+          created_at: string
+          id: string
+          month: string
+          summary: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: string
+          summary?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: string
+          summary?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          payload: Json | null
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      preferences: {
+        Row: {
+          agent_mode: string | null
+          created_at: string
+          daily_capacity_min: number | null
+          energy_profile: Json | null
+          id: string
+          theme: string | null
+          timezone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_mode?: string | null
+          created_at?: string
+          daily_capacity_min?: number | null
+          energy_profile?: Json | null
+          id?: string
+          theme?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_mode?: string | null
+          created_at?: string
+          daily_capacity_min?: number | null
+          energy_profile?: Json | null
+          id?: string
+          theme?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          domain_id: string | null
+          id: string
+          name: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          domain_id?: string | null
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          domain_id?: string | null
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resources: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          project_id: string
+          title: string
+          type: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_id: string
+          title: string
+          type: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_id?: string
+          title?: string
+          type?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routine_logs: {
+        Row: {
+          completed: boolean
+          completed_items: Json | null
+          created_at: string
+          date: string
+          id: string
+          routine_id: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_items?: Json | null
+          created_at?: string
+          date: string
+          id?: string
+          routine_id: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_items?: Json | null
+          created_at?: string
+          date?: string
+          id?: string
+          routine_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_logs_routine_id_fkey"
+            columns: ["routine_id"]
+            isOneToOne: false
+            referencedRelation: "routines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routines: {
+        Row: {
+          checklist: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checklist?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checklist?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      streaks: {
+        Row: {
+          current_streak: number
+          habit_id: string
+          id: string
+          last_completed_date: string | null
+          max_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          habit_id: string
+          id?: string
+          last_completed_date?: string | null
+          max_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          habit_id?: string
+          id?: string
+          last_completed_date?: string | null
+          max_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streaks_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: true
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_health: {
+        Row: {
+          created_at: string
+          id: string
+          last_check: string
+          message: string | null
+          service: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_check?: string
+          message?: string | null
+          service: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_check?: string
+          message?: string | null
+          service?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      task_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json | null
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json | null
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_events_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          actual_duration_min: number | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          energy_level: string | null
+          estimate_min: number | null
+          goal_id: string | null
+          id: string
+          priority: string
+          project_id: string | null
+          start_date: string | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_duration_min?: number | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          energy_level?: string | null
+          estimate_min?: number | null
+          goal_id?: string | null
+          id?: string
+          priority?: string
+          project_id?: string | null
+          start_date?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_duration_min?: number | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          energy_level?: string | null
+          estimate_min?: number | null
+          goal_id?: string | null
+          id?: string
+          priority?: string
+          project_id?: string | null
+          start_date?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_blocks: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          start_time: string
+          task_id: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          start_time: string
+          task_id?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          start_time?: string
+          task_id?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_blocks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      undo_stack: {
+        Row: {
+          action_id: string
+          created_at: string
+          id: string
+          revert_payload: Json
+          user_id: string
+        }
+        Insert: {
+          action_id: string
+          created_at?: string
+          id?: string
+          revert_payload: Json
+          user_id: string
+        }
+        Update: {
+          action_id?: string
+          created_at?: string
+          id?: string
+          revert_payload?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "undo_stack_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "agent_actions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_ledger: {
+        Row: {
+          cost_estimate: number | null
+          created_at: string
+          day: string
+          id: string
+          tokens_in: number
+          tokens_out: number
+          user_id: string
+        }
+        Insert: {
+          cost_estimate?: number | null
+          created_at?: string
+          day: string
+          id?: string
+          tokens_in?: number
+          tokens_out?: number
+          user_id: string
+        }
+        Update: {
+          cost_estimate?: number | null
+          created_at?: string
+          day?: string
+          id?: string
+          tokens_in?: number
+          tokens_out?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      weekly_stats: {
+        Row: {
+          created_at: string
+          id: string
+          summary: Json
+          updated_at: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          summary?: Json
+          updated_at?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          summary?: Json
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
