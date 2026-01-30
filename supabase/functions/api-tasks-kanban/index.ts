@@ -1,11 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getRequiredWorkspaceId } from '../_shared/workspace.ts'
+import { generateIdempotencyKey, isEventProcessed } from '../_shared/idempotency.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// ============= VALIDATION (inline for Deno edge function) =============
+// ============= VALIDATION (inline for edge function) =============
 
 const KANBAN_STATUS = ['backlog', 'todo', 'doing', 'done'] as const;
 type KanbanStatus = typeof KANBAN_STATUS[number];
@@ -18,69 +20,6 @@ function isUUID(value: unknown): value is string {
 
 function isValidStatus(status: unknown): status is KanbanStatus {
   return typeof status === 'string' && KANBAN_STATUS.includes(status as KanbanStatus);
-}
-
-/**
- * Generate idempotency key using payload hash (NOT time-bucket).
- * Uses SHA-256 hash of payload + entity + operation.
- */
-async function generateEventId(
-  entity: string, 
-  entityId: string, 
-  eventType: string,
-  payload: Record<string, unknown> = {}
-): Promise<string> {
-  const data = JSON.stringify({ entity, entityId, eventType, payload });
-  const encoder = new TextEncoder();
-  const dataBuffer = encoder.encode(data);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return `${entity}_${eventType}_${hashHex.slice(0, 24)}`;
-}
-
-/**
- * Get user's workspace ID - bootstraps one if none exists.
- * NEVER returns null - fails hard if cannot resolve.
- */
-async function getRequiredWorkspaceId(supabase: any, userId: string): Promise<string> {
-  // Check existing membership
-  const { data: membership } = await supabase
-    .from('memberships')
-    .select('workspace_id')
-    .eq('user_id', userId)
-    .limit(1)
-    .single();
-
-  if (membership?.workspace_id) {
-    return membership.workspace_id;
-  }
-
-  // Bootstrap personal workspace
-  console.log(`Bootstrapping workspace for user ${userId}`);
-  
-  const { data: workspace, error: createError } = await supabase
-    .from('workspaces')
-    .insert({
-      name: 'Mon espace personnel',
-      plan: 'free',
-      owner_id: userId
-    })
-    .select()
-    .single();
-
-  if (createError || !workspace) {
-    throw new Error(`Failed to bootstrap workspace: ${createError?.message || 'Unknown'}`);
-  }
-
-  // Add membership
-  await supabase.from('memberships').insert({
-    user_id: userId,
-    workspace_id: workspace.id,
-    role: 'owner'
-  });
-
-  return workspace.id;
 }
 
 // ============= MAIN HANDLER =============
@@ -113,7 +52,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Get user's workspace_id for multi-tenant inserts
+    // ========== MULTI-TENANT: Get required workspace_id (never null) ==========
     const workspaceId = await getRequiredWorkspaceId(supabase, user.id)
 
     const url = new URL(req.url)
@@ -169,17 +108,20 @@ Deno.serve(async (req) => {
         })
       }
 
-      // ========== IDEMPOTENCY CHECK (hash-based, NOT time-bucket) ==========
-      const eventId = await generateEventId('tasks', taskId, `move_${newStatus}`, { from: body.previousTaskId, to: newStatus })
+      // ========== IDEMPOTENCY CHECK (hash-based via _shared) ==========
+      const eventId = await generateIdempotencyKey(
+        'tasks',
+        taskId,
+        `move_${newStatus}`,
+        user.id,
+        workspaceId,
+        { from: body.previousTaskId, to: newStatus, sortOrder: newSortOrder }
+      )
       
       // Check if this exact event already processed
-      const { data: existingEvent } = await supabase
-        .from('task_events')
-        .select('id')
-        .eq('event_id', eventId)
-        .single()
+      const alreadyProcessed = await isEventProcessed(supabase, 'task_events', eventId)
 
-      if (existingEvent) {
+      if (alreadyProcessed) {
         // Return success but skip duplicate processing
         console.log(`Idempotent skip: ${eventId}`)
         return new Response(JSON.stringify({ 
@@ -270,7 +212,7 @@ Deno.serve(async (req) => {
         user_id: user.id,
         workspace_id: workspaceId, // MULTI-TENANT
         task_id: taskId,
-        event_id: eventId, // IDEMPOTENCY
+        event_id: eventId, // IDEMPOTENCY (hash-based)
         event_type: newStatus === 'done' ? 'completed' : 'status_changed',
         payload: { 
           from_status: oldTask.kanban_status, 
@@ -281,20 +223,32 @@ Deno.serve(async (req) => {
       })
 
       // Write to undo_stack with hash-based event_id for idempotency
-      const undoEventId = await generateEventId('undo', taskId, `kanban_${newStatus}`, { from: oldTask.kanban_status })
-      await supabase.from('undo_stack').insert({
-        user_id: user.id,
-        workspace_id: workspaceId, // MULTI-TENANT
-        event_id: undoEventId, // IDEMPOTENCY
-        action_id: crypto.randomUUID(),
-        entity: 'tasks',
-        entity_id: taskId,
-        operation: 'KANBAN_MOVE',
-        previous_state: { kanban_status: oldTask.kanban_status, sort_order: oldTask.sort_order, status: oldTask.status },
-        current_state: { kanban_status: newStatus, sort_order: sortOrder, status: updates.status || oldTask.status },
-        revert_payload: { taskId, newStatus: oldTask.kanban_status, newSortOrder: oldTask.sort_order },
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-      })
+      const undoEventId = await generateIdempotencyKey(
+        'undo',
+        taskId,
+        `kanban_${newStatus}`,
+        user.id,
+        workspaceId,
+        { from: oldTask.kanban_status, to: newStatus }
+      )
+
+      // Check if undo entry already exists
+      const undoExists = await isEventProcessed(supabase, 'undo_stack', undoEventId)
+      if (!undoExists) {
+        await supabase.from('undo_stack').insert({
+          user_id: user.id,
+          workspace_id: workspaceId, // MULTI-TENANT
+          event_id: undoEventId, // IDEMPOTENCY
+          action_id: crypto.randomUUID(),
+          entity: 'tasks',
+          entity_id: taskId,
+          operation: 'KANBAN_MOVE',
+          previous_state: { kanban_status: oldTask.kanban_status, sort_order: oldTask.sort_order, status: oldTask.status },
+          current_state: { kanban_status: newStatus, sort_order: sortOrder, status: updates.status || oldTask.status },
+          revert_payload: { taskId, newStatus: oldTask.kanban_status, newSortOrder: oldTask.sort_order },
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        })
+      }
 
       return new Response(JSON.stringify({ 
         success: true, 

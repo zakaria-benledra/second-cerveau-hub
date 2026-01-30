@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getRequiredWorkspaceId } from '../_shared/workspace.ts'
+import { generateTransactionExternalId } from '../_shared/idempotency.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,16 +13,6 @@ function isUUID(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(value);
-}
-
-async function getUserWorkspaceId(supabase: any, userId: string): Promise<string | null> {
-  const { data: membership } = await supabase
-    .from('memberships')
-    .select('workspace_id')
-    .eq('user_id', userId)
-    .limit(1)
-    .single();
-  return membership?.workspace_id || null;
 }
 
 // ============= CATEGORIZATION RULES =============
@@ -87,8 +79,8 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Get user's workspace_id for multi-tenant inserts
-    const workspaceId = await getUserWorkspaceId(supabase, user.id)
+    // ========== MULTI-TENANT: Get required workspace_id (never null) ==========
+    const workspaceId = await getRequiredWorkspaceId(supabase, user.id)
 
     const body = await req.json()
     const { documentId } = body
@@ -237,19 +229,25 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Generate external_id for idempotency (UNIQUE constraint)
-        const externalId = `${documentId}_${i}_${parsedDate}_${amount}`
+        // ========== IDEMPOTENCY: Generate robust external_id (hash-based) ==========
+        const externalId = generateTransactionExternalId(
+          documentId,
+          i,
+          parsedDate,
+          amount,
+          description
+        )
 
         transactions.push({
           user_id: user.id,
-          workspace_id: workspaceId, // MULTI-TENANT
+          workspace_id: workspaceId, // MULTI-TENANT (never null)
           date: parsedDate,
           amount: Math.abs(amount),
           type: suggestedType || (amount < 0 ? 'expense' : 'income'),
           description,
           category_id: categoryId,
           document_id: documentId,
-          external_id: externalId, // IDEMPOTENCY
+          external_id: externalId, // IDEMPOTENCY (hash-based)
           source: 'csv_import'
         })
       } catch (e) {
