@@ -93,6 +93,21 @@ export default function AICoachPage() {
             </div>
           ) : briefing ? (
             <>
+              {/* AI Insight Card */}
+              {(briefing as any).ai_insight && (
+                <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-primary/20">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      Message de votre Coach IA
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm whitespace-pre-line">{(briefing as any).ai_insight}</p>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
