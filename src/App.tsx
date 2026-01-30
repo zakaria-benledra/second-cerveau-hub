@@ -2,8 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AppLayout } from "@/components/layout/AppLayout";
 import AuthPage from "./pages/AuthPage";
 import TodayPage from "./pages/TodayPage";
 import TasksPage from "./pages/TasksPage";
@@ -26,6 +27,15 @@ import AutomationPage from "./pages/AutomationPage";
 import AICoachPage from "./pages/AICoachPage";
 import QADashboardPage from "./pages/QADashboardPage";
 import NotFound from "./pages/NotFound";
+
+// BI Dashboards
+import {
+  ExecutiveDashboardPage,
+  BehaviorTrendsPage,
+  FinancialHealthPage,
+  HabitStabilityPage,
+  DecisionImpactPage,
+} from "./pages/bi";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +75,13 @@ const App = () => (
           <Route path="/qa" element={<ProtectedRoute><QADashboardPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          
+          {/* BI Dashboards */}
+          <Route path="/bi/executive" element={<ProtectedRoute><AppLayout><ExecutiveDashboardPage /></AppLayout></ProtectedRoute>} />
+          <Route path="/bi/behavior" element={<ProtectedRoute><AppLayout><BehaviorTrendsPage /></AppLayout></ProtectedRoute>} />
+          <Route path="/bi/financial" element={<ProtectedRoute><AppLayout><FinancialHealthPage /></AppLayout></ProtectedRoute>} />
+          <Route path="/bi/habits" element={<ProtectedRoute><AppLayout><HabitStabilityPage /></AppLayout></ProtectedRoute>} />
+          <Route path="/bi/decisions" element={<ProtectedRoute><AppLayout><DecisionImpactPage /></AppLayout></ProtectedRoute>} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
