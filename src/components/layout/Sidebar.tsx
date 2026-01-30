@@ -1,30 +1,23 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home,
-  CheckSquare,
   Target,
-  Inbox,
-  FolderKanban,
-  Calendar,
-  BookOpen,
   Wallet,
-  BarChart3,
   Settings,
   ChevronLeft,
   ChevronRight,
   Brain,
   Timer,
   TrendingUp,
-  PenLine,
   Bell,
   ListChecks,
-  Sparkles,
-  LayoutDashboard,
-  Lightbulb,
   Heart,
   Zap,
   Award,
   TestTube2,
+  Repeat,
+  Shield,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -36,73 +29,57 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-// Grouped navigation structure
+// Grouped navigation structure - Transformation Comportementale
 const navGroups = [
   {
-    label: 'Quotidien',
-    icon: Sparkles,
+    label: 'Ma Trajectoire',
+    icon: Target,
     items: [
-      { icon: Home, label: 'Aujourd\'hui', path: '/' },
-      { icon: CheckSquare, label: 'Tâches', path: '/tasks' },
-      { icon: Inbox, label: 'Inbox', path: '/inbox' },
-      { icon: Calendar, label: 'Calendrier', path: '/calendar' },
+      { icon: Home, label: 'Qui Je Deviens', path: '/' },
+      { icon: TrendingUp, label: 'Mon Momentum', path: '/scores' },
+      { icon: Brain, label: 'Intelligence IA', path: '/intelligence' },
     ],
   },
   {
-    label: 'Habitudes & Focus',
-    icon: Heart,
+    label: 'Discipline',
+    icon: Zap,
     items: [
-      { icon: Target, label: 'Habitudes', path: '/habits' },
+      { icon: Repeat, label: 'Habitudes', path: '/habits' },
+      { icon: ListChecks, label: 'Engagements', path: '/tasks' },
+      { icon: Award, label: 'Victoires', path: '/behavior-hub?tab=wins' },
+    ],
+  },
+  {
+    label: 'Stabilité',
+    icon: Shield,
+    items: [
+      { icon: Wallet, label: 'Finances', path: '/finance' },
+      { icon: Heart, label: 'Bien-être', path: '/journal' },
       { icon: Timer, label: 'Focus', path: '/focus' },
     ],
   },
   {
-    label: 'Projets & Objectifs',
-    icon: TrendingUp,
+    label: 'Système',
+    icon: Settings,
     items: [
-      { icon: FolderKanban, label: 'Projets', path: '/projects' },
-      { icon: TrendingUp, label: 'Objectifs', path: '/goals' },
-    ],
-  },
-  {
-    label: 'Croissance',
-    icon: Lightbulb,
-    items: [
-      { icon: BookOpen, label: 'Apprentissage', path: '/learning' },
-      { icon: PenLine, label: 'Journal', path: '/journal' },
-    ],
-  },
-  {
-    label: 'Intelligence',
-    icon: LayoutDashboard,
-    items: [
-      { icon: BarChart3, label: 'Intelligence Hub', path: '/intelligence' },
-      { icon: TrendingUp, label: 'Product Intel', path: '/product-intelligence' },
-      { icon: Award, label: 'Scores', path: '/scores' },
       { icon: Zap, label: 'Automations', path: '/automation' },
-      { icon: Brain, label: 'AI Coach', path: '/ai-coach' },
-    ],
-  },
-  {
-    label: 'Gestion',
-    icon: Wallet,
-    items: [
-      { icon: Wallet, label: 'Finances', path: '/finance' },
+      { icon: Activity, label: 'Interventions IA', path: '/observability' },
+      { icon: Bell, label: 'Notifications', path: '/notifications' },
+      { icon: Settings, label: 'Paramètres', path: '/settings' },
     ],
   },
 ];
 
 const bottomItems = [
   { icon: TestTube2, label: 'QA Dashboard', path: '/qa' },
-  { icon: Bell, label: 'Notifications', path: '/notifications' },
-  { icon: Settings, label: 'Paramètres', path: '/settings' },
 ];
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
 
   const NavItem = ({ icon: Icon, label, path }: { icon: typeof Home; label: string; path: string }) => {
-    const isActive = location.pathname === path;
+    const isActive = location.pathname === path || 
+      (path.includes('?') && location.pathname + location.search === path);
     
     const content = (
       <Link
