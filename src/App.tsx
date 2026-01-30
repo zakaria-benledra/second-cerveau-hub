@@ -23,12 +23,14 @@ import RoutinesPage from "./pages/RoutinesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ScoresPage from "./pages/ScoresPage";
 import AutomationPage from "./pages/AutomationPage";
+import AICoachPage from "./pages/AICoachPage";
+import QADashboardPage from "./pages/QADashboardPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60, // 1 minute
+      staleTime: 1000 * 60,
       retry: 1,
     },
   },
@@ -41,10 +43,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Public routes */}
           <Route path="/auth" element={<AuthPage />} />
           
-          {/* Protected routes */}
           <Route path="/" element={<ProtectedRoute><TodayPage /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
           <Route path="/habits" element={<ProtectedRoute><HabitsPage /></ProtectedRoute>} />
@@ -61,10 +61,11 @@ const App = () => (
           <Route path="/scores" element={<ProtectedRoute><ScoresPage /></ProtectedRoute>} />
           <Route path="/automation" element={<ProtectedRoute><AutomationPage /></ProtectedRoute>} />
           <Route path="/agent" element={<ProtectedRoute><AgentPage /></ProtectedRoute>} />
+          <Route path="/ai-coach" element={<ProtectedRoute><AICoachPage /></ProtectedRoute>} />
+          <Route path="/qa" element={<ProtectedRoute><QADashboardPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           
-          {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
