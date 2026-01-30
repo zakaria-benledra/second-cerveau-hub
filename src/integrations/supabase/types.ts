@@ -798,6 +798,119 @@ export type Database = {
           },
         ]
       }
+      challenge_logs: {
+        Row: {
+          challenge_id: string
+          completed: boolean | null
+          created_at: string
+          date: string
+          id: string
+          note: string | null
+          source: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          challenge_id: string
+          completed?: boolean | null
+          created_at?: string
+          date: string
+          id?: string
+          note?: string | null
+          source?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          challenge_id?: string
+          completed?: boolean | null
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          source?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_logs_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "challenge_logs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenges: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          days_completed: number | null
+          deleted_at: string | null
+          description: string | null
+          duration: number
+          id: string
+          name: string
+          reward: string | null
+          source: string | null
+          started_at: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          days_completed?: number | null
+          deleted_at?: string | null
+          description?: string | null
+          duration: number
+          id?: string
+          name: string
+          reward?: string | null
+          source?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          days_completed?: number | null
+          deleted_at?: string | null
+          description?: string | null
+          duration?: number
+          id?: string
+          name?: string
+          reward?: string | null
+          source?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenges_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       churn_risk_scores: {
         Row: {
           last_activity_at: string | null
