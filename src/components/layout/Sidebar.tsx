@@ -77,6 +77,7 @@ const navGroups = [
     icon: LayoutDashboard,
     items: [
       { icon: BarChart3, label: 'Intelligence Hub', path: '/intelligence' },
+      { icon: TrendingUp, label: 'Product Intel', path: '/product-intelligence' },
       { icon: Award, label: 'Scores', path: '/scores' },
       { icon: Zap, label: 'Automations', path: '/automation' },
       { icon: Brain, label: 'AI Coach', path: '/ai-coach' },

@@ -139,7 +139,34 @@ export function useProductIntelligence(days = 30) {
   return useFunnelMetrics(days);
 }
 
-// Get churn risk distribution
+// Get churn risk distribution (returns array for charts)
+export function useChurnDistribution() {
+  return useQuery({
+    queryKey: ['churn-distribution'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('churn_risk_scores')
+        .select('risk_level');
+
+      if (error) throw error;
+
+      const distribution: Record<string, number> = { low: 0, medium: 0, high: 0, critical: 0 };
+      data?.forEach(item => {
+        const level = item.risk_level as keyof typeof distribution;
+        if (level in distribution) {
+          distribution[level]++;
+        }
+      });
+
+      return Object.entries(distribution).map(([risk_level, count]) => ({
+        risk_level,
+        count,
+      }));
+    },
+  });
+}
+
+// Get churn risk distribution (object format)
 export function useChurnRiskDistribution() {
   return useQuery({
     queryKey: ['churn-risk-distribution'],
@@ -161,4 +188,19 @@ export function useChurnRiskDistribution() {
       return distribution;
     },
   });
+}
+
+// Funnel daily data
+export function useFunnelDaily(days = 30) {
+  return useFunnelMetrics(days);
+}
+
+// Journey events alias
+export function useJourneyEvents(days = 30) {
+  return useMyJourneyEvents(100);
+}
+
+// Churn risk alias
+export function useChurnRisk() {
+  return useMyChurnRisk();
 }

@@ -15,6 +15,9 @@ import { useDocuments, useUploadStatement, useDeleteDocument } from '@/hooks/use
 import { useGoals } from '@/hooks/useProjects';
 import { useSavingsGoals, useCreateSavingsGoal, useContributeToGoal, useDeleteSavingsGoal } from '@/hooks/useSavingsGoals';
 import { SavingsGoalCard } from '@/components/finance/SavingsGoalCard';
+import { FinanceImportWizard } from '@/components/finance/FinanceImportWizard';
+import { FinanceVisualDashboard } from '@/components/finance/FinanceVisualDashboard';
+import { FinanceExportModal } from '@/components/finance/FinanceExportModal';
 import { ScoreRing } from '@/components/today/ScoreRing';
 import { cn } from '@/lib/utils';
 import { 
@@ -39,7 +42,8 @@ import {
   ArrowDownRight,
   Sparkles,
   Link2,
-  BarChart3
+  BarChart3,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -50,6 +54,8 @@ export default function FinancePage() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isBudgetOpen, setIsBudgetOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('transactions');
   const [newTransaction, setNewTransaction] = useState({ amount: '', description: '', category_id: '', type: 'expense', date: format(new Date(), 'yyyy-MM-dd'), goal_id: '' });
   const [newCategory, setNewCategory] = useState({ name: '', type: 'expense' });
   const [newBudget, setNewBudget] = useState({ category_id: '', monthly_limit: '' });
@@ -196,6 +202,10 @@ export default function FinancePage() {
             <p className="text-muted-foreground">{format(new Date(), 'MMMM yyyy', { locale: fr })}</p>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => setIsExportOpen(true)}>
+              <Download className="h-4 w-4" />
+              Exporter
+            </Button>
             <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="gap-2">
@@ -479,14 +489,26 @@ export default function FinancePage() {
         </div>
 
         {/* Main Tabs */}
-        <Tabs defaultValue="transactions" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="glass-strong">
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="visuals">📊 Visuels</TabsTrigger>
+            <TabsTrigger value="import">📥 Import</TabsTrigger>
             <TabsTrigger value="savings">Épargne</TabsTrigger>
             <TabsTrigger value="budgets">Budgets</TabsTrigger>
             <TabsTrigger value="statements">Relevés</TabsTrigger>
             <TabsTrigger value="categories">Catégories</TabsTrigger>
           </TabsList>
+
+          {/* Visual Dashboard Tab */}
+          <TabsContent value="visuals">
+            <FinanceVisualDashboard />
+          </TabsContent>
+
+          {/* Import Wizard Tab */}
+          <TabsContent value="import">
+            <FinanceImportWizard onComplete={() => setActiveTab('transactions')} />
+          </TabsContent>
 
           {/* Transactions Tab */}
           <TabsContent value="transactions" className="space-y-4">
@@ -818,6 +840,9 @@ export default function FinancePage() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Export Modal */}
+        <FinanceExportModal open={isExportOpen} onOpenChange={setIsExportOpen} />
       </div>
     </AppLayout>
   );
