@@ -98,74 +98,74 @@
     --shadow-glow-lg: 0 0 40px hsl(252 90% 55% / 0.25);
   }
 
-  /* DARK MODE - PRIMARY THEME */
+  /* DARK MODE - PRIMARY THEME (Golden Prompt Spec) */
   .dark {
-    /* Deep charcoal base */
-    --background: 235 25% 6%;
+    /* Deep charcoal base - Golden Prompt exact tokens */
+    --background: 220 20% 6%;
     --foreground: 240 10% 94%;
 
     /* Glass cards */
-    --card: 235 25% 9%;
+    --card: 220 18% 10%;
     --card-foreground: 240 10% 94%;
 
-    --popover: 235 25% 10%;
+    --popover: 220 18% 10%;
     --popover-foreground: 240 10% 94%;
 
-    /* Primary - Electric Violet */
-    --primary: 262 85% 62%;
+    /* Primary - Electric Violet (Golden Prompt) */
+    --primary: 265 90% 60%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary - Deep Slate */
-    --secondary: 235 25% 14%;
+    --secondary: 220 20% 14%;
     --secondary-foreground: 240 10% 88%;
 
     /* Muted */
-    --muted: 235 25% 16%;
+    --muted: 220 20% 16%;
     --muted-foreground: 240 10% 55%;
 
-    /* Accent - Cyan highlight */
-    --accent: 185 90% 52%;
+    /* Accent - Cyan highlight (Golden Prompt) */
+    --accent: 190 90% 50%;
     --accent-foreground: 0 0% 8%;
 
-    /* Destructive */
-    --destructive: 0 65% 55%;
+    /* Destructive / Danger (Golden Prompt) */
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Success */
-    --success: 155 75% 48%;
+    /* Success (Golden Prompt) */
+    --success: 140 60% 45%;
     --success-foreground: 0 0% 8%;
 
-    /* Warning */
-    --warning: 40 95% 55%;
+    /* Warning (Golden Prompt) */
+    --warning: 40 90% 55%;
     --warning-foreground: 0 0% 8%;
 
     /* Info */
     --info: 200 95% 55%;
     --info-foreground: 0 0% 8%;
 
-    /* Borders */
-    --border: 235 25% 18%;
-    --input: 235 25% 18%;
-    --ring: 262 85% 62%;
+    /* Borders (Golden Prompt) */
+    --border: 220 10% 20%;
+    --input: 220 10% 20%;
+    --ring: 265 90% 60%;
 
     /* Sidebar - Deepest black */
-    --sidebar-background: 235 30% 4%;
+    --sidebar-background: 220 25% 4%;
     --sidebar-foreground: 240 10% 92%;
-    --sidebar-primary: 262 85% 65%;
+    --sidebar-primary: 265 90% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 235 25% 10%;
+    --sidebar-accent: 220 20% 10%;
     --sidebar-accent-foreground: 240 10% 92%;
-    --sidebar-border: 235 25% 12%;
-    --sidebar-ring: 262 85% 62%;
-    --sidebar: 235 30% 4%;
+    --sidebar-border: 220 20% 12%;
+    --sidebar-ring: 265 90% 60%;
+    --sidebar: 220 25% 4%;
 
     /* Charts */
-    --chart-1: 262 85% 62%;
-    --chart-2: 185 90% 52%;
-    --chart-3: 40 95% 55%;
+    --chart-1: 265 90% 60%;
+    --chart-2: 190 90% 50%;
+    --chart-3: 40 90% 55%;
     --chart-4: 200 95% 55%;
-    --chart-5: 0 65% 55%;
-    --chart-6: 155 75% 48%;
+    --chart-5: 0 70% 50%;
+    --chart-6: 140 60% 45%;
 
     /* Dark shadows with glow */
     --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.15);
@@ -176,8 +176,8 @@
     --shadow-lg: 0 10px 20px -3px hsl(0 0% 0% / 0.4), 0 4px 8px -4px hsl(0 0% 0% / 0.3);
     --shadow-xl: 0 20px 40px -5px hsl(0 0% 0% / 0.5), 0 8px 16px -6px hsl(0 0% 0% / 0.35);
     --shadow-2xl: 0 32px 64px -8px hsl(0 0% 0% / 0.6);
-    --shadow-glow: 0 0 25px hsl(262 85% 62% / 0.3);
-    --shadow-glow-lg: 0 0 50px hsl(262 85% 62% / 0.4);
+    --shadow-glow: 0 0 25px hsl(265 90% 60% / 0.3);
+    --shadow-glow-lg: 0 0 50px hsl(265 90% 60% / 0.4);
   }
 }
 
@@ -190,13 +190,17 @@
     scroll-behavior: smooth;
   }
 
-  /* Force dark mode as primary */
-  html {
+  /* Support both light and dark modes */
+  html.dark {
     color-scheme: dark;
   }
 
+  html:not(.dark) {
+    color-scheme: light;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased dark;
+    @apply bg-background text-foreground antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
