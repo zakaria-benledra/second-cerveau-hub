@@ -20,8 +20,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { useHabitsWithLogs, useCreateHabit, useToggleHabitLog, useDeleteHabit } from '@/hooks/useHabits';
 import { useHabitHistory } from '@/hooks/useHabitsKPI';
-import { useRoutines, useTodayRoutineLogs, useLogRoutineCompletion } from '@/hooks/useRoutines';
 import { ScoreRing } from '@/components/today/ScoreRing';
+import { BehavioralSection } from '@/components/habits/BehavioralSection';
 import { 
   Plus, 
   Flame, 
@@ -34,34 +34,22 @@ import {
   ChevronRight,
   CheckCircle2,
   History,
-  Clock,
-  Sunrise,
-  Moon,
-  ListChecks
+  Heart
 } from 'lucide-react';
 import { HabitTimeline } from '@/components/habits/HabitTimeline';
 import type { CreateHabitInput } from '@/lib/api/habits';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const emojiOptions = ['✨', '🧘', '📚', '💪', '🏃', '💧', '🍎', '😴', '✍️', '🎯', '🧠', '🌱', '🎨', '🎵', '💡'];
 
-interface ChecklistItem {
-  id: string;
-  text: string;
-}
-
 export default function HabitsPage() {
   const { data: habits, isLoading: habitsLoading } = useHabitsWithLogs();
-  const { data: routines = [], isLoading: routinesLoading } = useRoutines();
-  const { data: todayLogs = [] } = useTodayRoutineLogs();
   const { data: weekHistory = [], isLoading: historyLoading } = useHabitHistory(7);
   const createHabit = useCreateHabit();
   const toggleHabit = useToggleHabitLog();
   const deleteHabit = useDeleteHabit();
-  const logCompletion = useLogRoutineCompletion();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newHabit, setNewHabit] = useState<CreateHabitInput>({
@@ -91,29 +79,7 @@ export default function HabitsPage() {
   const totalStreak = activeHabits.reduce((sum, h) => sum + (h.streak?.current_streak || 0), 0);
   const maxStreak = activeHabits.reduce((max, h) => Math.max(max, h.streak?.max_streak || 0), 0);
 
-  // Routines
-  const morningRoutines = routines.filter(r => r.type === 'morning');
-  const eveningRoutines = routines.filter(r => r.type === 'evening');
-
-  const getCompletedItems = (routineId: string): string[] => {
-    const log = todayLogs.find(l => l.routine_id === routineId);
-    if (!log || !log.completed_items) return [];
-    return Array.isArray(log.completed_items) ? log.completed_items as string[] : [];
-  };
-
-  const toggleRoutineItem = (routineId: string, itemId: string) => {
-    const currentCompleted = getCompletedItems(routineId);
-    const newCompleted = currentCompleted.includes(itemId)
-      ? currentCompleted.filter(id => id !== itemId)
-      : [...currentCompleted, itemId];
-    
-    logCompletion.mutate({ routineId, completedItems: newCompleted });
-  };
-
-  // Use real history from useHabitHistory hook (above)
-  // weekHistory is already loaded via useHabitHistory(7)
-
-  const isLoading = habitsLoading || routinesLoading || historyLoading;
+  const isLoading = habitsLoading || historyLoading;
 
   if (isLoading) {
     return (
@@ -135,10 +101,10 @@ export default function HabitsPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-gradient">
-              Habitudes & Routines
+              Habitudes & Comportement
             </h1>
             <p className="text-muted-foreground mt-1">
-              Système unifié - Construisez la discipline
+              Système unifié de discipline quotidienne
             </p>
           </div>
 
@@ -267,8 +233,8 @@ export default function HabitsPage() {
                   <Target className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold tabular-nums">{activeHabits.length + routines.length}</p>
-                  <p className="text-xs text-muted-foreground">Total actifs</p>
+                  <p className="text-2xl font-bold tabular-nums">{activeHabits.length}</p>
+                  <p className="text-xs text-muted-foreground">Habitudes actives</p>
                 </div>
               </div>
             </CardContent>
@@ -338,16 +304,16 @@ export default function HabitsPage() {
           <TabsList className="glass-strong">
             <TabsTrigger value="today" className="gap-2">
               <CheckCircle2 className="h-4 w-4" />
-              Aujourd'hui
+              Habitudes
               {incompleteHabits.length > 0 && (
                 <Badge className="h-5 w-5 p-0 flex items-center justify-center text-[10px]">
                   {incompleteHabits.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="routines" className="gap-2">
-              <ListChecks className="h-4 w-4" />
-              Routines
+            <TabsTrigger value="behavioral" className="gap-2">
+              <Heart className="h-4 w-4" />
+              Comportement
             </TabsTrigger>
             <TabsTrigger value="history" className="gap-2">
               <History className="h-4 w-4" />
@@ -369,7 +335,7 @@ export default function HabitsPage() {
                     Toutes les habitudes complétées !
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Excellent travail. Vérifiez vos routines.
+                    Excellent travail. N'oubliez pas votre check-in comportemental.
                   </p>
                 </CardContent>
               </Card>
@@ -431,207 +397,65 @@ export default function HabitsPage() {
                 </Card>
               ))
             )}
-          </TabsContent>
 
-          {/* Routines Tab - Merged */}
-          <TabsContent value="routines" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Morning Routines */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Sunrise className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-semibold">Matin</h2>
-                  <Badge variant="secondary">{morningRoutines.length}</Badge>
-                </div>
-                {morningRoutines.length === 0 ? (
-                  <Card className="glass border-dashed">
-                    <CardContent className="py-8 text-center text-muted-foreground">
-                      <p>Aucune routine matinale</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  morningRoutines.map((routine) => {
-                    const checklist = (routine.checklist as unknown as ChecklistItem[]) || [];
-                    const completedItems = getCompletedItems(routine.id);
-                    const progress = checklist.length > 0 ? (completedItems.length / checklist.length) * 100 : 0;
-
-                    return (
-                      <Card key={routine.id} className="glass-hover">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">{routine.name}</CardTitle>
-                          {checklist.length > 0 && (
-                            <div className="mt-2">
-                              <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                                <span>{completedItems.length}/{checklist.length}</span>
-                                <span>{Math.round(progress)}%</span>
-                              </div>
-                              <Progress value={progress} className="h-2" />
-                            </div>
-                          )}
-                        </CardHeader>
-                        <CardContent>
-                          <ul className="space-y-2">
-                            {checklist.map((item) => (
-                              <li key={item.id} className="flex items-center gap-3">
-                                <Checkbox
-                                  checked={completedItems.includes(item.id)}
-                                  onCheckedChange={() => toggleRoutineItem(routine.id, item.id)}
-                                />
-                                <span className={cn(
-                                  completedItems.includes(item.id) && 'line-through text-muted-foreground'
-                                )}>
-                                  {item.text}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </CardContent>
-                      </Card>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Evening Routines */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Moon className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-semibold">Soir</h2>
-                  <Badge variant="secondary">{eveningRoutines.length}</Badge>
-                </div>
-                {eveningRoutines.length === 0 ? (
-                  <Card className="glass border-dashed">
-                    <CardContent className="py-8 text-center text-muted-foreground">
-                      <p>Aucune routine du soir</p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  eveningRoutines.map((routine) => {
-                    const checklist = (routine.checklist as unknown as ChecklistItem[]) || [];
-                    const completedItems = getCompletedItems(routine.id);
-                    const progress = checklist.length > 0 ? (completedItems.length / checklist.length) * 100 : 0;
-
-                    return (
-                      <Card key={routine.id} className="glass-hover">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-lg">{routine.name}</CardTitle>
-                          {checklist.length > 0 && (
-                            <div className="mt-2">
-                              <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                                <span>{completedItems.length}/{checklist.length}</span>
-                                <span>{Math.round(progress)}%</span>
-                              </div>
-                              <Progress value={progress} className="h-2" />
-                            </div>
-                          )}
-                        </CardHeader>
-                        <CardContent>
-                          <ul className="space-y-2">
-                            {checklist.map((item) => (
-                              <li key={item.id} className="flex items-center gap-3">
-                                <Checkbox
-                                  checked={completedItems.includes(item.id)}
-                                  onCheckedChange={() => toggleRoutineItem(routine.id, item.id)}
-                                />
-                                <span className={cn(
-                                  completedItems.includes(item.id) && 'line-through text-muted-foreground'
-                                )}>
-                                  {item.text}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        </CardContent>
-                      </Card>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground text-center">
-              Gérer les routines : <Link to="/routines" className="text-primary hover:underline">Paramètres des routines</Link>
-            </p>
-          </TabsContent>
-
-          {/* History Tab - Uses real data from HabitTimeline component */}
-          <TabsContent value="history" className="space-y-4">
-            <HabitTimeline days={30} />
-            
-            {/* Today's Completed Summary */}
-            <Card className="glass">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Aujourd'hui ({completedHabits.length}/{activeHabits.length})</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
+            {/* Completed habits */}
+            {completedHabits.length > 0 && (
+              <div className="space-y-2 pt-4">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Complétées</p>
                 {completedHabits.map((habit) => (
-                  <div key={habit.id} className="flex items-center gap-3 p-2 rounded-lg bg-success/10">
-                    <CheckCircle2 className="h-4 w-4 text-success" />
-                    <span className="text-2xl">{habit.icon || '✨'}</span>
-                    <span className="text-sm line-through text-muted-foreground">{habit.name}</span>
-                    {habit.streak && habit.streak.current_streak > 0 && (
-                      <Badge className="bg-warning/15 text-warning border-0 text-xs ml-auto">
-                        <Flame className="h-3 w-3 mr-1" />
-                        {habit.streak.current_streak}
-                      </Badge>
-                    )}
-                  </div>
+                  <Card
+                    key={habit.id}
+                    className="glass-hover cursor-pointer opacity-60"
+                    onClick={() => toggleHabit.mutate(habit.id)}
+                  >
+                    <CardContent className="py-3">
+                      <div className="flex items-center gap-4">
+                        <Checkbox
+                          checked={true}
+                          disabled={toggleHabit.isPending}
+                          className="h-5 w-5 rounded-lg"
+                        />
+                        <span className="text-xl">{habit.icon || '✨'}</span>
+                        <p className="font-medium line-through text-muted-foreground">{habit.name}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
-                {completedHabits.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Aucune habitude complétée aujourd'hui
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Behavioral Section - Gratitude, Wins, Challenges */}
+          <TabsContent value="behavioral" className="space-y-4">
+            <BehavioralSection />
+          </TabsContent>
+
+          {/* History Tab */}
+          <TabsContent value="history" className="space-y-4">
+            <HabitTimeline days={14} />
           </TabsContent>
 
           {/* Manage Tab */}
           <TabsContent value="manage" className="space-y-4">
-            <Card className="glass-strong">
+            <Card className="glass">
               <CardHeader>
                 <CardTitle>Gérer les habitudes</CardTitle>
-                <CardDescription>
-                  Modifiez, activez ou supprimez vos habitudes
-                </CardDescription>
+                <CardDescription>Modifiez ou supprimez vos habitudes</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2">
                 {activeHabits.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Sparkles className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-                    <p className="text-muted-foreground">Aucune habitude</p>
-                    <Button className="mt-4 gradient-primary" onClick={() => setIsDialogOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Créer une habitude
-                    </Button>
-                  </div>
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Aucune habitude à gérer
+                  </p>
                 ) : (
                   activeHabits.map((habit) => (
-                    <div
+                    <div 
                       key={habit.id}
-                      className="flex items-center gap-4 p-4 rounded-xl border border-border/50 hover:border-border transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg glass-hover"
                     >
-                      <span className="text-2xl">{habit.icon || '✨'}</span>
-                      <div className="flex-1">
-                        <p className="font-medium">{habit.name}</p>
-                        <div className="flex gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
-                            {habit.target_frequency === 'daily' ? 'Quotidien' : 
-                             habit.target_frequency === 'weekly' ? 'Hebdo' : 'Personnalisé'}
-                          </Badge>
-                          {habit.streak && habit.streak.current_streak > 0 && (
-                            <Badge className="bg-warning/15 text-warning border-0 text-xs">
-                              <Flame className="h-3 w-3 mr-1" />
-                              {habit.streak.current_streak} jours
-                            </Badge>
-                          )}
-                          {habit.streak && habit.streak.max_streak && habit.streak.max_streak > 0 && (
-                            <Badge variant="secondary" className="text-xs">
-                              <Trophy className="h-3 w-3 mr-1" />
-                              Max: {habit.streak.max_streak}
-                            </Badge>
-                          )}
-                        </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{habit.icon || '✨'}</span>
+                        <span className="font-medium">{habit.name}</span>
                       </div>
                       <Button
                         variant="ghost"
