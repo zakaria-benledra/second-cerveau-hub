@@ -133,3 +133,32 @@ export function useFunnelSummary(days = 7) {
     financeAdoptionRate: totalActivated > 0 ? (totalFinanceConnected / totalActivated) * 100 : 0,
   };
 }
+
+// Alias for backward compatibility
+export function useProductIntelligence(days = 30) {
+  return useFunnelMetrics(days);
+}
+
+// Get churn risk distribution
+export function useChurnRiskDistribution() {
+  return useQuery({
+    queryKey: ['churn-risk-distribution'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('churn_risk_scores')
+        .select('risk_level');
+
+      if (error) throw error;
+
+      const distribution = { low: 0, medium: 0, high: 0, critical: 0 };
+      data?.forEach(item => {
+        const level = item.risk_level as keyof typeof distribution;
+        if (level in distribution) {
+          distribution[level]++;
+        }
+      });
+
+      return distribution;
+    },
+  });
+}

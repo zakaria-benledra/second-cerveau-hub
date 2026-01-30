@@ -366,3 +366,19 @@ export function useFinanceStatsBI(months: number = 6) {
     isLoading,
   };
 }
+
+// ============================================================
+// Combined BI Stats Hook for Dashboard
+// ============================================================
+export function useBIStats(days: number = 7) {
+  const { data: daily = [], isLoading: dailyLoading } = useDailyStats(days);
+  const { data: weekly = [], isLoading: weeklyLoading } = useWeeklyStats(Math.ceil(days / 7));
+  const { data: monthly = [], isLoading: monthlyLoading } = useMonthlyStats(Math.ceil(days / 30));
+  
+  return {
+    daily,
+    weekly,
+    monthly,
+    isLoading: dailyLoading || weeklyLoading || monthlyLoading,
+  };
+}
