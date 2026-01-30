@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +35,7 @@ const COLORS = [
   'hsl(330 81% 60%)',
 ];
 
-export function FinanceVisualDashboard() {
+function FinanceVisualDashboardInner() {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const { data: snapshots = [] } = useFinanceSnapshots();
   const { data: dailyTrend = [] } = useDailySpendingTrend(60);
@@ -377,3 +378,9 @@ export function FinanceVisualDashboard() {
     </div>
   );
 }
+
+// ForwardRef wrapper for compatibility with Tab content
+export const FinanceVisualDashboard = React.forwardRef<HTMLDivElement, Record<string, never>>(
+  (_props, _ref) => <FinanceVisualDashboardInner />
+);
+FinanceVisualDashboard.displayName = 'FinanceVisualDashboard';

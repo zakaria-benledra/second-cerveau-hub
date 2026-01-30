@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,7 @@ interface FinanceExportModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function FinanceExportModal({ open, onOpenChange }: FinanceExportModalProps) {
+function FinanceExportModalInner({ open, onOpenChange }: FinanceExportModalProps) {
   const [format_, setFormat] = useState<'csv' | 'json'>('csv');
   const [dateRange, setDateRange] = useState('30');
   const [startDate, setStartDate] = useState(format(subMonths(new Date(), 1), 'yyyy-MM-dd'));
@@ -301,3 +302,9 @@ export function FinanceExportModal({ open, onOpenChange }: FinanceExportModalPro
     </Dialog>
   );
 }
+
+// Wrap with forwardRef for compatibility with Dialog parent components
+export const FinanceExportModal = React.forwardRef<HTMLDivElement, FinanceExportModalProps>(
+  (props, _ref) => <FinanceExportModalInner {...props} />
+);
+FinanceExportModal.displayName = 'FinanceExportModal';
