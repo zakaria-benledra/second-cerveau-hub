@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -13,7 +14,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   BarChart3,
-  Zap
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -31,6 +33,8 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
+  
   const { data: todayStats, isLoading: loadingToday } = useQuery({
     queryKey: ['stats', 'today'],
     queryFn: fetchTodayStats,
@@ -81,6 +85,49 @@ export default function DashboardPage() {
     ? Math.round((todayStats.habits_completed / todayStats.habits_total) * 100)
     : 0;
 
+  // Clickable KPI Card component
+  const KPICard = ({ 
+    title, 
+    value, 
+    subtitle, 
+    icon: Icon, 
+    progress, 
+    link,
+    iconBgClass = 'bg-primary/10',
+    iconClass = 'text-primary',
+    valueClass = ''
+  }: {
+    title: string;
+    value: string | number;
+    subtitle: string;
+    icon: React.ElementType;
+    progress: number;
+    link: string;
+    iconBgClass?: string;
+    iconClass?: string;
+    valueClass?: string;
+  }) => (
+    <Card 
+      className="hover-lift cursor-pointer group transition-all hover:ring-2 hover:ring-primary/20"
+      onClick={() => navigate(link)}
+    >
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <div className="flex items-center gap-2">
+          <div className={cn("p-2 rounded-lg", iconBgClass)}>
+            <Icon className={cn("h-4 w-4", iconClass)} />
+          </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className={cn("text-3xl font-bold", valueClass)}>{value}</div>
+        <Progress value={progress} className="mt-3 h-2" />
+        <p className="text-xs text-muted-foreground mt-2">{subtitle}</p>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto space-y-8">
@@ -89,7 +136,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
             <p className="text-muted-foreground mt-1">
-              Vos indicateurs de performance — données issues de Stats uniquement
+              Vos indicateurs de performance — Cliquez pour voir les détails
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -98,67 +145,58 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Today KPIs */}
+        {/* Today KPIs - Now clickable! */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="hover-lift">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Target className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{completionRate}%</div>
-              <Progress value={completionRate} className="mt-3 h-2" />
-              <p className="text-xs text-muted-foreground mt-2">
-                {todayStats?.tasks_completed || 0} / {todayStats?.tasks_planned || 0} tâches
-              </p>
-            </CardContent>
-          </Card>
+          <KPICard
+            title="Completion Rate"
+            value={`${completionRate}%`}
+            subtitle={`${todayStats?.tasks_completed || 0} / ${todayStats?.tasks_planned || 0} tâches`}
+            icon={Target}
+            progress={completionRate}
+            link="/tasks"
+            iconBgClass="bg-primary/10"
+            iconClass="text-primary"
+          />
 
-          <Card className="hover-lift">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Habit Adherence</CardTitle>
-              <div className="p-2 rounded-lg bg-warning/10">
-                <Flame className="h-4 w-4 text-warning" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{habitRate}%</div>
-              <Progress value={habitRate} className="mt-3 h-2" />
-              <p className="text-xs text-muted-foreground mt-2">
-                {todayStats?.habits_completed || 0} / {todayStats?.habits_total || 0} habitudes
-              </p>
-            </CardContent>
-          </Card>
+          <KPICard
+            title="Habit Adherence"
+            value={`${habitRate}%`}
+            subtitle={`${todayStats?.habits_completed || 0} / ${todayStats?.habits_total || 0} habitudes`}
+            icon={Flame}
+            progress={habitRate}
+            link="/habits"
+            iconBgClass="bg-primary/10"
+            iconClass="text-primary"
+          />
 
-          <Card className="hover-lift">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Focus Time</CardTitle>
-              <div className="p-2 rounded-lg bg-info/10">
-                <Clock className="h-4 w-4 text-info" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{todayStats?.focus_minutes || 0} min</div>
-              <Progress value={Math.min(100, ((todayStats?.focus_minutes || 0) / 240) * 100)} className="mt-3 h-2" />
-              <p className="text-xs text-muted-foreground mt-2">
-                Objectif: 4h de focus
-              </p>
-            </CardContent>
-          </Card>
+          <KPICard
+            title="Focus Time"
+            value={`${todayStats?.focus_minutes || 0} min`}
+            subtitle="Objectif: 4h de focus"
+            icon={Clock}
+            progress={Math.min(100, ((todayStats?.focus_minutes || 0) / 240) * 100)}
+            link="/focus"
+            iconBgClass="bg-primary/10"
+            iconClass="text-primary"
+          />
 
-          <Card className="hover-lift">
+          <Card 
+            className="hover-lift cursor-pointer group transition-all hover:ring-2 hover:ring-primary/20"
+            onClick={() => navigate('/tasks')}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Overload Index</CardTitle>
-              <div className={cn(
-                "p-2 rounded-lg",
-                (todayStats?.overload_index || 0) > 1 ? 'bg-destructive/10' : 'bg-success/10'
-              )}>
-                <AlertTriangle className={cn(
-                  "h-4 w-4",
-                  (todayStats?.overload_index || 0) > 1 ? 'text-destructive' : 'text-success'
-                )} />
+              <div className="flex items-center gap-2">
+                <div className={cn(
+                  "p-2 rounded-lg",
+                  (todayStats?.overload_index || 0) > 1 ? 'bg-destructive/10' : 'bg-primary/10'
+                )}>
+                  <AlertTriangle className={cn(
+                    "h-4 w-4",
+                    (todayStats?.overload_index || 0) > 1 ? 'text-destructive' : 'text-primary'
+                  )} />
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </CardHeader>
             <CardContent>
@@ -196,12 +234,12 @@ export default function DashboardPage() {
                     <AreaChart data={chartData}>
                       <defs>
                         <linearGradient id="colorCompletion" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(262, 83%, 58%)" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="hsl(262, 83%, 58%)" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                         </linearGradient>
                         <linearGradient id="colorHabits" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="hsl(175, 70%, 45%)" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="hsl(175, 70%, 45%)" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -218,7 +256,7 @@ export default function DashboardPage() {
                       <Area 
                         type="monotone" 
                         dataKey="completion" 
-                        stroke="hsl(262, 83%, 58%)" 
+                        stroke="hsl(var(--primary))" 
                         fillOpacity={1}
                         fill="url(#colorCompletion)"
                         strokeWidth={2}
@@ -227,7 +265,7 @@ export default function DashboardPage() {
                       <Area 
                         type="monotone" 
                         dataKey="habits" 
-                        stroke="hsl(175, 70%, 45%)" 
+                        stroke="hsl(var(--accent))" 
                         fillOpacity={1}
                         fill="url(#colorHabits)"
                         strokeWidth={2}
@@ -242,7 +280,7 @@ export default function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-info" />
+                  <Clock className="h-5 w-5 text-primary" />
                   Focus Time Trend
                 </CardTitle>
                 <CardDescription>Minutes de focus par jour</CardDescription>
@@ -264,7 +302,7 @@ export default function DashboardPage() {
                       <Line 
                         type="monotone" 
                         dataKey="focus" 
-                        stroke="hsl(199, 89%, 48%)" 
+                        stroke="hsl(var(--primary))" 
                         strokeWidth={2}
                         dot={{ r: 4, strokeWidth: 2 }}
                         name="Focus (min)"
@@ -280,13 +318,17 @@ export default function DashboardPage() {
         {/* Week Summary */}
         {weekAvg && (
           <div className="grid gap-6 md:grid-cols-2">
-            <Card>
+            <Card 
+              className="cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all"
+              onClick={() => navigate('/tasks')}
+            >
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
                   Tendances Semaine
+                  <ArrowRight className="h-4 w-4 text-muted-foreground ml-auto" />
                 </CardTitle>
-                <CardDescription>Moyennes sur 7 jours</CardDescription>
+                <CardDescription>Moyennes sur 7 jours — Cliquez pour les tâches</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
@@ -316,19 +358,19 @@ export default function DashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-accent" />
+                  <Zap className="h-5 w-5 text-primary" />
                   Clarity Score
                 </CardTitle>
                 <CardDescription>Qualité de planification</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="text-5xl font-bold text-gradient">
+                  <div className="text-5xl font-bold text-primary">
                     {((todayStats?.clarity_score || 0) * 100).toFixed(0)}%
                   </div>
                   <CheckCircle2 className={cn(
                     "h-8 w-8",
-                    (todayStats?.clarity_score || 0) >= 0.8 ? "text-success" : "text-muted-foreground"
+                    (todayStats?.clarity_score || 0) >= 0.8 ? "text-primary" : "text-muted-foreground"
                   )} />
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
