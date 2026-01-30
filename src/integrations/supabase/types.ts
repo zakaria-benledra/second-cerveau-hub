@@ -646,6 +646,7 @@ export type Database = {
         Row: {
           access_token: string
           created_at: string
+          encryption_version: number | null
           expires_at: string | null
           id: string
           metadata: Json | null
@@ -654,6 +655,7 @@ export type Database = {
           refresh_token: string | null
           refresh_token_encrypted: string | null
           scopes: string[] | null
+          token_migrated_at: string | null
           updated_at: string
           user_id: string
           workspace_id: string | null
@@ -661,6 +663,7 @@ export type Database = {
         Insert: {
           access_token: string
           created_at?: string
+          encryption_version?: number | null
           expires_at?: string | null
           id?: string
           metadata?: Json | null
@@ -669,6 +672,7 @@ export type Database = {
           refresh_token?: string | null
           refresh_token_encrypted?: string | null
           scopes?: string[] | null
+          token_migrated_at?: string | null
           updated_at?: string
           user_id: string
           workspace_id?: string | null
@@ -676,6 +680,7 @@ export type Database = {
         Update: {
           access_token?: string
           created_at?: string
+          encryption_version?: number | null
           expires_at?: string | null
           id?: string
           metadata?: Json | null
@@ -684,6 +689,7 @@ export type Database = {
           refresh_token?: string | null
           refresh_token_encrypted?: string | null
           scopes?: string[] | null
+          token_migrated_at?: string | null
           updated_at?: string
           user_id?: string
           workspace_id?: string | null

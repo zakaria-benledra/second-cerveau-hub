@@ -113,9 +113,6 @@ export async function getUserWorkspaceId(
   }
 }
 
-// Re-export idempotency functions from dedicated module
-export { 
-  generateIdempotencyKey, 
-  isEventProcessed, 
-  stableStringify 
-} from './idempotency.ts';
+// NOTE: Do NOT re-export from idempotency.ts here.
+// Each edge function should import directly from the module it needs.
+// This prevents circular dependencies and makes dependencies explicit.
