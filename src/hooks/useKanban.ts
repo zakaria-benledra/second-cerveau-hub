@@ -15,6 +15,7 @@ export interface KanbanTask {
   estimate_min?: number;
   energy_level?: string;
   project_id?: string;
+  goal_id?: string;
   created_at: string;
 }
 
