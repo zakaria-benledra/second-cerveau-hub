@@ -357,7 +357,7 @@ export default function HabitsPage() {
                 <Card
                   key={habit.id}
                   className={cn(
-                    "glass-hover cursor-pointer transition-all",
+                    "group glass-hover cursor-pointer transition-all",
                     "hover:border-primary/30 hover:-translate-y-0.5"
                   )}
                   onClick={() => toggleHabit.mutate(habit.id)}

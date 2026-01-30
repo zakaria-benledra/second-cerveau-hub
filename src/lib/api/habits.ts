@@ -116,12 +116,14 @@ export async function toggleHabitLog(habitId: string): Promise<HabitLog> {
   const today = new Date().toISOString().split('T')[0];
 
   // Check if log exists
-  const { data: existingLog } = await supabase
+  const { data: existingLog, error: existingLogError } = await supabase
     .from('habit_logs')
     .select('*')
     .eq('habit_id', habitId)
     .eq('date', today)
-    .single();
+    .maybeSingle();
+
+  if (existingLogError) throw existingLogError;
 
   if (existingLog) {
     // Toggle existing log
@@ -165,11 +167,13 @@ async function updateStreak(habitId: string, userId: string, completed: boolean)
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
-  const { data: streak } = await supabase
+  const { data: streak, error: streakError } = await supabase
     .from('streaks')
     .select('*')
     .eq('habit_id', habitId)
-    .single();
+    .maybeSingle();
+
+  if (streakError) throw streakError;
 
   if (!streak) {
     // Create streak if doesn't exist
@@ -214,7 +218,7 @@ async function updateStreak(habitId: string, userId: string, completed: boolean)
         .eq('habit_id', habitId)
         .eq('date', yesterday)
         .eq('completed', true)
-        .single();
+        .maybeSingle();
 
       await supabase
         .from('streaks')

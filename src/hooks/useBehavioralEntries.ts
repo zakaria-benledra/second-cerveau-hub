@@ -52,37 +52,58 @@ export function useSaveBehavioralEntry() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Upsert to journal_entries
-      const { data, error } = await supabase
+      // Avoid relying on DB unique constraints (onConflict) that may not exist.
+      const { data: existing, error: existingError } = await supabase
         .from('journal_entries')
-        .upsert({
-          user_id: user.id,
-          date: today,
-          gratitude: input.gratitude,
-          wins: input.wins,
-          challenges: input.challenges,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id,date',
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+
+      const payload = {
+        user_id: user.id,
+        date: today,
+        gratitude: input.gratitude,
+        wins: input.wins,
+        challenges: input.challenges,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data, error } = existing?.id
+        ? await supabase
+            .from('journal_entries')
+            .update(payload)
+            .eq('id', existing.id)
+            .select()
+            .single()
+        : await supabase
+            .from('journal_entries')
+            .insert(payload)
+            .select()
+            .single();
 
       if (error) throw error;
 
-      // Track behavioral entry as habit behavior link
-      await supabase.from('habit_behavior_links').upsert({
-        user_id: user.id,
-        behavior_type: 'daily_checkin',
-        metadata: {
-          date: today,
-          gratitude_count: input.gratitude.length,
-          wins_count: input.wins.length,
-          challenges_count: input.challenges.length,
-        }
-      }, {
-        onConflict: 'user_id,behavior_type'
-      });
+      // Track behavioral entry as habit behavior link (best-effort; do not block save if it fails)
+      const { error: linkError } = await supabase
+        .from('habit_behavior_links')
+        .insert({
+          user_id: user.id,
+          behavior_type: 'daily_checkin',
+          metadata: {
+            date: today,
+            gratitude_count: input.gratitude.length,
+            wins_count: input.wins.length,
+            challenges_count: input.challenges.length,
+          },
+        });
+
+      if (linkError) {
+        // Non-blocking, but visible in console for debugging
+        console.warn('[behavior] habit_behavior_links insert failed', linkError);
+      }
 
       return data;
     },
