@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useCategories, useCreateTransaction } from '@/hooks/useFinance';
+import { useCategories } from '@/hooks/useFinance';
+import { useUploadStatement } from '@/hooks/useDocuments';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { 
   Upload, 
@@ -23,7 +25,8 @@ import {
   TableIcon,
   Eye,
   CheckCircle2,
-  XCircle
+  XCircle,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -55,107 +58,128 @@ const STEPS: WizardStep[] = [
   { id: 4, title: 'Confirmation', description: 'Validez l\'import', icon: <Check className="h-5 w-5" /> },
 ];
 
-export function FinanceImportWizard({ onComplete }: { onComplete?: () => void }) {
+interface FinanceImportWizardProps {
+  onComplete?: () => void;
+  onCancel?: () => void;
+}
+
+export function FinanceImportWizard({ onComplete, onCancel }: FinanceImportWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [file, setFile] = useState<File | null>(null);
+  const [documentId, setDocumentId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactions, setTransactions] = useState<ParsedTransaction[]>([]);
   const [importProgress, setImportProgress] = useState(0);
+  const [parseError, setParseError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { data: categories = [] } = useCategories();
-  const createTransaction = useCreateTransaction();
+  const uploadStatement = useUploadStatement();
 
-  // Simulate file parsing (in production, this would call an edge function)
-  const parseFile = useCallback(async (uploadedFile: File) => {
+  // Real file upload and parsing via edge function
+  const uploadAndParseFile = useCallback(async (uploadedFile: File) => {
     setIsProcessing(true);
+    setParseError(null);
     
-    // Simulate parsing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // For demo, generate sample parsed transactions
-    const mockTransactions: ParsedTransaction[] = [
-      {
-        id: '1',
-        date: new Date().toISOString().split('T')[0],
-        description: 'CARREFOUR MARKET',
-        amount: 45.67,
-        type: 'expense',
-        category_id: null,
-        suggestedCategory: 'Alimentation',
-        isAnomaly: false,
+    try {
+      // Check file type
+      const isPDF = uploadedFile.name.toLowerCase().endsWith('.pdf');
+      const isCSV = uploadedFile.name.toLowerCase().endsWith('.csv');
+      
+      if (!isPDF && !isCSV) {
+        throw new Error('Format non supporté. Utilisez CSV ou PDF.');
+      }
+      
+      // Upload to Supabase storage first
+      const result = await uploadStatement.mutateAsync({
+        file: uploadedFile,
+        accountLabel: undefined,
+        dateFrom: undefined,
+        dateTo: undefined,
+      });
+      
+      if (!result?.document?.id) {
+        throw new Error('Upload failed - no document ID returned');
+      }
+      
+      setDocumentId(result.document.id);
+      
+      // Call the appropriate parsing edge function
+      const parseFunction = isPDF ? 'parse-statement-pdf' : 'parse-statement-csv';
+      
+      const { data: parseResult, error: parseError } = await supabase.functions.invoke(parseFunction, {
+        body: { documentId: result.document.id }
+      });
+      
+      if (parseError) throw parseError;
+      
+      // If PDF requires manual entry
+      if (parseResult?.requires_manual_entry) {
+        setParseError('Les fichiers PDF nécessitent une saisie manuelle. Veuillez exporter votre relevé en CSV.');
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Fetch parsed transactions from DB
+      const { data: parsedTxns, error: fetchError } = await supabase
+        .from('finance_transactions')
+        .select('*, finance_categories(name)')
+        .eq('document_id', result.document.id)
+        .order('date', { ascending: false });
+      
+      if (fetchError) throw fetchError;
+      
+      // Transform to wizard format
+      const wizardTransactions: ParsedTransaction[] = (parsedTxns || []).map((t, idx) => ({
+        id: t.id,
+        date: t.date,
+        description: t.description || `Transaction ${idx + 1}`,
+        amount: Number(t.amount),
+        type: t.type as 'income' | 'expense',
+        category_id: t.category_id,
+        suggestedCategory: (t.finance_categories as any)?.name || null,
+        isAnomaly: Number(t.amount) > 500, // Flag high amounts
+        anomalyReason: Number(t.amount) > 500 ? 'Montant élevé' : undefined,
         selected: true,
-      },
-      {
-        id: '2',
-        date: new Date().toISOString().split('T')[0],
-        description: 'VIREMENT SALAIRE',
-        amount: 2500.00,
-        type: 'income',
-        category_id: null,
-        suggestedCategory: 'Salaire',
-        isAnomaly: false,
-        selected: true,
-      },
-      {
-        id: '3',
-        date: new Date().toISOString().split('T')[0],
-        description: 'AMAZON EU SARL',
-        amount: 299.99,
-        type: 'expense',
-        category_id: null,
-        suggestedCategory: 'Shopping',
-        isAnomaly: true,
-        anomalyReason: 'Montant inhabituellement élevé',
-        selected: true,
-      },
-      {
-        id: '4',
-        date: new Date().toISOString().split('T')[0],
-        description: 'UBER *EATS',
-        amount: 23.50,
-        type: 'expense',
-        category_id: null,
-        suggestedCategory: 'Restaurant',
-        isAnomaly: false,
-        selected: true,
-      },
-      {
-        id: '5',
-        date: new Date().toISOString().split('T')[0],
-        description: 'EDF',
-        amount: 85.00,
-        type: 'expense',
-        category_id: null,
-        suggestedCategory: 'Factures',
-        isAnomaly: false,
-        selected: true,
-      },
-    ];
-    
-    setTransactions(mockTransactions);
-    setIsProcessing(false);
-    setCurrentStep(2);
-  }, []);
+      }));
+      
+      if (wizardTransactions.length === 0) {
+        setParseError('Aucune transaction trouvée dans le fichier.');
+        setIsProcessing(false);
+        return;
+      }
+      
+      setTransactions(wizardTransactions);
+      setIsProcessing(false);
+      setCurrentStep(2);
+      
+      toast.success(`${wizardTransactions.length} transactions importées !`);
+      
+    } catch (err) {
+      console.error('Upload/parse error:', err);
+      setParseError((err as Error).message || 'Erreur lors du traitement du fichier');
+      setIsProcessing(false);
+    }
+  }, [uploadStatement]);
 
   const handleFileDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile && (droppedFile.name.endsWith('.csv') || droppedFile.name.endsWith('.pdf'))) {
       setFile(droppedFile);
-      parseFile(droppedFile);
+      uploadAndParseFile(droppedFile);
     } else {
       toast.error('Format non supporté. Utilisez CSV ou PDF.');
     }
-  }, [parseFile]);
+  }, [uploadAndParseFile]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      parseFile(selectedFile);
+      uploadAndParseFile(selectedFile);
     }
-  }, [parseFile]);
+  }, [uploadAndParseFile]);
 
   const toggleTransaction = (id: string) => {
     setTransactions(prev => 
@@ -163,42 +187,51 @@ export function FinanceImportWizard({ onComplete }: { onComplete?: () => void })
     );
   };
 
-  const updateCategory = (id: string, categoryId: string) => {
+  const updateCategory = async (id: string, categoryId: string) => {
+    // Update local state
     setTransactions(prev =>
       prev.map(t => t.id === id ? { ...t, category_id: categoryId } : t)
     );
+    
+    // Update in database
+    await supabase
+      .from('finance_transactions')
+      .update({ category_id: categoryId })
+      .eq('id', id);
   };
 
-  const handleImport = async () => {
-    const selectedTransactions = transactions.filter(t => t.selected);
-    setIsProcessing(true);
-    
-    for (let i = 0; i < selectedTransactions.length; i++) {
-      const t = selectedTransactions[i];
-      try {
-        await createTransaction.mutateAsync({
-          amount: t.amount,
-          description: t.description,
-          category_id: t.category_id,
-          type: t.type,
-          date: t.date,
-        });
-        setImportProgress(((i + 1) / selectedTransactions.length) * 100);
-      } catch (error) {
-        console.error('Failed to import transaction:', error);
-      }
-    }
-    
-    setIsProcessing(false);
-    toast.success(`${selectedTransactions.length} transactions importées !`);
+  const handleComplete = () => {
+    toast.success('Import terminé avec succès !');
     onComplete?.();
+  };
+
+  const handleCancel = () => {
+    // Reset state
+    setCurrentStep(1);
+    setFile(null);
+    setDocumentId(null);
+    setTransactions([]);
+    setParseError(null);
+    setImportProgress(0);
+    onCancel?.();
   };
 
   const selectedCount = transactions.filter(t => t.selected).length;
   const anomalyCount = transactions.filter(t => t.isAnomaly).length;
+  const totalAmount = transactions.filter(t => t.selected).reduce((sum, t) => 
+    t.type === 'income' ? sum + t.amount : sum - t.amount, 0
+  );
 
   return (
     <div className="space-y-6">
+      {/* Cancel Button - Always visible */}
+      <div className="flex justify-end">
+        <Button variant="ghost" size="sm" onClick={handleCancel} className="gap-2">
+          <X className="h-4 w-4" />
+          Annuler
+        </Button>
+      </div>
+
       {/* Stepper */}
       <div className="flex items-center justify-center gap-2">
         {STEPS.map((step, index) => (
@@ -234,7 +267,7 @@ export function FinanceImportWizard({ onComplete }: { onComplete?: () => void })
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Importer un relevé bancaire</CardTitle>
               <CardDescription>
-                Glissez-déposez votre fichier CSV ou PDF pour analyser vos transactions
+                Glissez-déposez votre fichier CSV pour analyser vos transactions
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -251,7 +284,7 @@ export function FinanceImportWizard({ onComplete }: { onComplete?: () => void })
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv,.pdf"
+                  accept=".csv"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
@@ -260,6 +293,9 @@ export function FinanceImportWizard({ onComplete }: { onComplete?: () => void })
                   <div className="space-y-4">
                     <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
                     <p className="text-muted-foreground">Analyse en cours...</p>
+                    <p className="text-xs text-muted-foreground">
+                      Upload, parsing et catégorisation automatique
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -271,12 +307,25 @@ export function FinanceImportWizard({ onComplete }: { onComplete?: () => void })
                       <p className="text-sm text-muted-foreground">ou cliquez pour parcourir</p>
                     </div>
                     <div className="flex items-center justify-center gap-2">
-                      <Badge variant="outline">CSV</Badge>
-                      <Badge variant="outline">PDF</Badge>
+                      <Badge variant="default">CSV</Badge>
+                      <Badge variant="outline" className="text-muted-foreground">PDF (bientôt)</Badge>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Les transactions seront automatiquement catégorisées
+                    </p>
                   </div>
                 )}
               </div>
+
+              {parseError && (
+                <div className="mt-4 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <div className="flex items-center gap-2 text-destructive">
+                    <XCircle className="h-5 w-5" />
+                    <span className="font-medium">Erreur</span>
+                  </div>
+                  <p className="text-sm text-destructive/80 mt-1">{parseError}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </AnimatedContainer>
@@ -294,8 +343,9 @@ export function FinanceImportWizard({ onComplete }: { onComplete?: () => void })
                     Aperçu des transactions
                   </CardTitle>
                   <CardDescription>
-                    {transactions.length} transactions détectées • {anomalyCount > 0 && (
-                      <span className="text-warning">{anomalyCount} anomalies</span>
+                    {transactions.length} transactions importées
+                    {anomalyCount > 0 && (
+                      <span className="text-warning ml-2">• {anomalyCount} anomalies</span>
                     )}
                   </CardDescription>
                 </div>
@@ -306,7 +356,7 @@ export function FinanceImportWizard({ onComplete }: { onComplete?: () => void })
               </div>
             </CardHeader>
             <CardContent>
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-hidden max-h-[400px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
@@ -389,14 +439,14 @@ export function FinanceImportWizard({ onComplete }: { onComplete?: () => void })
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" />
-                Assignation des catégories
+                Vérifier les catégories
               </CardTitle>
               <CardDescription>
-                Vérifiez et ajustez les catégories suggérées par l'IA
+                Les catégories ont été assignées automatiquement. Ajustez si nécessaire.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
                 {transactions.filter(t => t.selected).map((t) => (
                   <div 
                     key={t.id}
@@ -456,79 +506,47 @@ export function FinanceImportWizard({ onComplete }: { onComplete?: () => void })
         <AnimatedContainer animation="fade-up">
           <Card className="glass-strong">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Confirmer l'import</CardTitle>
+              <CardTitle className="text-2xl">Import terminé !</CardTitle>
               <CardDescription>
-                Vérifiez le résumé avant de valider
+                Vos transactions ont été importées avec succès
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3 mb-6">
                 <Card className="bg-muted/50">
-                  <CardContent className="pt-6 text-center">
+                  <CardContent className="p-4 text-center">
                     <p className="text-3xl font-bold text-primary">{selectedCount}</p>
                     <p className="text-sm text-muted-foreground">Transactions</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-success/10">
-                  <CardContent className="pt-6 text-center">
-                    <p className="text-3xl font-bold text-success">
-                      +{transactions.filter(t => t.selected && t.type === 'income').reduce((sum, t) => sum + t.amount, 0).toFixed(0)} €
+                <Card className="bg-muted/50">
+                  <CardContent className="p-4 text-center">
+                    <p className={cn(
+                      "text-3xl font-bold",
+                      totalAmount >= 0 ? 'text-success' : 'text-destructive'
+                    )}>
+                      {totalAmount >= 0 ? '+' : ''}{totalAmount.toFixed(0)} €
                     </p>
-                    <p className="text-sm text-muted-foreground">Revenus</p>
+                    <p className="text-sm text-muted-foreground">Solde net</p>
                   </CardContent>
                 </Card>
-                <Card className="bg-destructive/10">
-                  <CardContent className="pt-6 text-center">
-                    <p className="text-3xl font-bold text-destructive">
-                      -{transactions.filter(t => t.selected && t.type === 'expense').reduce((sum, t) => sum + t.amount, 0).toFixed(0)} €
-                    </p>
-                    <p className="text-sm text-muted-foreground">Dépenses</p>
+                <Card className="bg-muted/50">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-warning">{anomalyCount}</p>
+                    <p className="text-sm text-muted-foreground">Anomalies</p>
                   </CardContent>
                 </Card>
               </div>
 
-              {anomalyCount > 0 && (
-                <div className="p-4 rounded-lg bg-warning/10 border border-warning/30 mb-6">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-warning" />
-                    <span className="font-medium">{anomalyCount} anomalie(s) détectée(s)</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Ces transactions seront marquées pour revue
-                  </p>
-                </div>
-              )}
-
-              {isProcessing && (
-                <div className="space-y-2 mb-6">
-                  <Progress value={importProgress} className="h-2" />
-                  <p className="text-sm text-center text-muted-foreground">
-                    Import en cours... {Math.round(importProgress)}%
-                  </p>
-                </div>
-              )}
+              <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-success/10 border border-success/20">
+                <CheckCircle2 className="h-6 w-6 text-success" />
+                <span className="font-medium text-success">Transactions enregistrées dans votre base de données</span>
+              </div>
               
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setCurrentStep(3)} disabled={isProcessing}>
-                  <ChevronLeft className="h-4 w-4 mr-2" />
-                  Retour
-                </Button>
-                <Button 
-                  onClick={handleImport} 
-                  className="gradient-primary"
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Import en cours...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-4 w-4 mr-2" />
-                      Valider l'import
-                    </>
-                  )}
+              <div className="flex justify-center mt-6">
+                <Button onClick={handleComplete} className="gradient-primary px-8">
+                  <Check className="h-4 w-4 mr-2" />
+                  Terminer
                 </Button>
               </div>
             </CardContent>

@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAppStore } from '@/stores/useAppStore';
@@ -9,24 +8,13 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-// Routes where sidebar should auto-collapse
-const AUTO_COLLAPSE_ROUTES = ['/focus', '/ai-coach'];
-
 export function AppLayout({ children }: AppLayoutProps) {
   const { sidebarOpen, setSidebarOpen } = useAppStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const location = useLocation();
-
-  // Auto-collapse sidebar on Focus/AI Coach modes
-  useEffect(() => {
-    if (AUTO_COLLAPSE_ROUTES.includes(location.pathname) && sidebarOpen) {
-      setSidebarOpen(false);
-    }
-  }, [location.pathname, sidebarOpen, setSidebarOpen]);
 
   return (
     <div className="min-h-screen bg-background gradient-mesh">
-      {/* Desktop Sidebar */}
+      {/* Desktop Sidebar - Fixed, stable, never auto-collapses */}
       <aside
         className={cn(
           'fixed left-0 top-0 z-40 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-smooth',
@@ -45,7 +33,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         />
       )}
 
-      {/* Mobile Sidebar */}
+      {/* Mobile Sidebar Drawer */}
       <aside
         className={cn(
           'fixed left-0 top-0 z-50 h-screen w-72 bg-sidebar border-r border-sidebar-border transition-transform duration-300 ease-smooth md:hidden',
@@ -55,15 +43,15 @@ export function AppLayout({ children }: AppLayoutProps) {
         <Sidebar collapsed={false} onToggle={() => setMobileMenuOpen(false)} />
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content - Proper margin based on sidebar state */}
       <div
         className={cn(
-          'min-h-screen transition-all duration-300 ease-smooth',
+          'min-h-screen transition-all duration-300 ease-smooth flex flex-col',
           sidebarOpen ? 'md:ml-64' : 'md:ml-[72px]'
         )}
       >
         <Header onMenuClick={() => setMobileMenuOpen(true)} />
-        <main className="p-4 md:p-6 lg:p-8">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden">
           <div className="animate-fade-in">
             {children}
           </div>
