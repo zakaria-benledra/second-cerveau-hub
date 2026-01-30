@@ -323,6 +323,45 @@ export type Database = {
           },
         ]
       }
+      automation_templates: {
+        Row: {
+          action_payload: Json
+          action_type: string
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          priority: number | null
+          trigger_conditions: Json
+          trigger_event: string
+        }
+        Insert: {
+          action_payload?: Json
+          action_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          priority?: number | null
+          trigger_conditions?: Json
+          trigger_event: string
+        }
+        Update: {
+          action_payload?: Json
+          action_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          priority?: number | null
+          trigger_conditions?: Json
+          trigger_event?: string
+        }
+        Relationships: []
+      }
       budgets: {
         Row: {
           category_id: string | null
@@ -2169,6 +2208,8 @@ export type Database = {
         Args: { _feature: string; _user_id: string }
         Returns: boolean
       }
+      delete_user_data: { Args: { target_user_id: string }; Returns: boolean }
+      export_user_data: { Args: { target_user_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
