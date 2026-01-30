@@ -2,28 +2,9 @@ import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   useAllTasks, 
   useCreateTask, 
@@ -31,8 +12,9 @@ import {
   useDeleteTask,
   useUpdateTask 
 } from '@/hooks/useTasks';
-import { Plus, Clock, Loader2, Trash2, CheckCircle2, Circle, PlayCircle, ListTodo } from 'lucide-react';
-import type { CreateTaskInput } from '@/lib/api/tasks';
+import { TaskDialog } from '@/components/tasks/TaskDialog';
+import { Plus, Clock, Loader2, Trash2, CheckCircle2, Circle, PlayCircle, ListTodo, Pencil } from 'lucide-react';
+import type { Task, CreateTaskInput, UpdateTaskInput } from '@/lib/api/tasks';
 import { cn } from '@/lib/utils';
 
 const priorityColors: Record<string, string> = {
@@ -56,19 +38,25 @@ export default function TasksPage() {
   const deleteTask = useDeleteTask();
   const updateTask = useUpdateTask();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newTask, setNewTask] = useState<CreateTaskInput>({
-    title: '',
-    description: '',
-    priority: 'medium',
-  });
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const handleCreateTask = async () => {
-    if (!newTask.title.trim()) return;
-    
-    await createTask.mutateAsync(newTask);
-    setNewTask({ title: '', description: '', priority: 'medium' });
-    setIsDialogOpen(false);
+  const handleCreateTask = async (data: CreateTaskInput | UpdateTaskInput) => {
+    await createTask.mutateAsync(data as CreateTaskInput);
+    setIsCreateDialogOpen(false);
+  };
+
+  const handleUpdateTask = async (data: CreateTaskInput | UpdateTaskInput) => {
+    if (!selectedTask) return;
+    await updateTask.mutateAsync({ id: selectedTask.id, input: data as UpdateTaskInput });
+    setIsEditDialogOpen(false);
+    setSelectedTask(null);
+  };
+
+  const openEditDialog = (task: Task) => {
+    setSelectedTask(task);
+    setIsEditDialogOpen(true);
   };
 
   const todoTasks = tasks?.filter(t => t.status === 'todo') || [];
@@ -85,19 +73,24 @@ export default function TasksPage() {
     );
   }
 
-  const TaskCard = ({ task }: { task: NonNullable<typeof tasks>[0] }) => (
-    <div className="flex items-start gap-3 p-4 rounded-xl border hover:bg-muted/50 transition-all group hover-lift">
-      <Checkbox
-        checked={task.status === 'done'}
-        onCheckedChange={() => {
-          if (task.status === 'done') {
-            updateTask.mutate({ id: task.id, input: { status: 'todo' } });
-          } else {
-            completeTask.mutate(task.id);
-          }
-        }}
-        className="mt-1 rounded-md"
-      />
+  const TaskCard = ({ task }: { task: Task }) => (
+    <div 
+      className="flex items-start gap-3 p-4 rounded-xl border hover:bg-muted/50 transition-all group hover-lift cursor-pointer"
+      onClick={() => openEditDialog(task)}
+    >
+      <div onClick={(e) => e.stopPropagation()}>
+        <Checkbox
+          checked={task.status === 'done'}
+          onCheckedChange={() => {
+            if (task.status === 'done') {
+              updateTask.mutate({ id: task.id, input: { status: 'todo' } });
+            } else {
+              completeTask.mutate(task.id);
+            }
+          }}
+          className="mt-1 rounded-md"
+        />
+      </div>
       <div className="flex-1 min-w-0">
         <p className={cn(
           "font-medium",
@@ -115,7 +108,7 @@ export default function TasksPage() {
             {task.priority}
           </Badge>
           {task.estimate_min && (
-            <Badge variant="muted">
+            <Badge variant="secondary">
               <Clock className="h-3 w-3 mr-1" />
               {task.estimate_min} min
             </Badge>
@@ -125,16 +118,37 @@ export default function TasksPage() {
               {new Date(task.due_date).toLocaleDateString('fr-FR')}
             </Badge>
           )}
+          {task.energy_level && (
+            <Badge variant="secondary">
+              {task.energy_level === 'high' ? '🚀' : task.energy_level === 'medium' ? '⚡' : '🔋'}
+            </Badge>
+          )}
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        className="opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={() => deleteTask.mutate(task.id)}
-      >
-        <Trash2 className="h-4 w-4 text-destructive" />
-      </Button>
+      <div className="flex gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation();
+            openEditDialog(task);
+          }}
+        >
+          <Pencil className="h-4 w-4 text-muted-foreground" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+          onClick={(e) => {
+            e.stopPropagation();
+            deleteTask.mutate(task.id);
+          }}
+        >
+          <Trash2 className="h-4 w-4 text-destructive" />
+        </Button>
+      </div>
     </div>
   );
 
@@ -150,92 +164,10 @@ export default function TasksPage() {
             </p>
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="gradient">
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvelle tâche
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Créer une tâche</DialogTitle>
-                <DialogDescription>
-                  Ajoutez une nouvelle tâche à votre liste
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Titre</Label>
-                  <Input
-                    id="title"
-                    value={newTask.title}
-                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    placeholder="Ex: Finir le rapport trimestriel"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={newTask.description || ''}
-                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    placeholder="Détails optionnels..."
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="priority">Priorité</Label>
-                    <Select
-                      value={newTask.priority}
-                      onValueChange={(v) => setNewTask({ ...newTask, priority: v as CreateTaskInput['priority'] })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Basse</SelectItem>
-                        <SelectItem value="medium">Moyenne</SelectItem>
-                        <SelectItem value="high">Haute</SelectItem>
-                        <SelectItem value="urgent">Urgente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="estimate">Estimation (min)</Label>
-                    <Input
-                      id="estimate"
-                      type="number"
-                      value={newTask.estimate_min || ''}
-                      onChange={(e) => setNewTask({ ...newTask, estimate_min: parseInt(e.target.value) || undefined })}
-                      placeholder="30"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="dueDate">Échéance</Label>
-                  <Input
-                    id="dueDate"
-                    type="date"
-                    value={newTask.due_date || ''}
-                    onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value || undefined })}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Annuler
-                </Button>
-                <Button 
-                  onClick={handleCreateTask} 
-                  disabled={createTask.isPending || !newTask.title.trim()}
-                >
-                  {createTask.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Créer
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button variant="gradient" onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle tâche
+          </Button>
         </div>
 
         {/* Stats */}
@@ -253,8 +185,8 @@ export default function TasksPage() {
           </Card>
           <Card className="hover-lift">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-info/10">
-                <PlayCircle className="h-5 w-5 text-info" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <PlayCircle className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{inProgressTasks.length}</p>
@@ -264,8 +196,8 @@ export default function TasksPage() {
           </Card>
           <Card className="hover-lift">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10">
-                <CheckCircle2 className="h-5 w-5 text-success" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{doneTasks.length}</p>
@@ -297,7 +229,7 @@ export default function TasksPage() {
               <CardHeader>
                 <CardTitle>{statusLabels.todo}</CardTitle>
                 <CardDescription>
-                  Tâches en attente d'exécution
+                  Tâches en attente d'exécution - Cliquez pour modifier
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -319,7 +251,7 @@ export default function TasksPage() {
               <CardHeader>
                 <CardTitle>{statusLabels.in_progress}</CardTitle>
                 <CardDescription>
-                  Tâches actuellement en cours
+                  Tâches actuellement en cours - Cliquez pour modifier
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -341,7 +273,7 @@ export default function TasksPage() {
               <CardHeader>
                 <CardTitle>{statusLabels.done}</CardTitle>
                 <CardDescription>
-                  Tâches terminées
+                  Tâches terminées - Cliquez pour voir les détails
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -363,6 +295,28 @@ export default function TasksPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Create Dialog */}
+        <TaskDialog
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+          mode="create"
+          onSave={handleCreateTask}
+          isPending={createTask.isPending}
+        />
+
+        {/* Edit Dialog */}
+        <TaskDialog
+          open={isEditDialogOpen}
+          onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) setSelectedTask(null);
+          }}
+          mode="edit"
+          task={selectedTask}
+          onSave={handleUpdateTask}
+          isPending={updateTask.isPending}
+        />
       </div>
     </AppLayout>
   );
