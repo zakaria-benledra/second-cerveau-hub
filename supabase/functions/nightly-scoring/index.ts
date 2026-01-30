@@ -245,6 +245,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  let jobRunId: string | null = null;
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -253,6 +256,20 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const date = body.date || new Date().toISOString().split("T")[0];
     const specificUserId = body.user_id;
+
+    // Create job run record
+    const { data: jobRun } = await supabase
+      .from('job_runs')
+      .insert({
+        job_name: 'nightly-scoring',
+        status: 'running',
+        started_at: new Date().toISOString(),
+        metadata: { date, user_id: specificUserId || 'all' },
+      })
+      .select()
+      .single();
+    
+    jobRunId = jobRun?.id;
 
     let users: { id: string }[] = [];
 
@@ -290,9 +307,21 @@ serve(async (req) => {
     const successful = results.filter(r => r.success).length;
     const failed = results.filter(r => !r.success).length;
 
+    // Update job run
+    if (jobRunId) {
+      await supabase.from('job_runs').update({
+        status: failed === 0 ? 'completed' : 'partial',
+        completed_at: new Date().toISOString(),
+        duration_ms: Date.now() - startTime,
+        records_processed: successful,
+        records_failed: failed,
+        metadata: { date, users_processed: successful }
+      }).eq('id', jobRunId);
+    }
+
     // Log job completion
     await supabase.from("system_health").upsert({
-      service: "nightly_scoring",
+      service: "nightly-scoring",
       status: failed === 0 ? "healthy" : "degraded",
       message: `Processed ${successful}/${users.length} users. ${failed} failures.`,
       last_check: new Date().toISOString()
@@ -312,6 +341,21 @@ serve(async (req) => {
   } catch (error) {
     console.error("Nightly scoring error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
+    
+    // Update job run with error
+    if (jobRunId) {
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await supabase.from('job_runs').update({
+        status: 'failed',
+        completed_at: new Date().toISOString(),
+        duration_ms: Date.now() - startTime,
+        error_message: message
+      }).eq('id', jobRunId);
+    }
+    
     return new Response(JSON.stringify({ success: false, error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
