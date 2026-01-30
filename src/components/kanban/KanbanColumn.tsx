@@ -103,7 +103,9 @@ export function KanbanColumn({
         'flex flex-col rounded-2xl border transition-all duration-300',
         'bg-gradient-to-b from-card/50 to-card/30 backdrop-blur-sm',
         accentColor,
-        isDropTarget && 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02]',
+        // ISSUE #11 FIX: Enhanced drop target visual
+        isDropTarget && 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02] bg-primary/5',
+        isDropTarget && 'border-primary border-dashed',
         isDropTarget && glowColor,
         isOverWipLimit && 'border-destructive/50 bg-destructive/5'
       )}

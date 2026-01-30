@@ -126,6 +126,19 @@ async function processEvent(
   eventType: string,
   eventPayload: any
 ): Promise<{ matched: number; executed: number; results: any[] }> {
+  // BUG #6 FIX: Check automation depth to prevent infinite loops
+  const MAX_AUTOMATION_DEPTH = 3;
+  const currentDepth = eventPayload.__automation_depth || 0;
+  
+  if (currentDepth >= MAX_AUTOMATION_DEPTH) {
+    console.warn(`Automation depth limit (${MAX_AUTOMATION_DEPTH}) reached for user ${userId}`);
+    return {
+      matched: 0,
+      executed: 0,
+      results: [{ skipped: true, reason: 'max_depth_reached' }]
+    };
+  }
+
   // Find matching rules
   const { data: rules, error: rulesError } = await supabase
     .from("automation_rules")
@@ -162,15 +175,15 @@ async function processEvent(
       rule.action_payload
     );
 
-    // Log automation event
+    // Log automation event with depth tracking
     await supabase.from("automation_events").insert({
       user_id: userId,
       rule_id: rule.id,
       event_type: eventType,
       entity: eventPayload.entity || null,
       entity_id: eventPayload.entity_id || null,
-      payload: eventPayload,
-      result: actionResult,
+      payload: { ...eventPayload, __automation_depth: currentDepth },
+      result: { ...actionResult, depth: currentDepth },
       status: actionResult.success ? "success" : "failed",
       processed_at: new Date().toISOString()
     });
@@ -183,6 +196,13 @@ async function processEvent(
         last_triggered_at: new Date().toISOString()
       })
       .eq("id", rule.id);
+
+    // BUG #6 FIX: If action creates a new event, increment depth
+    if (actionResult.result?.created_event_id) {
+      await supabase.from("system_events")
+        .update({ payload: { ...eventPayload, __automation_depth: currentDepth + 1 } })
+        .eq("id", actionResult.result.created_event_id);
+    }
 
     results.push({
       rule_id: rule.id,

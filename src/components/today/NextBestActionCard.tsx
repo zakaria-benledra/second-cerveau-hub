@@ -26,6 +26,7 @@ interface NextBestActionProps {
   onStart: () => void;
   onSkip?: () => void;
   isLoading?: boolean;
+  disabled?: boolean; // BUG #1 FIX: Prevent race conditions with explicit disabled prop
 }
 
 const priorityConfig = {
@@ -45,10 +46,12 @@ export function NextBestActionCard({
   task, 
   onStart, 
   onSkip,
-  isLoading 
+  isLoading,
+  disabled // BUG #1 FIX
 }: NextBestActionProps) {
   const priority = priorityConfig[task.priority];
   const energy = task.energyLevel ? energyConfig[task.energyLevel] : null;
+  const isActionDisabled = isLoading || disabled;
 
   return (
     <Card className="command-card glass-strong border-primary/30 overflow-hidden group hover:border-primary/50 transition-all duration-500 hover:shadow-glow">
@@ -135,10 +138,10 @@ export function NextBestActionCard({
               size="lg"
               className="gradient-primary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 active:scale-100 transition-all duration-300 flex-1 lg:flex-none group/btn"
               onClick={onStart}
-              disabled={isLoading}
+              disabled={isActionDisabled}
             >
               <Play className="h-4 w-4 mr-2 transition-transform duration-300 group-hover/btn:scale-110" />
-              Commencer
+              {isLoading ? 'En cours...' : 'Commencer'}
               <ChevronRight className="h-4 w-4 ml-1 transition-transform duration-300 group-hover/btn:translate-x-1" />
             </Button>
             
@@ -148,7 +151,7 @@ export function NextBestActionCard({
                 size="sm"
                 className="text-muted-foreground hover:text-foreground"
                 onClick={onSkip}
-                disabled={isLoading}
+                disabled={isActionDisabled}
               >
                 Passer
               </Button>
