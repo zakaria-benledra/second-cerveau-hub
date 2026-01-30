@@ -40,13 +40,50 @@ Deno.serve(async (req) => {
     const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
     const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET')
     const redirectUri = Deno.env.get('GOOGLE_REDIRECT_URI') || `${Deno.env.get('SUPABASE_URL')}/functions/v1/connect-google?action=callback`
+    
+    const isConfigured = !!(clientId && clientSecret)
 
-    if (!clientId || !clientSecret) {
+    // For status action, return gracefully even if not configured
+    if (action === 'status') {
+      if (!isConfigured) {
+        return new Response(JSON.stringify({ 
+          connected: false,
+          configured: false,
+          account: null,
+          message: 'Google Calendar integration not configured'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      
+      const { data } = await supabase
+        .from('connected_accounts')
+        .select('id, provider, metadata, expires_at, created_at')
+        .eq('user_id', user.id)
+        .eq('provider', 'google')
+        .single()
+
       return new Response(JSON.stringify({ 
-        error: 'Google OAuth not configured',
-        message: 'Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET secrets'
+        connected: !!data,
+        configured: true,
+        account: data ? {
+          email: data.metadata?.email,
+          connectedAt: data.created_at,
+          expiresAt: data.expires_at
+        } : null
       }), {
-        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // For other actions, require configuration
+    if (!isConfigured) {
+      return new Response(JSON.stringify({ 
+        error: 'Google Calendar not configured',
+        message: 'Google Calendar sync requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET. Configure these in Cloud settings or use the calendar without sync.',
+        configured: false
+      }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -170,25 +207,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    if (action === 'status') {
-      const { data } = await supabase
-        .from('connected_accounts')
-        .select('id, provider, metadata, expires_at, created_at')
-        .eq('user_id', user.id)
-        .eq('provider', 'google')
-        .single()
-
-      return new Response(JSON.stringify({ 
-        connected: !!data,
-        account: data ? {
-          email: data.metadata?.email,
-          connectedAt: data.created_at,
-          expiresAt: data.expires_at
-        } : null
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    // Status action is now handled above
 
     return new Response(JSON.stringify({ error: 'Invalid action' }), {
       status: 400,
