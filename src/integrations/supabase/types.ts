@@ -1717,6 +1717,51 @@ export type Database = {
           },
         ]
       }
+      habit_streak_freezes: {
+        Row: {
+          created_at: string
+          date: string
+          habit_id: string
+          id: string
+          reason: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          habit_id: string
+          id?: string
+          reason?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          habit_id?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_streak_freezes_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "habit_streak_freezes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       habits: {
         Row: {
           color: string | null
@@ -1726,8 +1771,10 @@ export type Database = {
           icon: string | null
           id: string
           is_active: boolean
+          last_freeze_reset_date: string | null
           name: string
           source: string | null
+          streak_freezes_available: number | null
           target_frequency: string
           updated_at: string
           user_id: string
@@ -1741,8 +1788,10 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean
+          last_freeze_reset_date?: string | null
           name: string
           source?: string | null
+          streak_freezes_available?: number | null
           target_frequency?: string
           updated_at?: string
           user_id: string
@@ -1756,8 +1805,10 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean
+          last_freeze_reset_date?: string | null
           name?: string
           source?: string | null
+          streak_freezes_available?: number | null
           target_frequency?: string
           updated_at?: string
           user_id?: string
@@ -3795,6 +3846,11 @@ export type Database = {
       }
       is_workspace_member: {
         Args: { _user_id: string; _workspace_id: string }
+        Returns: boolean
+      }
+      reset_weekly_streak_freezes: { Args: never; Returns: undefined }
+      use_streak_freeze: {
+        Args: { p_habit_id: string; p_user_id: string }
         Returns: boolean
       }
     }
