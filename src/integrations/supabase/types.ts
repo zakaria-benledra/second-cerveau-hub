@@ -3796,6 +3796,59 @@ export type Database = {
           },
         ]
       }
+      wins: {
+        Row: {
+          achieved_at: string
+          category: string | null
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          id: string
+          score_impact: number | null
+          source: string | null
+          tags: string[] | null
+          title: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          achieved_at?: string
+          category?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          score_impact?: number | null
+          source?: string | null
+          tags?: string[] | null
+          title: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          achieved_at?: string
+          category?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          score_impact?: number | null
+          source?: string | null
+          tags?: string[] | null
+          title?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wins_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           created_at: string
