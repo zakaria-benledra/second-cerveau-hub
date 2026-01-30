@@ -70,33 +70,54 @@ export type Database = {
       ai_interventions: {
         Row: {
           ai_message: string
+          applied_at: string | null
+          auto_applied: boolean | null
           context: Json | null
           created_at: string
           id: string
+          impact_after: Json | null
+          impact_before: Json | null
           intervention_type: string
+          reason: string | null
           responded_at: string | null
+          reverted_at: string | null
+          severity: string | null
           user_action: string | null
           user_id: string
           workspace_id: string | null
         }
         Insert: {
           ai_message: string
+          applied_at?: string | null
+          auto_applied?: boolean | null
           context?: Json | null
           created_at?: string
           id?: string
+          impact_after?: Json | null
+          impact_before?: Json | null
           intervention_type: string
+          reason?: string | null
           responded_at?: string | null
+          reverted_at?: string | null
+          severity?: string | null
           user_action?: string | null
           user_id: string
           workspace_id?: string | null
         }
         Update: {
           ai_message?: string
+          applied_at?: string | null
+          auto_applied?: boolean | null
           context?: Json | null
           created_at?: string
           id?: string
+          impact_after?: Json | null
+          impact_before?: Json | null
           intervention_type?: string
+          reason?: string | null
           responded_at?: string | null
+          reverted_at?: string | null
+          severity?: string | null
           user_action?: string | null
           user_id?: string
           workspace_id?: string | null
