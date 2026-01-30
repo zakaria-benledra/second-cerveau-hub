@@ -509,7 +509,7 @@ Deno.serve(async (req) => {
           category_id: categoryId,
           document_id: documentId,
           external_id: externalId,
-          source: 'csv_import'
+          source: 'integration'
         })
       } catch (e) {
         errors.push({ line: lineNumber, reason: `Erreur de parsing: ${(e as Error).message}` })
