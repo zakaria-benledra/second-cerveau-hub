@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,36 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useCategories, useCreateCategory, useTransactions, useCreateTransaction, useDeleteTransaction, useBudgets, useCreateBudget, useMonthlySpending } from '@/hooks/useFinance';
 import { useDocuments, useUploadStatement, useDeleteDocument } from '@/hooks/useDocuments';
-import { DollarSign, Plus, TrendingUp, TrendingDown, Wallet, PiggyBank, Trash2, Upload, FileText, Loader2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { useGoals } from '@/hooks/useProjects';
+import { ScoreRing } from '@/components/today/ScoreRing';
+import { cn } from '@/lib/utils';
+import { 
+  DollarSign, 
+  Plus, 
+  TrendingUp, 
+  TrendingDown, 
+  Wallet, 
+  PiggyBank, 
+  Trash2, 
+  Upload, 
+  FileText, 
+  Loader2, 
+  CheckCircle, 
+  XCircle, 
+  Clock,
+  Target,
+  AlertTriangle,
+  ChevronRight,
+  History,
+  ArrowUpRight,
+  ArrowDownRight,
+  Sparkles,
+  Link2,
+  BarChart3
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -21,7 +48,7 @@ export default function FinancePage() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isBudgetOpen, setIsBudgetOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [newTransaction, setNewTransaction] = useState({ amount: '', description: '', category_id: '', type: 'expense', date: format(new Date(), 'yyyy-MM-dd') });
+  const [newTransaction, setNewTransaction] = useState({ amount: '', description: '', category_id: '', type: 'expense', date: format(new Date(), 'yyyy-MM-dd'), goal_id: '' });
   const [newCategory, setNewCategory] = useState({ name: '', type: 'expense' });
   const [newBudget, setNewBudget] = useState({ category_id: '', monthly_limit: '' });
   const [uploadForm, setUploadForm] = useState({ accountLabel: '', dateFrom: '', dateTo: '' });
@@ -32,12 +59,47 @@ export default function FinancePage() {
   const { data: budgets = [] } = useBudgets();
   const { data: monthlyStats } = useMonthlySpending(currentMonth);
   const { data: documents = [] } = useDocuments('bank_statement');
+  const { data: goals = [] } = useGoals();
   const createTransaction = useCreateTransaction();
   const deleteTransaction = useDeleteTransaction();
   const createCategory = useCreateCategory();
   const createBudget = useCreateBudget();
   const uploadStatement = useUploadStatement();
   const deleteDocument = useDeleteDocument();
+
+  // Calculate financial health score
+  const financialHealth = useMemo(() => {
+    const income = monthlyStats?.totalIncome || 0;
+    const expenses = monthlyStats?.totalExpenses || 0;
+    const savings = monthlyStats?.netSavings || 0;
+    
+    if (income === 0) return 50;
+    
+    const savingsRate = (savings / income) * 100;
+    if (savingsRate >= 20) return 90;
+    if (savingsRate >= 10) return 70;
+    if (savingsRate >= 0) return 50;
+    return 30;
+  }, [monthlyStats]);
+
+  // Budget utilization
+  const budgetUtilization = useMemo(() => {
+    return budgets.map(budget => {
+      const category = categories.find(c => c.id === budget.category_id);
+      const spent = transactions
+        .filter(t => t.category_id === budget.category_id && t.type === 'expense')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      const percentage = Math.round((spent / Number(budget.monthly_limit)) * 100);
+      
+      return {
+        ...budget,
+        categoryName: category?.name || 'Sans catégorie',
+        spent,
+        percentage: Math.min(percentage, 100),
+        overspent: percentage > 100
+      };
+    });
+  }, [budgets, transactions, categories]);
 
   const handleAddTransaction = () => {
     if (!newTransaction.amount) return;
@@ -49,7 +111,7 @@ export default function FinancePage() {
       date: newTransaction.date,
     }, {
       onSuccess: () => {
-        setNewTransaction({ amount: '', description: '', category_id: '', type: 'expense', date: format(new Date(), 'yyyy-MM-dd') });
+        setNewTransaction({ amount: '', description: '', category_id: '', type: 'expense', date: format(new Date(), 'yyyy-MM-dd'), goal_id: '' });
         setIsTransactionOpen(false);
       }
     });
@@ -98,165 +160,335 @@ export default function FinancePage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'completed': return <CheckCircle className="h-4 w-4 text-success" />;
       case 'failed': return <XCircle className="h-4 w-4 text-destructive" />;
       case 'processing': return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
       default: return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
+  // Spending by category for chart
+  const spendingByCategory = useMemo(() => {
+    const categoryMap = new Map<string, number>();
+    transactions.filter(t => t.type === 'expense').forEach(t => {
+      const cat = categories.find(c => c.id === t.category_id)?.name || 'Autre';
+      categoryMap.set(cat, (categoryMap.get(cat) || 0) + Number(t.amount));
+    });
+    return Array.from(categoryMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+  }, [transactions, categories]);
+
+  const totalSpending = spendingByCategory.reduce((sum, [, amount]) => sum + amount, 0);
+
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Finances</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-gradient">Finances</h1>
             <p className="text-muted-foreground">{format(new Date(), 'MMMM yyyy', { locale: fr })}</p>
+          </div>
+          <div className="flex gap-2">
+            <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Upload className="h-4 w-4" />
+                  Importer
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="glass-strong">
+                <DialogHeader>
+                  <DialogTitle>Importer un relevé bancaire</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label>Fichier (CSV ou PDF)</Label>
+                    <Input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv,.pdf"
+                      onChange={handleFileUpload}
+                      disabled={uploadStatement.isPending}
+                      className="glass-hover"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      L'upload catégorise automatiquement vos transactions
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Compte (optionnel)</Label>
+                    <Input
+                      value={uploadForm.accountLabel}
+                      onChange={(e) => setUploadForm({ ...uploadForm, accountLabel: e.target.value })}
+                      placeholder="Compte courant, Livret A..."
+                      className="glass-hover"
+                    />
+                  </div>
+                  {uploadStatement.isPending && (
+                    <div className="flex items-center gap-2 text-primary">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Analyse en cours...
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={isTransactionOpen} onOpenChange={setIsTransactionOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2 gradient-primary">
+                  <Plus className="h-4 w-4" />
+                  Transaction
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="glass-strong">
+                <DialogHeader>
+                  <DialogTitle>Nouvelle transaction</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label>Type</Label>
+                    <Select value={newTransaction.type} onValueChange={(type) => setNewTransaction({ ...newTransaction, type })}>
+                      <SelectTrigger className="glass-hover">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="expense">Dépense</SelectItem>
+                        <SelectItem value="income">Revenu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Montant *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={newTransaction.amount}
+                      onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
+                      placeholder="0.00"
+                      className="glass-hover"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Input
+                      value={newTransaction.description}
+                      onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
+                      placeholder="Courses, loyer..."
+                      className="glass-hover"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Catégorie</Label>
+                    <Select value={newTransaction.category_id} onValueChange={(category_id) => setNewTransaction({ ...newTransaction, category_id })}>
+                      <SelectTrigger className="glass-hover">
+                        <SelectValue placeholder="Sélectionner..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.filter(c => c.type === newTransaction.type).map(cat => (
+                          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Link2 className="h-4 w-4" />
+                      Lier à un objectif
+                    </Label>
+                    <Select value={newTransaction.goal_id} onValueChange={(goal_id) => setNewTransaction({ ...newTransaction, goal_id })}>
+                      <SelectTrigger className="glass-hover">
+                        <SelectValue placeholder="Optionnel..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {goals.map(goal => (
+                          <SelectItem key={goal.id} value={goal.id}>{goal.title}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Date</Label>
+                    <Input
+                      type="date"
+                      value={newTransaction.date}
+                      onChange={(e) => setNewTransaction({ ...newTransaction, date: e.target.value })}
+                      className="glass-hover"
+                    />
+                  </div>
+                  <Button onClick={handleAddTransaction} className="w-full gradient-primary" disabled={createTransaction.isPending}>
+                    {createTransaction.isPending ? 'Ajout...' : 'Ajouter'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card className="glass">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-green-500" />
-                Revenus
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-green-500">
-                +{monthlyStats?.totalIncome.toFixed(2) || '0.00'} €
-              </p>
+        {/* Financial Health Score & Summary */}
+        <div className="grid gap-4 md:grid-cols-5">
+          <Card className="glass-strong md:row-span-2">
+            <CardContent className="pt-6 flex flex-col items-center justify-center h-full">
+              <ScoreRing
+                value={financialHealth}
+                size="xl"
+                label="Santé"
+                sublabel="Financière"
+              />
+              <div className="flex items-center gap-1 mt-4">
+                {financialHealth >= 70 ? (
+                  <TrendingUp className="h-4 w-4 text-success" />
+                ) : financialHealth >= 50 ? (
+                  <TrendingUp className="h-4 w-4 text-warning" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {financialHealth >= 70 ? 'Excellent' : financialHealth >= 50 ? 'Correct' : 'Attention'}
+                </span>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="glass">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <TrendingDown className="h-4 w-4 text-red-500" />
-                Dépenses
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-red-500">
-                -{monthlyStats?.totalExpenses.toFixed(2) || '0.00'} €
-              </p>
+          <Card className="glass-hover hover-lift">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-success/15">
+                  <ArrowUpRight className="h-5 w-5 text-success" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-success tabular-nums">
+                    +{(monthlyStats?.totalIncome || 0).toFixed(0)} €
+                  </p>
+                  <p className="text-xs text-muted-foreground">Revenus</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="glass">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <PiggyBank className="h-4 w-4 text-primary" />
-                Épargne nette
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className={`text-2xl font-bold ${(monthlyStats?.netSavings || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {(monthlyStats?.netSavings || 0) >= 0 ? '+' : ''}{monthlyStats?.netSavings.toFixed(2) || '0.00'} €
-              </p>
+          <Card className="glass-hover hover-lift">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-destructive/15">
+                  <ArrowDownRight className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-destructive tabular-nums">
+                    -{(monthlyStats?.totalExpenses || 0).toFixed(0)} €
+                  </p>
+                  <p className="text-xs text-muted-foreground">Dépenses</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="glass">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Wallet className="h-4 w-4" />
-                Transactions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">
-                {monthlyStats?.transactionCount || 0}
-              </p>
+          <Card className="glass-hover hover-lift">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-primary/15">
+                  <PiggyBank className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className={cn(
+                    "text-2xl font-bold tabular-nums",
+                    (monthlyStats?.netSavings || 0) >= 0 ? 'text-success' : 'text-destructive'
+                  )}>
+                    {(monthlyStats?.netSavings || 0) >= 0 ? '+' : ''}{(monthlyStats?.netSavings || 0).toFixed(0)} €
+                  </p>
+                  <p className="text-xs text-muted-foreground">Épargne</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-hover hover-lift">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-accent/15">
+                  <Wallet className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold tabular-nums">
+                    {monthlyStats?.transactionCount || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Transactions</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Spending by Category Mini Chart */}
+          <Card className="glass-hover md:col-span-3">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium">Top catégories</span>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-xs text-primary gap-1">
+                      Détails <ChevronRight className="h-3 w-3" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent className="glass-strong">
+                    <SheetHeader>
+                      <SheetTitle className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Dépenses par catégorie
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6 space-y-4">
+                      {spendingByCategory.map(([category, amount]) => (
+                        <div key={category}>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>{category}</span>
+                            <span className="font-medium">{amount.toFixed(0)} €</span>
+                          </div>
+                          <Progress 
+                            value={totalSpending > 0 ? (amount / totalSpending) * 100 : 0} 
+                            className="h-2"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+              <div className="space-y-2">
+                {spendingByCategory.slice(0, 3).map(([category, amount]) => (
+                  <div key={category} className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="truncate">{category}</span>
+                        <span className="font-medium tabular-nums">{amount.toFixed(0)} €</span>
+                      </div>
+                      <Progress 
+                        value={totalSpending > 0 ? (amount / totalSpending) * 100 : 0} 
+                        className="h-1.5"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </div>
 
+        {/* Main Tabs */}
         <Tabs defaultValue="transactions" className="space-y-4">
-          <TabsList className="glass">
+          <TabsList className="glass-strong">
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="statements">Relevés</TabsTrigger>
             <TabsTrigger value="budgets">Budgets</TabsTrigger>
+            <TabsTrigger value="statements">Relevés</TabsTrigger>
             <TabsTrigger value="categories">Catégories</TabsTrigger>
           </TabsList>
 
+          {/* Transactions Tab */}
           <TabsContent value="transactions" className="space-y-4">
-            <div className="flex justify-end">
-              <Dialog open={isTransactionOpen} onOpenChange={setIsTransactionOpen}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Transaction
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Nouvelle transaction</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                      <Label>Type</Label>
-                      <Select value={newTransaction.type} onValueChange={(type) => setNewTransaction({ ...newTransaction, type })}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="expense">Dépense</SelectItem>
-                          <SelectItem value="income">Revenu</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Montant *</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={newTransaction.amount}
-                        onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Description</Label>
-                      <Input
-                        value={newTransaction.description}
-                        onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
-                        placeholder="Courses, loyer..."
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Catégorie</Label>
-                      <Select value={newTransaction.category_id} onValueChange={(category_id) => setNewTransaction({ ...newTransaction, category_id })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.filter(c => c.type === newTransaction.type).map(cat => (
-                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Date</Label>
-                      <Input
-                        type="date"
-                        value={newTransaction.date}
-                        onChange={(e) => setNewTransaction({ ...newTransaction, date: e.target.value })}
-                      />
-                    </div>
-                    <Button onClick={handleAddTransaction} className="w-full" disabled={createTransaction.isPending}>
-                      {createTransaction.isPending ? 'Ajout...' : 'Ajouter'}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
             {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">Chargement...</div>
+              <div className="text-center py-8 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                Chargement...
+              </div>
             ) : transactions.length === 0 ? (
               <Card className="glass border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-12">
@@ -267,16 +499,19 @@ export default function FinancePage() {
                 </CardContent>
               </Card>
             ) : (
-              <Card className="glass">
+              <Card className="glass-strong overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="divide-y divide-border">
+                  <div className="divide-y divide-border/50">
                     {transactions.map((tx) => (
-                      <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-muted/50 group">
+                      <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-muted/30 group transition-colors">
                         <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-full ${tx.type === 'income' ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                          <div className={cn(
+                            "p-2.5 rounded-xl",
+                            tx.type === 'income' ? 'bg-success/15' : 'bg-destructive/15'
+                          )}>
                             {tx.type === 'income' ? 
-                              <TrendingUp className="h-4 w-4 text-green-500" /> : 
-                              <TrendingDown className="h-4 w-4 text-red-500" />
+                              <ArrowUpRight className="h-4 w-4 text-success" /> : 
+                              <ArrowDownRight className="h-4 w-4 text-destructive" />
                             }
                           </div>
                           <div>
@@ -287,14 +522,17 @@ export default function FinancePage() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`font-semibold ${tx.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
+                        <div className="flex items-center gap-3">
+                          <span className={cn(
+                            "font-bold tabular-nums",
+                            tx.type === 'income' ? 'text-success' : 'text-destructive'
+                          )}>
                             {tx.type === 'income' ? '+' : '-'}{Number(tx.amount).toFixed(2)} €
                           </span>
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="opacity-0 group-hover:opacity-100 text-destructive h-8 w-8"
+                            className="opacity-0 group-hover:opacity-100 text-destructive h-8 w-8 transition-opacity"
                             onClick={() => deleteTransaction.mutate(tx.id)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -308,138 +546,25 @@ export default function FinancePage() {
             )}
           </TabsContent>
 
-          {/* NEW: Bank Statements Tab */}
-          <TabsContent value="statements" className="space-y-4">
-            <div className="flex justify-end">
-              <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2">
-                    <Upload className="h-4 w-4" />
-                    Importer un relevé
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Importer un relevé bancaire</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                      <Label>Fichier (CSV ou PDF)</Label>
-                      <Input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".csv,.pdf"
-                        onChange={handleFileUpload}
-                        disabled={uploadStatement.isPending}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Format CSV recommandé pour l'import automatique. Les PDF nécessitent une saisie manuelle.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Compte (optionnel)</Label>
-                      <Input
-                        value={uploadForm.accountLabel}
-                        onChange={(e) => setUploadForm({ ...uploadForm, accountLabel: e.target.value })}
-                        placeholder="Compte courant, Livret A..."
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Du</Label>
-                        <Input
-                          type="date"
-                          value={uploadForm.dateFrom}
-                          onChange={(e) => setUploadForm({ ...uploadForm, dateFrom: e.target.value })}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Au</Label>
-                        <Input
-                          type="date"
-                          value={uploadForm.dateTo}
-                          onChange={(e) => setUploadForm({ ...uploadForm, dateTo: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    {uploadStatement.isPending && (
-                      <div className="flex items-center gap-2 text-primary">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Import en cours...
-                      </div>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {documents.length === 0 ? (
-              <Card className="glass border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground text-center">
-                    Aucun relevé importé.<br />
-                    Importez vos relevés bancaires pour analyser vos transactions.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {documents.map((doc) => (
-                  <Card key={doc.id} className="glass">
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-8 w-8 text-primary" />
-                        <div>
-                          <p className="font-medium">{doc.filename}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(doc.created_at), 'd MMM yyyy', { locale: fr })}
-                            {doc.account_label && ` • ${doc.account_label}`}
-                            {doc.transactions_count > 0 && ` • ${doc.transactions_count} transactions`}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(doc.parsed_status)}
-                          <Badge variant={doc.parsed_status === 'completed' ? 'default' : doc.parsed_status === 'failed' ? 'destructive' : 'secondary'}>
-                            {doc.parsed_status === 'completed' ? 'Traité' : doc.parsed_status === 'failed' ? 'Échec' : doc.parsed_status === 'processing' ? 'En cours' : 'En attente'}
-                          </Badge>
-                        </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="text-destructive h-8 w-8"
-                          onClick={() => deleteDocument.mutate(doc.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
+          {/* Budgets Tab */}
           <TabsContent value="budgets" className="space-y-4">
             <div className="flex justify-end">
               <Dialog open={isBudgetOpen} onOpenChange={setIsBudgetOpen}>
                 <DialogTrigger asChild>
-                  <Button className="gap-2">
+                  <Button className="gap-2 gradient-primary">
                     <Plus className="h-4 w-4" />
-                    Budget
+                    Nouveau budget
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="glass-strong">
                   <DialogHeader>
                     <DialogTitle>Créer un budget</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 pt-4">
                     <div className="space-y-2">
                       <Label>Catégorie</Label>
-                      <Select value={newBudget.category_id} onValueChange={(category_id) => setNewBudget({ ...newBudget, category_id })}>
-                        <SelectTrigger>
+                      <Select value={newBudget.category_id} onValueChange={(v) => setNewBudget({ ...newBudget, category_id: v })}>
+                        <SelectTrigger className="glass-hover">
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -453,13 +578,13 @@ export default function FinancePage() {
                       <Label>Limite mensuelle (€)</Label>
                       <Input
                         type="number"
-                        step="0.01"
                         value={newBudget.monthly_limit}
                         onChange={(e) => setNewBudget({ ...newBudget, monthly_limit: e.target.value })}
                         placeholder="500"
+                        className="glass-hover"
                       />
                     </div>
-                    <Button onClick={handleAddBudget} className="w-full" disabled={createBudget.isPending}>
+                    <Button onClick={handleAddBudget} className="w-full gradient-primary" disabled={createBudget.isPending}>
                       {createBudget.isPending ? 'Création...' : 'Créer'}
                     </Button>
                   </div>
@@ -467,10 +592,10 @@ export default function FinancePage() {
               </Dialog>
             </div>
 
-            {budgets.length === 0 ? (
+            {budgetUtilization.length === 0 ? (
               <Card className="glass border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-12">
-                  <PiggyBank className="h-12 w-12 text-muted-foreground mb-4" />
+                  <Target className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground text-center">
                     Aucun budget défini.<br />
                     Créez des budgets pour suivre vos dépenses.
@@ -479,51 +604,109 @@ export default function FinancePage() {
               </Card>
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
-                {budgets.map((budget) => {
-                  const spent = transactions
-                    .filter(t => t.category_id === budget.category_id && t.type === 'expense')
-                    .reduce((sum, t) => sum + Number(t.amount), 0);
-                  const percentage = Math.min(100, (spent / Number(budget.monthly_limit)) * 100);
-                  const isOver = spent > Number(budget.monthly_limit);
-
-                  return (
-                    <Card key={budget.id} className="glass">
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">
-                            {(budget as any).finance_categories?.name || 'Catégorie'}
-                          </CardTitle>
-                          <Badge variant={isOver ? 'destructive' : 'outline'}>
-                            {isOver ? 'Dépassé' : `${percentage.toFixed(0)}%`}
+                {budgetUtilization.map((budget) => (
+                  <Card key={budget.id} className={cn(
+                    "glass-hover",
+                    budget.overspent && "border-destructive/50"
+                  )}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg">{budget.categoryName}</CardTitle>
+                        {budget.overspent && (
+                          <Badge variant="destructive" className="gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Dépassé
                           </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <Progress value={percentage} className={isOver ? '[&>div]:bg-destructive' : ''} />
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
                         <div className="flex justify-between text-sm">
-                          <span>{spent.toFixed(2)} € dépensés</span>
-                          <span className="text-muted-foreground">{Number(budget.monthly_limit).toFixed(2)} € max</span>
+                          <span>{budget.spent.toFixed(0)} € dépensés</span>
+                          <span className="text-muted-foreground">sur {Number(budget.monthly_limit).toFixed(0)} €</span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        <Progress 
+                          value={budget.percentage} 
+                          className={cn(
+                            "h-3",
+                            budget.overspent && "[&>div]:bg-destructive"
+                          )}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {budget.overspent 
+                            ? `${(budget.spent - Number(budget.monthly_limit)).toFixed(0)} € de dépassement`
+                            : `${(Number(budget.monthly_limit) - budget.spent).toFixed(0)} € restants`
+                          }
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
           </TabsContent>
 
+          {/* Statements Tab */}
+          <TabsContent value="statements" className="space-y-4">
+            {documents.length === 0 ? (
+              <Card className="glass border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground text-center mb-4">
+                    Aucun relevé importé.<br />
+                    Importez vos relevés bancaires pour analyser vos transactions.
+                  </p>
+                  <Button onClick={() => setIsUploadOpen(true)} className="gap-2">
+                    <Upload className="h-4 w-4" />
+                    Importer un relevé
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {documents.map((doc) => (
+                  <Card key={doc.id} className="glass-hover">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {getStatusIcon(doc.parsed_status || 'pending')}
+                        <div>
+                          <p className="font-medium">{doc.filename}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {doc.account_label && `${doc.account_label} • `}
+                            {format(new Date(doc.created_at), 'dd MMM yyyy', { locale: fr })}
+                            {doc.transactions_count && ` • ${doc.transactions_count} transactions`}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive"
+                        onClick={() => deleteDocument.mutate(doc.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Categories Tab */}
           <TabsContent value="categories" className="space-y-4">
             <div className="flex justify-end">
               <Dialog open={isCategoryOpen} onOpenChange={setIsCategoryOpen}>
                 <DialogTrigger asChild>
-                  <Button className="gap-2">
+                  <Button className="gap-2 gradient-primary">
                     <Plus className="h-4 w-4" />
-                    Catégorie
+                    Nouvelle catégorie
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="glass-strong">
                   <DialogHeader>
-                    <DialogTitle>Nouvelle catégorie</DialogTitle>
+                    <DialogTitle>Créer une catégorie</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 pt-4">
                     <div className="space-y-2">
@@ -532,12 +715,13 @@ export default function FinancePage() {
                         value={newCategory.name}
                         onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
                         placeholder="Alimentation, Transport..."
+                        className="glass-hover"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label>Type</Label>
                       <Select value={newCategory.type} onValueChange={(type) => setNewCategory({ ...newCategory, type })}>
-                        <SelectTrigger>
+                        <SelectTrigger className="glass-hover">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -546,7 +730,7 @@ export default function FinancePage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button onClick={handleAddCategory} className="w-full" disabled={createCategory.isPending}>
+                    <Button onClick={handleAddCategory} className="w-full gradient-primary" disabled={createCategory.isPending}>
                       {createCategory.isPending ? 'Création...' : 'Créer'}
                     </Button>
                   </div>
@@ -555,43 +739,45 @@ export default function FinancePage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <Card className="glass">
+              <Card className="glass-strong">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-red-500" />
+                    <ArrowDownRight className="h-5 w-5 text-destructive" />
                     Dépenses
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {categories.filter(c => c.type === 'expense').map(cat => (
-                      <div key={cat.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
+                      <div key={cat.id} className="flex items-center justify-between p-2 rounded bg-muted/30">
                         <span>{cat.name}</span>
+                        <Badge variant="outline">Dépense</Badge>
                       </div>
                     ))}
                     {categories.filter(c => c.type === 'expense').length === 0 && (
-                      <p className="text-muted-foreground text-sm">Aucune catégorie</p>
+                      <p className="text-muted-foreground text-center py-4">Aucune catégorie</p>
                     )}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="glass">
+              <Card className="glass-strong">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-green-500" />
+                    <ArrowUpRight className="h-5 w-5 text-success" />
                     Revenus
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     {categories.filter(c => c.type === 'income').map(cat => (
-                      <div key={cat.id} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
+                      <div key={cat.id} className="flex items-center justify-between p-2 rounded bg-muted/30">
                         <span>{cat.name}</span>
+                        <Badge variant="outline">Revenu</Badge>
                       </div>
                     ))}
                     {categories.filter(c => c.type === 'income').length === 0 && (
-                      <p className="text-muted-foreground text-sm">Aucune catégorie</p>
+                      <p className="text-muted-foreground text-center py-4">Aucune catégorie</p>
                     )}
                   </div>
                 </CardContent>
