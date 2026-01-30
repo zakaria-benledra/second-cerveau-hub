@@ -297,6 +297,7 @@ export type Database = {
           action_type: string
           channel: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           id: string
           is_active: boolean | null
@@ -316,6 +317,7 @@ export type Database = {
           action_type: string
           channel?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
@@ -335,6 +337,7 @@ export type Database = {
           action_type?: string
           channel?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
@@ -615,6 +618,7 @@ export type Database = {
           name: string
           updated_at: string
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           color?: string | null
@@ -624,6 +628,7 @@ export type Database = {
           name: string
           updated_at?: string
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           color?: string | null
@@ -633,8 +638,17 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "domains_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       finance_categories: {
         Row: {
@@ -742,6 +756,7 @@ export type Database = {
           next_review: string | null
           updated_at: string
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           back: string
@@ -753,6 +768,7 @@ export type Database = {
           next_review?: string | null
           updated_at?: string
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           back?: string
@@ -764,8 +780,17 @@ export type Database = {
           next_review?: string | null
           updated_at?: string
           user_id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       focus_sessions: {
         Row: {
@@ -824,6 +849,7 @@ export type Database = {
       goals: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string | null
           end_date: string | null
           id: string
@@ -839,6 +865,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
@@ -854,6 +881,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
@@ -929,6 +957,7 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           icon: string | null
           id: string
@@ -943,6 +972,7 @@ export type Database = {
         Insert: {
           color?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           icon?: string | null
           id?: string
@@ -957,6 +987,7 @@ export type Database = {
         Update: {
           color?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           icon?: string | null
           id?: string
@@ -987,6 +1018,7 @@ export type Database = {
           page: number | null
           reading_item_id: string | null
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           content: string
@@ -996,6 +1028,7 @@ export type Database = {
           page?: number | null
           reading_item_id?: string | null
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           content?: string
@@ -1005,6 +1038,7 @@ export type Database = {
           page?: number | null
           reading_item_id?: string | null
           user_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1012,6 +1046,13 @@ export type Database = {
             columns: ["reading_item_id"]
             isOneToOne: false
             referencedRelation: "reading_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "highlights_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -1287,6 +1328,7 @@ export type Database = {
           title: string | null
           updated_at: string
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           content: string
@@ -1297,6 +1339,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           content?: string
@@ -1307,6 +1350,7 @@ export type Database = {
           title?: string | null
           updated_at?: string
           user_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1314,6 +1358,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -1465,6 +1516,7 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           domain_id: string | null
           id: string
@@ -1478,6 +1530,7 @@ export type Database = {
         Insert: {
           color?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           domain_id?: string | null
           id?: string
@@ -1491,6 +1544,7 @@ export type Database = {
         Update: {
           color?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           domain_id?: string | null
           id?: string
@@ -1574,6 +1628,7 @@ export type Database = {
           score: number
           total: number
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1582,6 +1637,7 @@ export type Database = {
           score: number
           total: number
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1590,8 +1646,17 @@ export type Database = {
           score?: number
           total?: number
           user_id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "quiz_results_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reading_items: {
         Row: {
@@ -1605,6 +1670,7 @@ export type Database = {
           updated_at: string
           url: string | null
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           author?: string | null
@@ -1617,6 +1683,7 @@ export type Database = {
           updated_at?: string
           url?: string | null
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           author?: string | null
@@ -1629,8 +1696,17 @@ export type Database = {
           updated_at?: string
           url?: string | null
           user_id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reading_items_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       resources: {
         Row: {
@@ -1642,6 +1718,7 @@ export type Database = {
           type: string
           url: string | null
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -1652,6 +1729,7 @@ export type Database = {
           type: string
           url?: string | null
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -1662,6 +1740,7 @@ export type Database = {
           type?: string
           url?: string | null
           user_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1669,6 +1748,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -1728,6 +1814,7 @@ export type Database = {
         Row: {
           checklist: Json
           created_at: string
+          deleted_at: string | null
           id: string
           is_active: boolean
           name: string
@@ -1740,6 +1827,7 @@ export type Database = {
         Insert: {
           checklist?: Json
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -1752,6 +1840,7 @@ export type Database = {
         Update: {
           checklist?: Json
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -2146,6 +2235,7 @@ export type Database = {
           payload: Json | null
           task_id: string
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -2154,6 +2244,7 @@ export type Database = {
           payload?: Json | null
           task_id: string
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -2162,6 +2253,7 @@ export type Database = {
           payload?: Json | null
           task_id?: string
           user_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -2171,6 +2263,13 @@ export type Database = {
             referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "task_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tasks: {
@@ -2178,6 +2277,7 @@ export type Database = {
           actual_duration_min: number | null
           completed_at: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           due_date: string | null
           energy_level: string | null
@@ -2198,6 +2298,7 @@ export type Database = {
           actual_duration_min?: number | null
           completed_at?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           due_date?: string | null
           energy_level?: string | null
@@ -2218,6 +2319,7 @@ export type Database = {
           actual_duration_min?: number | null
           completed_at?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           due_date?: string | null
           energy_level?: string | null
@@ -2267,6 +2369,7 @@ export type Database = {
           task_id: string | null
           title: string | null
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -2276,6 +2379,7 @@ export type Database = {
           task_id?: string | null
           title?: string | null
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -2285,6 +2389,7 @@ export type Database = {
           task_id?: string | null
           title?: string | null
           user_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -2292,6 +2397,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_blocks_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]

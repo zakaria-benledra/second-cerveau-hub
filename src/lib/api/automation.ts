@@ -100,9 +100,9 @@ export async function createAutomationRule(input: CreateRuleInput): Promise<Auto
     name: input.name,
     description: input.description || null,
     trigger_event: input.trigger_event,
-    trigger_conditions: JSON.stringify(input.trigger_conditions || {}),
+    trigger_conditions: input.trigger_conditions || {},
     action_type: input.action_type,
-    action_payload: JSON.stringify(input.action_payload || {}),
+    action_payload: input.action_payload || {},
     priority: input.priority || 0,
     channel: input.channel || 'ui',
   };
@@ -125,9 +125,9 @@ export async function updateAutomationRule(
   if (input.name !== undefined) updateData.name = input.name;
   if (input.description !== undefined) updateData.description = input.description;
   if (input.trigger_event !== undefined) updateData.trigger_event = input.trigger_event;
-  if (input.trigger_conditions !== undefined) updateData.trigger_conditions = JSON.stringify(input.trigger_conditions);
+  if (input.trigger_conditions !== undefined) updateData.trigger_conditions = input.trigger_conditions;
   if (input.action_type !== undefined) updateData.action_type = input.action_type;
-  if (input.action_payload !== undefined) updateData.action_payload = JSON.stringify(input.action_payload);
+  if (input.action_payload !== undefined) updateData.action_payload = input.action_payload;
   if (input.priority !== undefined) updateData.priority = input.priority;
   if (input.channel !== undefined) updateData.channel = input.channel;
   if (input.is_active !== undefined) updateData.is_active = input.is_active;
@@ -179,7 +179,7 @@ export async function emitSystemEvent(
     entity,
     entity_id: entityId,
     source: 'ui' as const,
-    payload: JSON.stringify(payload),
+    payload: payload,
   };
 
   await supabase.from('system_events').insert(insertData as any);
