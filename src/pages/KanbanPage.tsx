@@ -1,15 +1,16 @@
 import { useState, useCallback, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { useKanbanTasks, useMoveKanbanTask, type KanbanStatus, type KanbanTask } from '@/hooks/useKanban';
 import { useCreateTask } from '@/hooks/useTasks';
 import { useProjects, useGoals } from '@/hooks/useProjects';
+import { useRecentUndos } from '@/hooks/useUndo';
 import { TaskDialog } from '@/components/tasks/TaskDialog';
 import { KanbanHeader } from '@/components/kanban/KanbanHeader';
 import { KanbanColumn } from '@/components/kanban/KanbanColumn';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Undo2 } from 'lucide-react';
 import type { CreateTaskInput, UpdateTaskInput } from '@/lib/api/tasks';
-
 const COLUMNS: { id: KanbanStatus; title: string; accent: string; glow: string }[] = [
   { id: 'backlog', title: 'Backlog', accent: 'border-muted/50', glow: 'shadow-muted/20' },
   { id: 'todo', title: 'À Faire', accent: 'border-info/30', glow: 'shadow-info/20' },
@@ -37,6 +38,7 @@ export default function KanbanPage() {
   const { data: goals = [] } = useGoals();
   const moveTask = useMoveKanbanTask();
   const createTask = useCreateTask();
+  const { recentActions, canUndo, undoLast, isUndoing } = useRecentUndos();
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [draggedTask, setDraggedTask] = useState<KanbanTask | null>(null);
@@ -171,13 +173,31 @@ export default function KanbanPage() {
           })}
         </div>
 
-        {/* Loading Indicator */}
-        {moveTask.isPending && (
-          <div className="fixed bottom-4 right-4 glass-strong rounded-xl p-3 shadow-xl flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-sm">Mise à jour...</span>
-          </div>
-        )}
+        {/* Loading Indicator + Undo Button */}
+        <div className="fixed bottom-4 right-4 flex items-center gap-2">
+          {canUndo && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={undoLast}
+              disabled={isUndoing}
+              className="glass-strong shadow-xl gap-2"
+            >
+              {isUndoing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Undo2 className="h-4 w-4" />
+              )}
+              Annuler
+            </Button>
+          )}
+          {moveTask.isPending && (
+            <div className="glass-strong rounded-xl p-3 shadow-xl flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm">Mise à jour...</span>
+            </div>
+          )}
+        </div>
 
         {/* Create Task Dialog */}
         <TaskDialog
