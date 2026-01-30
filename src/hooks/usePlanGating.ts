@@ -11,7 +11,9 @@ export type FeatureName =
   | 'history_90d'
   | 'history_unlimited'
   | 'export_data'
-  | 'team_workspace';
+  | 'team_workspace'
+  | 'sso'
+  | 'custom_integrations';
 
 interface PlanFeatures {
   ai_coach: boolean;
@@ -21,9 +23,12 @@ interface PlanFeatures {
   history_unlimited: boolean;
   export_data: boolean;
   team_workspace: boolean;
+  sso?: boolean;
+  custom_integrations?: boolean;
   max_automations: number;
   max_team_members: number;
   history_days: number;
+  ai_requests_limit: number;
 }
 
 const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
@@ -38,6 +43,7 @@ const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     max_automations: 3,
     max_team_members: 1,
     history_days: 7,
+    ai_requests_limit: 100,
   },
   pro: {
     ai_coach: true,
@@ -50,6 +56,7 @@ const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     max_automations: 25,
     max_team_members: 5,
     history_days: 90,
+    ai_requests_limit: 1000,
   },
   enterprise: {
     ai_coach: true,
@@ -59,29 +66,61 @@ const PLAN_FEATURES: Record<PlanTier, PlanFeatures> = {
     history_unlimited: true,
     export_data: true,
     team_workspace: true,
+    sso: true,
+    custom_integrations: true,
     max_automations: -1,
     max_team_members: -1,
     history_days: -1,
+    ai_requests_limit: -1,
   },
 };
 
-async function fetchUserPlan(): Promise<PlanTier> {
-  const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return 'free';
+interface UserPlanData {
+  plan: PlanTier;
+  usage?: {
+    ai_requests_used: number;
+    ai_requests_limit: number;
+    automations_used: number;
+    automations_limit: number;
+  };
+}
 
+async function fetchUserPlan(): Promise<UserPlanData> {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { plan: 'free' };
+
+  // Get user's workspace membership
   const { data: membership } = await supabase
     .from('memberships')
-    .select('workspace_id, workspaces(plan)')
+    .select('workspace_id')
     .eq('user_id', userData.user.id)
     .limit(1)
     .single();
 
-  if (membership?.workspaces) {
-    const workspace = membership.workspaces as { plan?: string };
-    return (workspace.plan as PlanTier) || 'free';
-  }
+  if (!membership) return { plan: 'free' };
 
-  return 'free';
+  // Get subscription from new table
+  const { data: subscription } = await supabase
+    .from('subscriptions')
+    .select('plan, status')
+    .eq('workspace_id', membership.workspace_id)
+    .single();
+
+  // Get usage limits
+  const { data: usage } = await supabase
+    .from('usage_limits')
+    .select('ai_requests_used, ai_requests_limit, automations_used, automations_limit')
+    .eq('workspace_id', membership.workspace_id)
+    .single();
+
+  const plan = (subscription?.status === 'active' || subscription?.status === 'trialing') 
+    ? (subscription.plan as PlanTier) 
+    : 'free';
+
+  return {
+    plan,
+    usage: usage as UserPlanData['usage'],
+  };
 }
 
 export function usePlanGating() {
@@ -91,8 +130,10 @@ export function usePlanGating() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const plan = planQuery.data || 'free';
+  const planData = planQuery.data || { plan: 'free' as PlanTier };
+  const plan = planData.plan;
   const features = PLAN_FEATURES[plan];
+  const usage = planData.usage;
 
   const hasFeature = (feature: FeatureName): boolean => {
     return features[feature] ?? false;
@@ -103,6 +144,18 @@ export function usePlanGating() {
   const canExportData = features.export_data;
   const maxAutomations = features.max_automations;
   const historyDays = features.history_days;
+
+  // Usage checks
+  const isAtAILimit = usage 
+    ? usage.ai_requests_used >= usage.ai_requests_limit && usage.ai_requests_limit !== -1
+    : false;
+  const isAtAutomationsLimit = usage
+    ? usage.automations_used >= usage.automations_limit && usage.automations_limit !== -1
+    : false;
+
+  const aiUsagePercent = usage && usage.ai_requests_limit !== -1
+    ? (usage.ai_requests_used / usage.ai_requests_limit) * 100
+    : 0;
 
   return {
     plan,
@@ -116,6 +169,12 @@ export function usePlanGating() {
     isLoading: planQuery.isLoading,
     isPro: plan === 'pro' || plan === 'enterprise',
     isEnterprise: plan === 'enterprise',
+    // Usage info
+    usage,
+    isAtAILimit,
+    isAtAutomationsLimit,
+    aiUsagePercent,
+    refetch: planQuery.refetch,
   };
 }
 

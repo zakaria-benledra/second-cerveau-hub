@@ -12,6 +12,12 @@ const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
  * AI COACH - Decision Intelligence Agent with Real AI
  * 
  * Now powered by Lovable AI Gateway (Google Gemini)
+ * 
+ * Features:
+ * - Versioned prompts from ai_prompts table
+ * - Usage tracking for billing
+ * - RBAC enforcement
+ * - Full audit trail
  */
 
 interface CoachRequest {
@@ -26,15 +32,78 @@ interface CoachResponse {
   error?: string;
 }
 
+// Get versioned prompt from database
+async function getPrompt(supabase: any, name: string): Promise<{ template: string; model: string } | null> {
+  const { data } = await supabase
+    .from("ai_prompts")
+    .select("template, model")
+    .eq("name", name)
+    .eq("is_active", true)
+    .order("version", { ascending: false })
+    .limit(1)
+    .single();
+  
+  return data;
+}
+
+// Check and increment AI usage for billing
+async function checkAndIncrementUsage(supabase: any, userId: string): Promise<boolean> {
+  // Get user's workspace
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("workspace_id")
+    .eq("user_id", userId)
+    .limit(1)
+    .single();
+
+  if (!membership) return true; // Allow if no workspace (legacy users)
+
+  // Check limit
+  const { data: usage } = await supabase
+    .from("usage_limits")
+    .select("ai_requests_used, ai_requests_limit")
+    .eq("workspace_id", membership.workspace_id)
+    .single();
+
+  if (!usage) return true; // Allow if no limits set
+
+  // Check if at limit (-1 means unlimited)
+  if (usage.ai_requests_limit !== -1 && usage.ai_requests_used >= usage.ai_requests_limit) {
+    return false;
+  }
+
+  // Increment usage
+  await supabase.rpc("increment_usage", {
+    _workspace_id: membership.workspace_id,
+    _limit_type: "ai_requests",
+    _amount: 1
+  });
+
+  return true;
+}
+
 async function callLovableAI(
-  systemPrompt: string,
+  supabase: any,
+  userId: string,
+  promptName: string,
   userPrompt: string,
   context?: Record<string, unknown>
 ): Promise<string> {
+  // Check usage limits
+  const canProceed = await checkAndIncrementUsage(supabase, userId);
+  if (!canProceed) {
+    throw new Error("Limite de requêtes IA atteinte. Passez à un plan supérieur.");
+  }
+
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!apiKey) {
     throw new Error("LOVABLE_API_KEY not configured");
   }
+
+  // Get prompt from database (or use default)
+  const promptData = await getPrompt(supabase, promptName);
+  const systemPrompt = promptData?.template || "Tu es un assistant IA utile et concis.";
+  const model = promptData?.model || "google/gemini-3-flash-preview";
 
   const contextStr = context ? `\n\nContext data:\n${JSON.stringify(context, null, 2)}` : "";
   
@@ -45,7 +114,7 @@ async function callLovableAI(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt + contextStr }
@@ -125,7 +194,9 @@ async function getDailyBriefing(supabase: any, userId: string): Promise<CoachRes
   let aiInsight = "";
   try {
     aiInsight = await callLovableAI(
-      `Tu es un coach de productivité personnel intelligent. Tu analyses les données de l'utilisateur et fournis des conseils personnalisés en français. Sois concis, motivant et actionnable.`,
+      supabase,
+      userId,
+      "daily_briefing",
       `Génère un briefing matinal personnalisé basé sur ces données. Inclus:
       1. Un message d'encouragement contextuel
       2. Les 2-3 priorités clés pour aujourd'hui
@@ -249,7 +320,9 @@ async function detectRisks(supabase: any, userId: string): Promise<CoachResponse
   let aiRiskAnalysis = null;
   try {
     const analysisResult = await callLovableAI(
-      `Tu es un analyste de risques comportementaux. Analyse les données et identifie les risques potentiels. Réponds en JSON.`,
+      supabase,
+      userId,
+      "risk_analysis",
       `Analyse ces données pour identifier les risques:
       - Score actuel: ${latestScore?.global_score || 'N/A'}
       - Burnout index: ${latestScore?.burnout_index || 0}
@@ -371,7 +444,9 @@ async function generateProposal(supabase: any, userId: string, payload: any): Pr
   let aiProposal = null;
   try {
     const aiResult = await callLovableAI(
-      `Tu es un assistant de productivité qui génère des propositions d'actions concrètes. Réponds en JSON structuré.`,
+      supabase,
+      userId,
+      "proposal_generation",
       `Génère une proposition d'action de type "${type}" basée sur:
       - Score global: ${recentScore?.global_score || 'N/A'}
       - Burnout: ${recentScore?.burnout_index || 0}%
@@ -719,7 +794,9 @@ async function getWeeklyReview(supabase: any, userId: string): Promise<CoachResp
   let aiInsights: string[] = [];
   try {
     const aiResult = await callLovableAI(
-      `Tu es un coach de performance personnel. Génère des insights perspicaces basés sur la semaine de l'utilisateur. Réponds en JSON.`,
+      supabase,
+      userId,
+      "weekly_review",
       `Analyse cette semaine et génère 3-5 insights actionables:
       - Score moyen: ${Math.round(avgGlobal)}%
       - Tendance: ${trend}
