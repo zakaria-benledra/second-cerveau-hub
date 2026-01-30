@@ -4,41 +4,39 @@ import { useAICoach } from '@/hooks/useAICoach';
 import { useTodayScore } from '@/hooks/useScores';
 import { useHabitsWithLogs } from '@/hooks/useHabits';
 import { useTodayTasks } from '@/hooks/useTasks';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { useSound } from '@/hooks/useSound';
 import {
   Brain,
   Sparkles,
   AlertTriangle,
   CheckCircle2,
-  XCircle,
   TrendingUp,
   TrendingDown,
   Loader2,
   Target,
   RefreshCw,
-  Zap,
-  Moon,
   Sun,
-  Calendar,
+  Moon,
   ArrowRight,
-  Minus,
-  BarChart3,
+  Flame,
   Clock,
-  Flame
+  Check,
+  X,
+  Zap,
+  Play
 } from 'lucide-react';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 // Behavior analysis functions
 function analyzeBehavior(score: any, habits: any[], tasks: any[]) {
   const insights: Array<{
-    type: 'strength' | 'weakness' | 'trend' | 'recommendation';
-    icon: typeof TrendingUp;
+    type: 'strength' | 'weakness' | 'drift';
     title: string;
     description: string;
     severity: 'positive' | 'warning' | 'neutral';
@@ -52,17 +50,15 @@ function analyzeBehavior(score: any, habits: any[], tasks: any[]) {
   if (habitRate >= 0.8) {
     insights.push({
       type: 'strength',
-      icon: Flame,
       title: 'Habitudes solides',
-      description: `${Math.round(habitRate * 100)}% de vos habitudes complétées. Excellente discipline.`,
+      description: `${Math.round(habitRate * 100)}% de vos habitudes complétées aujourd'hui.`,
       severity: 'positive',
     });
   } else if (habitRate < 0.5 && activeHabits.length > 0) {
     insights.push({
-      type: 'weakness',
-      icon: AlertTriangle,
+      type: 'drift',
       title: 'Habitudes en souffrance',
-      description: `Seulement ${Math.round(habitRate * 100)}% des habitudes faites. Risque de dérive.`,
+      description: `Seulement ${Math.round(habitRate * 100)}% des habitudes faites.`,
       severity: 'warning',
     });
   }
@@ -74,10 +70,9 @@ function analyzeBehavior(score: any, habits: any[], tasks: any[]) {
 
   if (overdueTasks.length > 0) {
     insights.push({
-      type: 'weakness',
-      icon: Clock,
+      type: 'drift',
       title: `${overdueTasks.length} tâche${overdueTasks.length > 1 ? 's' : ''} en retard`,
-      description: 'Des engagements non tenus affectent votre score de discipline.',
+      description: 'Des engagements non tenus affectent votre discipline.',
       severity: 'warning',
     });
   }
@@ -85,9 +80,8 @@ function analyzeBehavior(score: any, habits: any[], tasks: any[]) {
   if (doneTasks.length >= 3) {
     insights.push({
       type: 'strength',
-      icon: CheckCircle2,
       title: 'Bonne productivité',
-      description: `${doneTasks.length} tâches accomplies aujourd'hui. Momentum positif.`,
+      description: `${doneTasks.length} tâches accomplies aujourd'hui.`,
       severity: 'positive',
     });
   }
@@ -95,37 +89,24 @@ function analyzeBehavior(score: any, habits: any[], tasks: any[]) {
   // Score trend
   if (score?.momentum_index > 0.05) {
     insights.push({
-      type: 'trend',
-      icon: TrendingUp,
+      type: 'strength',
       title: 'Tendance positive',
-      description: 'Votre score s\'améliore régulièrement. Continuez ainsi.',
+      description: 'Votre score s\'améliore régulièrement.',
       severity: 'positive',
     });
   } else if (score?.momentum_index < -0.05) {
     insights.push({
-      type: 'trend',
-      icon: TrendingDown,
+      type: 'drift',
       title: 'Tendance négative',
       description: 'Votre score décline. Identifiez les blocages.',
       severity: 'warning',
     });
   }
 
-  // Recommendations
-  if (todoTasks.length > 5) {
-    insights.push({
-      type: 'recommendation',
-      icon: Target,
-      title: 'Réduire la charge',
-      description: 'Plus de 5 tâches actives. Priorisez les 3 plus impactantes.',
-      severity: 'neutral',
-    });
-  }
-
   return insights;
 }
 
-function generateDailySummary(score: any, habits: any[], tasks: any[]) {
+function generateDailyIdentity(score: any, habits: any[], tasks: any[]) {
   const activeHabits = habits?.filter(h => h.is_active) || [];
   const completedHabits = activeHabits.filter(h => h.todayLog?.completed).length;
   const doneTasks = tasks?.filter(t => t.status === 'done').length || 0;
@@ -133,383 +114,320 @@ function generateDailySummary(score: any, habits: any[], tasks: any[]) {
 
   let identity = '';
   let emoji = '';
+  let description = '';
 
   if (globalScore >= 80) {
     identity = 'Un performer discipliné';
     emoji = '🏆';
+    description = 'Excellente maîtrise de vos comportements.';
   } else if (globalScore >= 60) {
     identity = 'Un exécutant régulier';
     emoji = '⚡';
+    description = 'Bonne dynamique, continuez ainsi.';
   } else if (globalScore >= 40) {
     identity = 'Quelqu\'un en transition';
     emoji = '🌱';
+    description = 'Des progrès sont possibles avec plus de constance.';
   } else {
     identity = 'Quelqu\'un qui se cherche';
     emoji = '🔍';
+    description = 'C\'est le moment de recentrer vos priorités.';
   }
 
   return {
     identity,
     emoji,
-    summary: `Aujourd'hui, vous avez été ${identity.toLowerCase()}. ${completedHabits}/${activeHabits.length} habitudes, ${doneTasks} tâches accomplies.`,
-    score: globalScore,
+    description,
+    stats: {
+      habits: `${completedHabits}/${activeHabits.length}`,
+      tasks: doneTasks,
+      score: globalScore,
+    },
   };
 }
 
-export default function AICoachPage() {
-  const {
-    briefing,
-    briefingLoading,
-    refetchBriefing,
-    proposals,
-    proposalsLoading,
-    approveProposal,
-    isApproving,
-    rejectProposal,
-    isRejecting,
-  } = useAICoach();
+function generateTomorrowPlan(insights: ReturnType<typeof analyzeBehavior>) {
+  const drifts = insights.filter(i => i.type === 'drift');
+  const actions: string[] = [];
 
+  if (drifts.length === 0) {
+    actions.push('Maintenir vos habitudes positives');
+    actions.push('Identifier une nouvelle habitude à adopter');
+  } else {
+    drifts.forEach(d => {
+      if (d.title.includes('retard')) {
+        actions.push('Terminer les tâches en retard dès le matin');
+      }
+      if (d.title.includes('Habitudes')) {
+        actions.push('Commencer la journée par vos habitudes critiques');
+      }
+      if (d.title.includes('négative')) {
+        actions.push('Réduire votre charge cognitive pour regagner du momentum');
+      }
+    });
+  }
+
+  return actions.slice(0, 3);
+}
+
+export default function AICoachPage() {
+  const { refetchBriefing, proposals, approveProposal, isApproving, rejectProposal, isRejecting } = useAICoach();
   const { data: score } = useTodayScore();
   const { data: habits } = useHabitsWithLogs();
   const { data: tasks } = useTodayTasks();
+  const { play } = useSound();
 
-  const [activeTab, setActiveTab] = useState('mirror');
+  const [planAccepted, setPlanAccepted] = useState(false);
 
   // Generate behavior analysis
   const behaviorInsights = useMemo(() => {
     return analyzeBehavior(score, habits || [], tasks || []);
   }, [score, habits, tasks]);
 
-  const dailySummary = useMemo(() => {
-    return generateDailySummary(score, habits || [], tasks || []);
+  const dailyIdentity = useMemo(() => {
+    return generateDailyIdentity(score, habits || [], tasks || []);
   }, [score, habits, tasks]);
 
-  const pendingProposals = proposals.filter(p => p.status === 'pending');
+  const tomorrowActions = useMemo(() => {
+    return generateTomorrowPlan(behaviorInsights);
+  }, [behaviorInsights]);
+
+  const strengths = behaviorInsights.filter(i => i.type === 'strength');
+  const drifts = behaviorInsights.filter(i => i.type === 'drift' || i.type === 'weakness');
+
+  const handleAcceptPlan = () => {
+    setPlanAccepted(true);
+    play('goal_progress');
+  };
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gradient flex items-center gap-3">
-              <Brain className="h-8 w-8 text-primary" />
-              AI Coach
+      <div className="max-w-3xl mx-auto space-y-8">
+        {/* Header - Minimal */}
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Brain className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold tracking-tight text-gradient">
+              Revue Quotidienne
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Votre miroir comportemental quotidien
-            </p>
           </div>
-          <Button variant="outline" onClick={() => refetchBriefing()} className="glass-hover">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Actualiser
-          </Button>
+          <p className="text-muted-foreground">
+            {format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
+          </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="glass-strong">
-            <TabsTrigger value="mirror" className="gap-2">
-              <Brain className="h-4 w-4" />
-              Miroir
-            </TabsTrigger>
-            <TabsTrigger value="insights" className="gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Insights
-            </TabsTrigger>
-            <TabsTrigger value="proposals" className="gap-2">
-              <Sparkles className="h-4 w-4" />
-              Propositions
-              {pendingProposals.length > 0 && (
-                <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
-                  {pendingProposals.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+        {/* SECTION 1: Who You Were Today */}
+        <Card className="glass-strong overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
+          <CardContent className="relative p-8">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary to-accent text-6xl shadow-xl shadow-primary/20 mb-6">
+                {dailyIdentity.emoji}
+              </div>
+              
+              <p className="text-sm text-muted-foreground mb-2">Aujourd'hui, vous avez été</p>
+              <h2 className="text-3xl font-bold text-gradient mb-3">
+                {dailyIdentity.identity}
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                {dailyIdentity.description}
+              </p>
 
-          {/* BEHAVIOR MIRROR TAB */}
-          <TabsContent value="mirror" className="space-y-6 mt-6">
-            {/* Daily Identity Card */}
-            <Card className="glass-strong overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
-              <CardContent className="relative p-8">
-                <div className="flex flex-col md:flex-row md:items-center gap-6">
-                  <div className="flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-accent text-5xl shadow-lg shadow-primary/20">
-                    {dailySummary.emoji}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground mb-1">Aujourd'hui, vous avez été</p>
-                    <h2 className="text-3xl font-bold text-gradient mb-2">
-                      {dailySummary.identity}
-                    </h2>
-                    <p className="text-muted-foreground">
-                      {dailySummary.summary}
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-5xl font-bold text-gradient">{dailySummary.score}</div>
-                    <p className="text-xs text-muted-foreground">Score global</p>
-                  </div>
+              {/* Stats Row */}
+              <div className="flex items-center justify-center gap-8">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-success">{dailyIdentity.stats.habits}</div>
+                  <div className="text-xs text-muted-foreground">Habitudes</div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Behavior Insights Grid */}
-            <div className="grid gap-4 md:grid-cols-2">
-              {behaviorInsights.map((insight, i) => {
-                const Icon = insight.icon;
-                return (
-                  <Card 
-                    key={i} 
-                    className={cn(
-                      'glass-hover transition-all',
-                      insight.severity === 'positive' && 'border-success/30 bg-success/5',
-                      insight.severity === 'warning' && 'border-warning/30 bg-warning/5'
-                    )}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div className={cn(
-                          'p-2 rounded-xl',
-                          insight.severity === 'positive' && 'bg-success/15',
-                          insight.severity === 'warning' && 'bg-warning/15',
-                          insight.severity === 'neutral' && 'bg-primary/15'
-                        )}>
-                          <Icon className={cn(
-                            'h-5 w-5',
-                            insight.severity === 'positive' && 'text-success',
-                            insight.severity === 'warning' && 'text-warning',
-                            insight.severity === 'neutral' && 'text-primary'
-                          )} />
-                        </div>
-                        <div>
-                          <h3 className="font-medium">{insight.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {insight.description}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-
-              {behaviorInsights.length === 0 && (
-                <Card className="glass md:col-span-2">
-                  <CardContent className="py-12 text-center">
-                    <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                    <p className="text-muted-foreground">
-                      Commencez votre journée pour voir vos insights comportementaux
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+                <div className="h-8 w-px bg-border" />
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{dailyIdentity.stats.tasks}</div>
+                  <div className="text-xs text-muted-foreground">Tâches</div>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-accent">{dailyIdentity.stats.score}</div>
+                  <div className="text-xs text-muted-foreground">Score</div>
+                </div>
+              </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Tomorrow Focus */}
-            <Card className="glass-subtle border-primary/20">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Sun className="h-5 w-5 text-warning" />
-                  Demain, focalisez-vous sur
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {behaviorInsights
-                    .filter(i => i.severity === 'warning')
-                    .slice(0, 2)
-                    .map((insight, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-background/50">
-                        <ArrowRight className="h-4 w-4 text-primary" />
-                        <span className="text-sm">{insight.title}</span>
-                      </div>
-                    ))}
-                  {behaviorInsights.filter(i => i.severity === 'warning').length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      Continuez sur votre lancée ! Maintenez vos habitudes positives.
-                    </p>
-                  )}
+        {/* SECTION 2: Where You Drifted */}
+        {drifts.length > 0 && (
+          <Card className="glass border-warning/20 bg-warning/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+                Où vous avez dévié
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {drifts.map((drift, i) => (
+                <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-background/50">
+                  <div className="p-1.5 rounded-lg bg-warning/15">
+                    <TrendingDown className="h-4 w-4 text-warning" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{drift.title}</p>
+                    <p className="text-xs text-muted-foreground">{drift.description}</p>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
-          {/* INSIGHTS TAB */}
-          <TabsContent value="insights" className="space-y-6 mt-6">
-            {briefingLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : briefing ? (
-              <>
-                {/* Summary Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card className="glass-hover">
-                    <CardContent className="p-4 text-center">
-                      <div className="text-3xl font-bold text-gradient">{briefing.summary.global_score}</div>
-                      <p className="text-xs text-muted-foreground">Score Global</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="glass-hover">
-                    <CardContent className="p-4 text-center">
-                      <div className="text-3xl font-bold flex items-center justify-center gap-1">
-                        {briefing.summary.momentum > 0 ? (
-                          <TrendingUp className="h-6 w-6 text-success" />
-                        ) : briefing.summary.momentum < 0 ? (
-                          <TrendingDown className="h-6 w-6 text-destructive" />
-                        ) : (
-                          <Minus className="h-6 w-6 text-muted-foreground" />
-                        )}
-                        {Math.abs(briefing.summary.momentum)}%
-                      </div>
-                      <p className="text-xs text-muted-foreground">Momentum</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="glass-hover">
-                    <CardContent className="p-4 text-center">
-                      <div className="text-3xl font-bold">{briefing.tasks.total}</div>
-                      <p className="text-xs text-muted-foreground">Tâches ({briefing.tasks.urgent} urgentes)</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="glass-hover">
-                    <CardContent className="p-4 text-center">
-                      <div className="text-3xl font-bold">{briefing.habits.pending}</div>
-                      <p className="text-xs text-muted-foreground">Habitudes restantes</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Risks & Recommendations */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card className="glass">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5 text-warning" />
-                        Risques détectés
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {briefing.risks.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-4">
-                          Aucun risque détecté 🎉
-                        </p>
-                      ) : (
-                        briefing.risks.map((risk: any, i: number) => (
-                          <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-warning/10">
-                            <Badge variant={risk.level === 'high' ? 'destructive' : 'secondary'}>
-                              {risk.level}
-                            </Badge>
-                            <p className="text-sm">{risk.message}</p>
-                          </div>
-                        ))
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card className="glass">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-primary" />
-                        Recommandations
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {briefing.recommendations.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-4">
-                          Tout va bien pour le moment
-                        </p>
-                      ) : (
-                        briefing.recommendations.map((rec: any, i: number) => (
-                          <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-primary/10">
-                            <Badge variant="outline">{Math.round(rec.confidence * 100)}%</Badge>
-                            <p className="text-sm">{rec.message}</p>
-                          </div>
-                        ))
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </>
-            ) : (
-              <Card className="glass">
-                <CardContent className="py-12 text-center">
-                  <Brain className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">Cliquez sur Actualiser pour charger les insights</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* PROPOSALS TAB */}
-          <TabsContent value="proposals" className="space-y-6 mt-6">
-            {proposalsLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
-              </div>
-            ) : proposals.length === 0 ? (
-              <Card className="glass">
-                <CardContent className="py-12 text-center">
-                  <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">Aucune proposition IA en attente</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {proposals.map((proposal) => (
-                  <Card key={proposal.id} className={cn(
-                    'glass-hover',
-                    proposal.status === 'pending' && 'border-primary/30'
-                  )}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{proposal.title}</CardTitle>
-                        <Badge variant={proposal.status === 'pending' ? 'default' : 'secondary'}>
-                          {proposal.status === 'pending' ? 'En attente' : 
-                           proposal.status === 'approved' ? 'Approuvée' : 'Rejetée'}
-                        </Badge>
-                      </div>
-                      <CardDescription>{proposal.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {proposal.reasoning && (
-                        <p className="text-sm text-muted-foreground mb-4">
-                          <strong>Raisonnement:</strong> {proposal.reasoning}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 mb-4">
-                        <Badge variant="outline">
-                          Confiance: {Math.round((proposal.confidence_score || 0) * 100)}%
-                        </Badge>
-                        <Badge variant="outline">{proposal.priority}</Badge>
-                      </div>
-                      {proposal.status === 'pending' && (
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => approveProposal(proposal.id)}
-                            disabled={isApproving}
-                            className="bg-success hover:bg-success/90"
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Approuver
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            onClick={() => rejectProposal({ proposalId: proposal.id })}
-                            disabled={isRejecting}
-                          >
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Rejeter
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+        {/* Strengths - Collapsed if drifts exist */}
+        {strengths.length > 0 && (
+          <Card className="glass-subtle border-success/20 bg-success/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Flame className="h-5 w-5 text-success" />
+                Ce qui a bien fonctionné
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {strengths.map((strength, i) => (
+                  <Badge key={i} className="bg-success/15 text-success border-0 py-1.5 px-3">
+                    <CheckCircle2 className="h-3 w-3 mr-1.5" />
+                    {strength.title}
+                  </Badge>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* SECTION 3: What to Fix Tomorrow */}
+        <Card className="glass-strong border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Sun className="h-5 w-5 text-warning" />
+              Plan pour demain
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              {tomorrowActions.map((action, i) => (
+                <div 
+                  key={i} 
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-xl transition-all",
+                    planAccepted ? "bg-success/10 border border-success/20" : "bg-background/50"
+                  )}
+                >
+                  <div className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+                    planAccepted 
+                      ? "bg-success text-success-foreground" 
+                      : "bg-primary/15 text-primary"
+                  )}>
+                    {planAccepted ? <Check className="h-3 w-3" /> : i + 1}
+                  </div>
+                  <span className="text-sm flex-1">{action}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            {!planAccepted ? (
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  className="flex-1 gradient-primary"
+                  onClick={handleAcceptPlan}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Accepter le plan
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => refetchBriefing()}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Ajuster
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-2">
+                <Badge className="bg-success/15 text-success border-0 py-2 px-4">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Plan accepté pour demain
+                </Badge>
+              </div>
             )}
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Simulate Scenario - Collapsed */}
+        <Card className="glass-subtle">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-accent/15">
+                  <Zap className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Simuler un scénario</p>
+                  <p className="text-xs text-muted-foreground">
+                    Que se passerait-il si vous ajoutiez une habitude ?
+                  </p>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" className="text-accent">
+                <Play className="h-4 w-4 mr-1" />
+                Simuler
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Proposals if any */}
+        {proposals.filter(p => p.status === 'pending').length > 0 && (
+          <Card className="glass">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Propositions de l'IA
+                <Badge className="ml-2">{proposals.filter(p => p.status === 'pending').length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {proposals.filter(p => p.status === 'pending').slice(0, 3).map((proposal) => (
+                <div key={proposal.id} className="flex items-start gap-3 p-4 rounded-xl bg-background/50 border border-border/50">
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{proposal.title}</p>
+                    {proposal.description && (
+                      <p className="text-xs text-muted-foreground mt-1">{proposal.description}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      onClick={() => rejectProposal({ proposalId: proposal.id })}
+                      disabled={isRejecting}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="gradient-primary"
+                      onClick={() => approveProposal(proposal.id)}
+                      disabled={isApproving}
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </AppLayout>
   );

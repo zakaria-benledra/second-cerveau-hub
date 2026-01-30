@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -22,24 +23,27 @@ import {
   useArchiveInboxItem,
   useDeleteInboxItem 
 } from '@/hooks/useInbox';
+import { useSound } from '@/hooks/useSound';
 import { 
   Plus, 
   Inbox, 
   Loader2, 
-  ArrowRight, 
   Archive, 
   Trash2,
-  Zap,
   Sparkles,
   Target,
   CheckSquare,
   FolderOpen,
   Brain,
   TrendingUp,
-  Lightbulb
+  Lightbulb,
+  Calendar,
+  Clock
 } from 'lucide-react';
 import type { CreateInboxInput } from '@/lib/api/inbox';
 import { cn } from '@/lib/utils';
+import { format, subDays, isAfter, startOfDay } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 // AI Classification suggestions based on content analysis
 function classifyInboxItem(title: string, content?: string): {
@@ -89,14 +93,18 @@ const classificationColors = {
   archive: 'bg-muted text-muted-foreground border-muted',
 };
 
+type TimeFilter = 'today' | '7d' | '30d' | 'all';
+
 export default function InboxPage() {
   const { data: items, isLoading } = useInboxItems();
   const createItem = useCreateInboxItem();
   const convertToTask = useConvertInboxToTask();
   const archiveItem = useArchiveInboxItem();
   const deleteItem = useDeleteInboxItem();
+  const { play } = useSound();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [newItem, setNewItem] = useState<CreateInboxInput>({
     title: '',
     content: '',
@@ -110,8 +118,28 @@ export default function InboxPage() {
     setIsDialogOpen(false);
   };
 
-  const newItems = items?.filter(i => i.status === 'new') || [];
-  const processedItems = items?.filter(i => i.status === 'processed') || [];
+  const handleConvertToTask = async (id: string) => {
+    await convertToTask.mutateAsync(id);
+    play('task_done');
+  };
+
+  // Filter items by time
+  const filteredItems = useMemo(() => {
+    if (!items) return [];
+    
+    const now = new Date();
+    const filterDate = {
+      'today': startOfDay(now),
+      '7d': subDays(now, 7),
+      '30d': subDays(now, 30),
+      'all': new Date(0),
+    }[timeFilter];
+
+    return items.filter(item => isAfter(new Date(item.created_at), filterDate));
+  }, [items, timeFilter]);
+
+  const newItems = filteredItems.filter(i => i.status === 'new');
+  const processedItems = filteredItems.filter(i => i.status === 'processed');
 
   // Classify items with AI suggestions
   const classifiedItems = useMemo(() => {
@@ -120,6 +148,9 @@ export default function InboxPage() {
       classification: classifyInboxItem(item.title, item.content || undefined),
     }));
   }, [newItems]);
+
+  // Stats
+  const highConfidenceCount = classifiedItems.filter(i => i.classification.confidence >= 0.8).length;
 
   if (isLoading) {
     return (
@@ -141,7 +172,7 @@ export default function InboxPage() {
               Capture Cognitive
             </h1>
             <p className="text-muted-foreground mt-1">
-              {newItems.length} élément{newItems.length > 1 ? 's' : ''} à classifier
+              {newItems.length} élément{newItems.length > 1 ? 's' : ''} à trier
             </p>
           </div>
 
@@ -226,6 +257,32 @@ export default function InboxPage() {
           </Dialog>
         </div>
 
+        {/* Time Filters */}
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <div className="flex gap-1">
+            {[
+              { value: 'today', label: "Aujourd'hui" },
+              { value: '7d', label: '7 jours' },
+              { value: '30d', label: '30 jours' },
+              { value: 'all', label: 'Tout' },
+            ].map(filter => (
+              <Button
+                key={filter.value}
+                variant={timeFilter === filter.value ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setTimeFilter(filter.value as TimeFilter)}
+                className={cn(
+                  'text-xs',
+                  timeFilter === filter.value && 'gradient-primary'
+                )}
+              >
+                {filter.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           <Card className="glass-hover hover-lift">
@@ -235,7 +292,7 @@ export default function InboxPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold tabular-nums">{newItems.length}</p>
-                <p className="text-xs text-muted-foreground">À traiter</p>
+                <p className="text-xs text-muted-foreground">À trier</p>
               </div>
             </CardContent>
           </Card>
@@ -245,9 +302,7 @@ export default function InboxPage() {
                 <Sparkles className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold tabular-nums">
-                  {classifiedItems.filter(i => i.classification.confidence >= 0.8).length}
-                </p>
+                <p className="text-2xl font-bold tabular-nums">{highConfidenceCount}</p>
                 <p className="text-xs text-muted-foreground">Haute confiance</p>
               </div>
             </CardContent>
@@ -273,7 +328,7 @@ export default function InboxPage() {
               À classifier
             </CardTitle>
             <CardDescription>
-              L'IA suggère une catégorie pour chaque élément
+              Un clic pour transformer, l'IA suggère la catégorie
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -312,12 +367,12 @@ export default function InboxPage() {
                         {cls.reason}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(item.created_at).toLocaleDateString('fr-FR')}
+                        {format(new Date(item.created_at), 'dd MMM HH:mm', { locale: fr })}
                       </span>
                     </div>
                   </div>
                   
-                  {/* Action Buttons */}
+                  {/* One-Click Action Buttons */}
                   <div className="flex flex-col gap-1.5">
                     <Button
                       size="sm"
@@ -326,11 +381,22 @@ export default function InboxPage() {
                         cls.suggestion === 'task' && 'gradient-primary text-primary-foreground'
                       )}
                       variant={cls.suggestion === 'task' ? 'default' : 'outline'}
-                      onClick={() => convertToTask.mutate(item.id)}
+                      onClick={() => handleConvertToTask(item.id)}
                       disabled={convertToTask.isPending}
                     >
                       <CheckSquare className="h-3 w-3" />
                       Tâche
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={cn(
+                        'text-xs gap-1.5',
+                        cls.suggestion === 'habit' && 'border-success text-success'
+                      )}
+                    >
+                      <TrendingUp className="h-3 w-3" />
+                      Habitude
                     </Button>
                     <Button
                       size="sm"
@@ -370,13 +436,13 @@ export default function InboxPage() {
           </CardContent>
         </Card>
 
-        {/* Processed Items */}
+        {/* Processed Items - Collapsed */}
         {processedItems.length > 0 && (
           <Card className="glass-subtle bg-muted/20">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
                 <Archive className="h-4 w-4" />
-                Traités récemment
+                Traités récemment ({processedItems.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
