@@ -34,7 +34,6 @@ const navItems = [
   { icon: FolderKanban, label: 'Projets', path: '/projects', color: 'text-accent' },
   { icon: Timer, label: 'Focus', path: '/focus', color: 'text-destructive' },
   { icon: TrendingUp, label: 'Objectifs', path: '/goals', color: 'text-primary' },
-  { icon: Calendar, label: 'Calendrier', path: '/calendar', color: 'text-info' },
   { icon: BookOpen, label: 'Apprentissage', path: '/learning', color: 'text-success' },
   { icon: Wallet, label: 'Finances', path: '/finance', color: 'text-warning' },
   { icon: BarChart3, label: 'Dashboard', path: '/dashboard', color: 'text-accent' },

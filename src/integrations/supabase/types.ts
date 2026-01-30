@@ -116,6 +116,80 @@ export type Database = {
         }
         Relationships: []
       }
+      budgets: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          id: string
+          monthly_limit: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          monthly_limit: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          monthly_limit?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar_events: {
+        Row: {
+          all_day: boolean | null
+          color: string | null
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          location: string | null
+          start_time: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          all_day?: boolean | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          location?: string | null
+          start_time: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          all_day?: boolean | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          location?: string | null
+          start_time?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_stats: {
         Row: {
           clarity_score: number | null
@@ -186,6 +260,113 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      finance_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      finance_transactions: {
+        Row: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcards: {
+        Row: {
+          back: string
+          created_at: string
+          deck: string | null
+          difficulty: number | null
+          front: string
+          id: string
+          next_review: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          back: string
+          created_at?: string
+          deck?: string | null
+          difficulty?: number | null
+          front: string
+          id?: string
+          next_review?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          back?: string
+          created_at?: string
+          deck?: string | null
+          difficulty?: number | null
+          front?: string
+          id?: string
+          next_review?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -348,6 +529,44 @@ export type Database = {
         }
         Relationships: []
       }
+      highlights: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          note: string | null
+          page: number | null
+          reading_item_id: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          page?: number | null
+          reading_item_id?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          page?: number | null
+          reading_item_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "highlights_reading_item_id_fkey"
+            columns: ["reading_item_id"]
+            isOneToOne: false
+            referencedRelation: "reading_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inbox_items: {
         Row: {
           content: string | null
@@ -391,6 +610,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      journal_entries: {
+        Row: {
+          challenges: string[] | null
+          created_at: string
+          date: string
+          energy_level: string | null
+          gratitude: string[] | null
+          id: string
+          mood: string | null
+          reflections: string | null
+          updated_at: string
+          user_id: string
+          wins: string[] | null
+        }
+        Insert: {
+          challenges?: string[] | null
+          created_at?: string
+          date?: string
+          energy_level?: string | null
+          gratitude?: string[] | null
+          id?: string
+          mood?: string | null
+          reflections?: string | null
+          updated_at?: string
+          user_id: string
+          wins?: string[] | null
+        }
+        Update: {
+          challenges?: string[] | null
+          created_at?: string
+          date?: string
+          energy_level?: string | null
+          gratitude?: string[] | null
+          id?: string
+          mood?: string | null
+          reflections?: string | null
+          updated_at?: string
+          user_id?: string
+          wins?: string[] | null
+        }
+        Relationships: []
       }
       metric_registry: {
         Row: {
@@ -451,6 +712,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          project_id: string | null
+          tags: string[] | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          tags?: string[] | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -594,6 +896,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      quiz_results: {
+        Row: {
+          created_at: string
+          deck: string | null
+          id: string
+          score: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deck?: string | null
+          id?: string
+          score: number
+          total: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deck?: string | null
+          id?: string
+          score?: number
+          total?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reading_items: {
+        Row: {
+          author: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          progress: number | null
+          status: string
+          title: string
+          updated_at: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          author?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          progress?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          author?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          progress?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       resources: {
         Row: {
