@@ -77,11 +77,10 @@ const navGroups = [
     label: 'Intelligence',
     icon: LayoutDashboard,
     items: [
+      { icon: BarChart3, label: 'Intelligence Hub', path: '/intelligence' },
       { icon: Award, label: 'Scores', path: '/scores' },
       { icon: Zap, label: 'Automations', path: '/automation' },
       { icon: Brain, label: 'AI Coach', path: '/ai-coach' },
-      { icon: BarChart3, label: 'Dashboard', path: '/dashboard' },
-      { icon: BarChart3, label: 'BI Executive', path: '/bi/executive' },
     ],
   },
   {
