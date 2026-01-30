@@ -67,6 +67,50 @@ export type Database = {
           },
         ]
       }
+      ai_interventions: {
+        Row: {
+          ai_message: string
+          context: Json | null
+          created_at: string
+          id: string
+          intervention_type: string
+          responded_at: string | null
+          user_action: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          ai_message: string
+          context?: Json | null
+          created_at?: string
+          id?: string
+          intervention_type: string
+          responded_at?: string | null
+          user_action?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          ai_message?: string
+          context?: Json | null
+          created_at?: string
+          id?: string
+          intervention_type?: string
+          responded_at?: string | null
+          user_action?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_interventions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_metrics: {
         Row: {
           approval_rate: number | null
@@ -96,6 +140,56 @@ export type Database = {
           total_requests?: number | null
         }
         Relationships: []
+      }
+      ai_notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          delivered: boolean | null
+          id: string
+          message: string
+          notification_type: string | null
+          read_at: string | null
+          title: string | null
+          urgency: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          delivered?: boolean | null
+          id?: string
+          message: string
+          notification_type?: string | null
+          read_at?: string | null
+          title?: string | null
+          urgency?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          delivered?: boolean | null
+          id?: string
+          message?: string
+          notification_type?: string | null
+          read_at?: string | null
+          title?: string | null
+          urgency?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_notifications_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_prompts: {
         Row: {
@@ -462,6 +556,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "bank_connections_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      behavior_signals: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          score: number
+          signal_type: string
+          source: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          score?: number
+          signal_type: string
+          source?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          score?: number
+          signal_type?: string
+          source?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavior_signals_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -1019,6 +1154,73 @@ export type Database = {
           },
         ]
       }
+      finance_parsed_transactions: {
+        Row: {
+          amount: number
+          anomaly_score: number | null
+          category_id: string | null
+          created_at: string
+          date: string
+          document_id: string | null
+          id: string
+          imported: boolean | null
+          label: string | null
+          type: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          amount: number
+          anomaly_score?: number | null
+          category_id?: string | null
+          created_at?: string
+          date: string
+          document_id?: string | null
+          id?: string
+          imported?: boolean | null
+          label?: string | null
+          type?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          amount?: number
+          anomaly_score?: number | null
+          category_id?: string | null
+          created_at?: string
+          date?: string
+          document_id?: string | null
+          id?: string
+          imported?: boolean | null
+          label?: string | null
+          type?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_parsed_transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_parsed_transactions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_parsed_transactions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_rules: {
         Row: {
           category_id: string | null
@@ -1422,6 +1624,51 @@ export type Database = {
           },
         ]
       }
+      habit_behavior_links: {
+        Row: {
+          behavior_type: string
+          created_at: string
+          habit_id: string | null
+          id: string
+          metadata: Json | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          behavior_type: string
+          created_at?: string
+          habit_id?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          behavior_type?: string
+          created_at?: string
+          habit_id?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_behavior_links_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "habit_behavior_links_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       habit_logs: {
         Row: {
           completed: boolean
@@ -1720,6 +1967,54 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_ai_assists: {
+        Row: {
+          accepted: boolean | null
+          created_at: string
+          entry_id: string | null
+          id: string
+          suggestion: string
+          suggestion_type: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          accepted?: boolean | null
+          created_at?: string
+          entry_id?: string | null
+          id?: string
+          suggestion: string
+          suggestion_type?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          accepted?: boolean | null
+          created_at?: string
+          entry_id?: string | null
+          id?: string
+          suggestion?: string
+          suggestion_type?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_ai_assists_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_ai_assists_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_entries: {
         Row: {
           challenges: string[] | null
@@ -1769,6 +2064,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "journal_entries_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_metrics_daily: {
+        Row: {
+          avg_time_in_column: Json | null
+          created_at: string
+          date: string
+          id: string
+          productivity_score: number | null
+          tasks_completed: number | null
+          tasks_created: number | null
+          tasks_moved: number | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          avg_time_in_column?: Json | null
+          created_at?: string
+          date: string
+          id?: string
+          productivity_score?: number | null
+          tasks_completed?: number | null
+          tasks_created?: number | null
+          tasks_moved?: number | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          avg_time_in_column?: Json | null
+          created_at?: string
+          date?: string
+          id?: string
+          productivity_score?: number | null
+          tasks_completed?: number | null
+          tasks_created?: number | null
+          tasks_moved?: number | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_metrics_daily_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
