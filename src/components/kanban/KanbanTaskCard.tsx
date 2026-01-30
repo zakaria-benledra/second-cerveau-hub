@@ -76,17 +76,42 @@ export function KanbanTaskCard({
   onDragEnd,
 }: KanbanTaskCardProps) {
   const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+  const [isLocalDragging, setIsLocalDragging] = useState(false); // ISSUE #11 FIX: Local drag state
   const priority = priorityConfig[task.priority] || priorityConfig.medium;
   const energy = energyConfig[task.energy_level || 'medium'];
   const impactScore = calculateImpactScore(task);
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.kanban_status !== 'done';
 
+  // ISSUE #11 FIX: Better visual feedback for dragging
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsLocalDragging(true);
+    
+    // Create custom drag image
+    const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+    dragImage.style.opacity = '0.8';
+    dragImage.style.transform = 'scale(1.02)';
+    dragImage.style.position = 'absolute';
+    dragImage.style.top = '-1000px';
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, 0, 0);
+    setTimeout(() => dragImage.remove(), 0);
+    
+    onDragStart(e);
+  };
+
+  const handleDragEnd = () => {
+    setIsLocalDragging(false);
+    onDragEnd();
+  };
+
+  const actualDragging = isDragging || isLocalDragging;
+
   return (
     <>
       <div
         draggable
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
         onClick={() => setIsTimelineOpen(true)}
         className={cn(
           'group relative cursor-grab active:cursor-grabbing',
@@ -94,7 +119,8 @@ export function KanbanTaskCard({
           'bg-card/80 backdrop-blur-sm',
           'hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5',
           'transition-all duration-300 ease-out',
-          isDragging && 'opacity-50 scale-95 ring-2 ring-primary',
+          // ISSUE #11 FIX: Enhanced dragging visual
+          actualDragging && 'opacity-40 scale-95 ring-2 ring-primary shadow-xl shadow-primary/20',
           isTopInDoing && 'ring-1 ring-warning/50 bg-warning/5'
         )}
       >

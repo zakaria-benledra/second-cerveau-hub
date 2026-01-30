@@ -54,6 +54,17 @@ Deno.serve(async (req) => {
       })
     }
 
+    // BUG #8 FIX: Create audit log BEFORE execution
+    const auditId = crypto.randomUUID()
+    await supabase.from('audit_log').insert({
+      id: auditId,
+      user_id: user.id,
+      action: 'AI_INTERVENTION_STARTED',
+      entity: 'ai_interventions',
+      entity_id: interventionId,
+      new_value: { status: 'started', started_at: new Date().toISOString() }
+    })
+
     // Get the intervention
     const { data: intervention, error: fetchError } = await supabase
       .from('ai_interventions')
@@ -63,6 +74,12 @@ Deno.serve(async (req) => {
       .single()
 
     if (fetchError || !intervention) {
+      // BUG #8 FIX: Log failure in audit
+      await supabase.from('audit_log').update({
+        action: 'AI_INTERVENTION_FAILED',
+        new_value: { status: 'failed', error: 'Intervention not found' }
+      }).eq('id', auditId)
+      
       return new Response(JSON.stringify({ error: 'Intervention not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -215,23 +232,38 @@ Deno.serve(async (req) => {
       })
       .eq('id', interventionId)
 
-    // Record in audit log
-    await supabase.from('audit_log').insert({
-      user_id: user.id,
+    // BUG #8 FIX: Update audit log with success
+    await supabase.from('audit_log').update({
       action: 'AI_INTERVENTION_APPLIED',
-      entity: 'ai_interventions',
-      entity_id: interventionId,
-      new_value: { results: actionResults }
-    })
+      new_value: { 
+        status: 'completed', 
+        completed_at: new Date().toISOString(),
+        results: actionResults 
+      }
+    }).eq('id', auditId)
 
-    // Track as product event
+    // Track as product event (existing audit_log insert is now an update above)
     await supabase.from('user_journey_events').insert({
       user_id: user.id,
       workspace_id: workspaceId,
       event_type: 'ai_intervention_applied',
       entity: 'ai_interventions',
       entity_id: interventionId,
-      metadata: { 
+      payload: { 
+        intervention_type: intervention.intervention_type,
+        actions_count: actionResults.length,
+        actions: actionResults
+      }
+    })
+
+    // Track as product event (legacy)
+    await supabase.from('user_journey_events').insert({
+      user_id: user.id,
+      workspace_id: workspaceId,
+      event_type: 'ai_action_accepted',
+      entity: 'ai_interventions',
+      entity_id: interventionId,
+      payload: { 
         intervention_type: intervention.intervention_type,
         actions_count: actionResults.length,
         actions: actionResults
@@ -241,7 +273,8 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       message: 'Intervention appliquée avec succès',
-      actions: actionResults
+      actions: actionResults,
+      auditId
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })

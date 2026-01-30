@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GlobalStateCard } from '@/components/today/GlobalStateCard';
 import { NextBestActionCard } from '@/components/today/NextBestActionCard';
@@ -15,13 +15,14 @@ import { useCompleteTask } from '@/hooks/useTasks';
 import { useToggleHabitLog } from '@/hooks/useHabits';
 import { useAICoach } from '@/hooks/useAICoach';
 import { useSound } from '@/hooks/useSound';
-import { Loader2, Settings2 } from 'lucide-react';
+import { Loader2, Settings2, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SoundSettings } from '@/components/sound/SoundSettings';
+import { toast } from 'sonner';
 
 export default function TodayPage() {
   const navigate = useNavigate();
@@ -50,26 +51,65 @@ export default function TodayPage() {
   const { refetchBriefing, briefingLoading } = useAICoach();
   const { play } = useSound();
 
+  // BUG #1 FIX: Prevent race conditions with refs
+  const completingTaskRef = useRef<string | null>(null);
+  const togglingHabitRef = useRef<string | null>(null);
+
+  // BUG #7 FIX: Rate limiting for AI briefing
+  const lastRefetchRef = useRef<number>(0);
+  const MIN_REFETCH_INTERVAL = 30000; // 30 seconds
+
   const today = new Date();
   const formattedDate = format(today, "EEEE d MMMM", { locale: fr });
 
-  // Handle task completion with sound
-  const handleCompleteTask = (id: string) => {
+  // Handle task completion with sound and race condition prevention
+  const handleCompleteTask = useCallback((id: string) => {
+    // BUG #1 FIX: Prevent double-clicks
+    if (completingTaskRef.current === id || completeTask.isPending) return;
+    completingTaskRef.current = id;
+    
     completeTask.mutate(id, {
       onSuccess: () => {
         play('task_done');
+        completingTaskRef.current = null;
+      },
+      onError: () => {
+        completingTaskRef.current = null;
       }
     });
-  };
+  }, [completeTask, play]);
 
-  // Handle habit toggle with sound
-  const handleToggleHabit = (id: string) => {
+  // Handle habit toggle with sound and race condition prevention
+  const handleToggleHabit = useCallback((id: string) => {
+    // BUG #1 FIX: Prevent double-clicks
+    if (togglingHabitRef.current === id || toggleHabit.isPending) return;
+    togglingHabitRef.current = id;
+    
     toggleHabit.mutate(id, {
       onSuccess: () => {
         play('habit_done');
+        togglingHabitRef.current = null;
+      },
+      onError: () => {
+        togglingHabitRef.current = null;
       }
     });
-  };
+  }, [toggleHabit, play]);
+
+  // BUG #7 FIX: Rate-limited AI briefing refresh
+  const handleRefetchBriefing = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastRefetchRef.current;
+    
+    if (timeSinceLastFetch < MIN_REFETCH_INTERVAL) {
+      const remainingSeconds = Math.ceil((MIN_REFETCH_INTERVAL - timeSinceLastFetch) / 1000);
+      toast.warning(`Veuillez attendre ${remainingSeconds}s avant de rafraîchir`);
+      return;
+    }
+    
+    lastRefetchRef.current = now;
+    refetchBriefing();
+  }, [refetchBriefing]);
 
   if (isLoading) {
     return (
@@ -149,8 +189,8 @@ export default function TodayPage() {
         </AnimatedContainer>
 
         {/* SECTION 2: Next Best Action - Dominant Card */}
-        {nextBestAction && nextBestAction.status !== 'done' && (
-          <AnimatedContainer delay={100} animation="fade-up">
+        <AnimatedContainer delay={100} animation="fade-up">
+          {nextBestAction && nextBestAction.status !== 'done' ? (
             <NextBestActionCard
               task={{
                 id: nextBestAction.id,
@@ -163,9 +203,30 @@ export default function TodayPage() {
               }}
               onStart={() => handleCompleteTask(nextBestAction.id)}
               isLoading={completeTask.isPending}
+              disabled={completeTask.isPending || completingTaskRef.current === nextBestAction.id}
             />
-          </AnimatedContainer>
-        )}
+          ) : (
+            // ISSUE #9 FIX: Show empty state when no next best action
+            <Card className="glass-strong">
+              <CardContent className="p-6 text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-success/10 flex items-center justify-center">
+                    <CheckCircle className="h-6 w-6 text-success" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Toutes vos priorités sont gérées !</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Prenez une pause méritée ou explorez vos autres tâches dans le Kanban.
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={() => navigate('/kanban')}>
+                    Voir toutes les tâches
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </AnimatedContainer>
 
         {/* SECTION 3: Focus Zone - Habits + Tasks (max 3 each) */}
         <div className="grid gap-6 md:grid-cols-2">
@@ -198,7 +259,7 @@ export default function TodayPage() {
           <AnimatedContainer delay={300} animation="fade-up">
             <AIInsightCard
               insight={aiInsight}
-              onRefresh={refetchBriefing}
+              onRefresh={handleRefetchBriefing}
               isRefreshing={briefingLoading}
               source="ai"
             />

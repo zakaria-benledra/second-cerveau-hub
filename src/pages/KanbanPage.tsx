@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -48,7 +48,11 @@ export default function KanbanPage() {
   const { recentActions, canUndo, undoLast, isUndoing } = useRecentUndos();
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [draggedTask, setDraggedTask] = useState<KanbanTask | null>(null);
+  // BUG #2 FIX: Use refs to prevent state loss during re-renders
+  const draggedTaskRef = useRef<KanbanTask | null>(null);
+  const dragOverColumnRef = useRef<KanbanStatus | null>(null);
+  // Keep state for UI updates
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<KanbanStatus | null>(null);
   const [activeTab, setActiveTab] = useState<'board' | 'metrics'>('board');
   
@@ -143,8 +147,10 @@ export default function KanbanPage() {
     return { total, doing, done, avgImpact };
   }, [columns]);
 
+  // BUG #2 FIX: Use refs to maintain drag state across re-renders
   const handleDragStart = useCallback((e: React.DragEvent, task: KanbanTask) => {
-    setDraggedTask(task);
+    draggedTaskRef.current = task;
+    setDraggedTaskId(task.id);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', task.id);
   }, []);
@@ -152,28 +158,36 @@ export default function KanbanPage() {
   const handleDragOver = useCallback((e: React.DragEvent, columnId: KanbanStatus) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    dragOverColumnRef.current = columnId;
     setDragOverColumn(columnId);
   }, []);
 
   const handleDragLeave = useCallback(() => {
+    dragOverColumnRef.current = null;
     setDragOverColumn(null);
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent, newStatus: KanbanStatus) => {
     e.preventDefault();
+    dragOverColumnRef.current = null;
     setDragOverColumn(null);
     
-    if (draggedTask && draggedTask.kanban_status !== newStatus) {
+    // BUG #2 FIX: Use ref instead of state
+    const task = draggedTaskRef.current;
+    if (task && task.kanban_status !== newStatus) {
       moveTask.mutate({
-        taskId: draggedTask.id,
+        taskId: task.id,
         newStatus,
       });
     }
-    setDraggedTask(null);
-  }, [draggedTask, moveTask]);
+    draggedTaskRef.current = null;
+    setDraggedTaskId(null);
+  }, [moveTask]);
 
   const handleDragEnd = useCallback(() => {
-    setDraggedTask(null);
+    draggedTaskRef.current = null;
+    dragOverColumnRef.current = null;
+    setDraggedTaskId(null);
     setDragOverColumn(null);
   }, []);
 
@@ -265,7 +279,8 @@ export default function KanbanPage() {
                     accentColor={column.accent}
                     glowColor={column.glow}
                     isDropTarget={dragOverColumn === column.id}
-                    draggedTaskId={draggedTask?.id}
+                    draggedTaskId={draggedTaskId || undefined}
+                    
                     projectsMap={projectsMap}
                     goalsMap={goalsMap}
                     onDragOver={(e) => handleDragOver(e, column.id)}

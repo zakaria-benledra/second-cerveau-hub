@@ -125,6 +125,22 @@ Deno.serve(async (req) => {
     if (downloadError) throw downloadError
 
     const csvText = await fileData.text()
+    
+    // BUG #4 FIX: Validate file size (max 10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (csvText.length > MAX_FILE_SIZE) {
+      await supabase.from('documents').update({
+        parsed_status: 'failed',
+        parse_errors: { message: 'Fichier trop volumineux (max 10MB)' },
+        parsed_at: new Date().toISOString()
+      }).eq('id', documentId)
+
+      return new Response(JSON.stringify({ error: 'Fichier trop volumineux (max 10MB)' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     const lines = csvText.split('\n').filter(line => line.trim())
 
     if (lines.length < 2) {

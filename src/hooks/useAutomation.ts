@@ -24,6 +24,17 @@ export function useAutomationEvents(limit: number = 50) {
   });
 }
 
+// ISSUE #16 FIX: Hook for automation history with unread count
+export function useAutomationHistory() {
+  const { data: events, isLoading } = useAutomationEvents(100);
+  
+  return {
+    history: events || [],
+    isLoading,
+    unreadCount: 0, // Could be enhanced with a read/unread tracking system
+  };
+}
+
 export function useCreateAutomationRule() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

@@ -200,6 +200,33 @@ serve(async (req) => {
     // ========== MULTI-TENANT: Get required workspace_id (never null) ==========
     const workspaceId = await getRequiredWorkspaceId(supabase, user_id);
 
+    // BUG #5 FIX: Prevent race conditions with idempotency check
+    const jobId = crypto.randomUUID();
+    const lockKey = `score_calc_${user_id}_${date}`;
+    
+    // Check for existing recent calculation (within last 30 seconds)
+    const { data: recentCalc } = await supabase
+      .from('scores_daily')
+      .select('computed_at')
+      .eq('user_id', user_id)
+      .eq('date', date)
+      .single();
+    
+    if (recentCalc?.computed_at) {
+      const lastComputed = new Date(recentCalc.computed_at);
+      const secondsAgo = (Date.now() - lastComputed.getTime()) / 1000;
+      if (secondsAgo < 30) {
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Score recently calculated, skipping',
+            skipped: true 
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Compute all subscores
     const { score: habitsScore, consistency } = await computeHabitsScore(supabase, user_id, date);
     const tasksScore = await computeTasksScore(supabase, user_id, date);
