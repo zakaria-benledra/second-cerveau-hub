@@ -3,12 +3,10 @@ import { useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Progress } from '@/components/ui/progress';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useCategories } from '@/hooks/useFinance';
 import { useUploadStatement } from '@/hooks/useDocuments';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,18 +14,17 @@ import { cn } from '@/lib/utils';
 import { 
   Upload, 
   FileText, 
-  ArrowRight, 
   Check, 
   AlertTriangle, 
   Loader2, 
   ChevronRight,
   ChevronLeft,
-  Sparkles,
-  TableIcon,
   Eye,
   CheckCircle2,
   XCircle,
-  X
+  X,
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatedContainer } from '@/components/ui/animated-container';
@@ -39,10 +36,9 @@ interface ParsedTransaction {
   amount: number;
   type: 'income' | 'expense';
   category_id: string | null;
-  suggestedCategory: string | null;
-  isAnomaly: boolean;
-  anomalyReason?: string;
-  selected: boolean;
+  categoryName: string | null;
+  isValid: boolean;
+  validationError?: string;
 }
 
 interface WizardStep {
@@ -54,9 +50,8 @@ interface WizardStep {
 
 const STEPS: WizardStep[] = [
   { id: 1, title: 'Upload', description: 'Déposez votre fichier', icon: <Upload className="h-5 w-5" /> },
-  { id: 2, title: 'Aperçu', description: 'Vérifiez les données', icon: <TableIcon className="h-5 w-5" /> },
-  { id: 3, title: 'Catégories', description: 'Assignez les catégories', icon: <Sparkles className="h-5 w-5" /> },
-  { id: 4, title: 'Confirmation', description: 'Validez l\'import', icon: <Check className="h-5 w-5" /> },
+  { id: 2, title: 'Aperçu', description: 'Vérifiez et éditez', icon: <Eye className="h-5 w-5" /> },
+  { id: 3, title: 'Confirmation', description: 'Importez', icon: <Check className="h-5 w-5" /> },
 ];
 
 interface FinanceImportWizardProps {
@@ -64,36 +59,275 @@ interface FinanceImportWizardProps {
   onCancel?: () => void;
 }
 
+// Validate a transaction row
+function validateTransaction(t: ParsedTransaction): { isValid: boolean; error?: string } {
+  // Date validation
+  if (!t.date || !/^\d{4}-\d{2}-\d{2}$/.test(t.date)) {
+    return { isValid: false, error: 'Date invalide (format: YYYY-MM-DD)' };
+  }
+  const dateObj = new Date(t.date);
+  if (isNaN(dateObj.getTime())) {
+    return { isValid: false, error: 'Date invalide' };
+  }
+  
+  // Amount validation
+  if (isNaN(t.amount) || t.amount === 0) {
+    return { isValid: false, error: 'Montant invalide' };
+  }
+  
+  // Description validation
+  if (!t.description || t.description.trim().length < 2) {
+    return { isValid: false, error: 'Description trop courte' };
+  }
+  
+  return { isValid: true };
+}
+
 function FinanceImportWizardInner({ onComplete, onCancel }: FinanceImportWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [file, setFile] = useState<File | null>(null);
-  const [documentId, setDocumentId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [transactions, setTransactions] = useState<ParsedTransaction[]>([]);
-  const [importProgress, setImportProgress] = useState(0);
-  const [parseError, setParseError] = useState<string | null>(null);
+  const [parseErrors, setParseErrors] = useState<Array<{ line: number; reason: string }>>([]);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { data: categories = [] } = useCategories();
   const uploadStatement = useUploadStatement();
 
-  // Real file upload and parsing via edge function
-  const uploadAndParseFile = useCallback(async (uploadedFile: File) => {
+  // Parse CSV locally for preview (no DB import yet)
+  const parseCSVForPreview = useCallback(async (uploadedFile: File) => {
     setIsProcessing(true);
-    setParseError(null);
+    setGlobalError(null);
+    setParseErrors([]);
     
     try {
-      // Check file type
-      const isPDF = uploadedFile.name.toLowerCase().endsWith('.pdf');
+      // Validate file type
       const isCSV = uploadedFile.name.toLowerCase().endsWith('.csv');
-      
-      if (!isPDF && !isCSV) {
-        throw new Error('Format non supporté. Utilisez CSV ou PDF.');
+      if (!isCSV) {
+        throw new Error('Format non supporté. Utilisez un fichier CSV.');
       }
       
-      // Upload to Supabase storage first
+      // Validate file size (10MB max)
+      if (uploadedFile.size > 10 * 1024 * 1024) {
+        throw new Error('Fichier trop volumineux (max 10MB).');
+      }
+      
+      // Read file content
+      const content = await uploadedFile.text();
+      const lines = content.split(/\r?\n/).filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        throw new Error('Le fichier doit contenir au moins un en-tête et une ligne de données.');
+      }
+      
+      // Parse header to find columns
+      const header = lines[0].toLowerCase();
+      const delimiter = header.includes(';') ? ';' : ',';
+      const headerCols = header.split(delimiter).map(h => h.trim().replace(/"/g, ''));
+      
+      // Find column indices
+      const dateIdx = headerCols.findIndex(h => 
+        h.includes('date') || h === 'dt' || h.includes('opération')
+      );
+      const descIdx = headerCols.findIndex(h => 
+        h.includes('libellé') || h.includes('libelle') || h.includes('description') || 
+        h.includes('label') || h.includes('motif') || h.includes('intitulé')
+      );
+      const amountIdx = headerCols.findIndex(h => 
+        h.includes('montant') || h.includes('amount') || h.includes('somme') || 
+        h.includes('débit') || h.includes('crédit') || h.includes('valeur')
+      );
+      
+      if (dateIdx === -1 || amountIdx === -1) {
+        throw new Error('Colonnes requises non trouvées: date et montant sont obligatoires.');
+      }
+      
+      const parsedTxns: ParsedTransaction[] = [];
+      const errors: Array<{ line: number; reason: string }> = [];
+      
+      // Parse each data row
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) continue;
+        
+        const cols = line.split(delimiter).map(c => c.trim().replace(/"/g, ''));
+        
+        try {
+          // Parse date
+          let dateStr = cols[dateIdx] || '';
+          let parsedDate: Date | null = null;
+          
+          // Try different date formats
+          const dateFormats = [
+            /^(\d{4})-(\d{2})-(\d{2})$/, // ISO: 2024-01-15
+            /^(\d{2})\/(\d{2})\/(\d{4})$/, // EU: 15/01/2024
+            /^(\d{2})-(\d{2})-(\d{4})$/, // EU dash: 15-01-2024
+            /^(\d{2})\/(\d{2})\/(\d{2})$/, // Short EU: 15/01/24
+          ];
+          
+          for (const fmt of dateFormats) {
+            const match = dateStr.match(fmt);
+            if (match) {
+              if (fmt === dateFormats[0]) {
+                parsedDate = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+              } else if (fmt === dateFormats[1] || fmt === dateFormats[2]) {
+                parsedDate = new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+              } else if (fmt === dateFormats[3]) {
+                const year = parseInt(match[3]) + 2000;
+                parsedDate = new Date(year, parseInt(match[2]) - 1, parseInt(match[1]));
+              }
+              break;
+            }
+          }
+          
+          if (!parsedDate || isNaN(parsedDate.getTime())) {
+            errors.push({ line: i + 1, reason: `Date invalide: "${dateStr}"` });
+            continue;
+          }
+          
+          const formattedDate = parsedDate.toISOString().split('T')[0];
+          
+          // Parse amount
+          let amountStr = cols[amountIdx] || '0';
+          amountStr = amountStr.replace(/[€$\s]/g, '').replace(',', '.');
+          const amount = parseFloat(amountStr);
+          
+          if (isNaN(amount) || amount === 0) {
+            errors.push({ line: i + 1, reason: `Montant invalide: "${cols[amountIdx]}"` });
+            continue;
+          }
+          
+          // Parse description
+          const description = descIdx >= 0 ? (cols[descIdx] || `Transaction ${i}`) : `Transaction ${i}`;
+          
+          // Determine type
+          const type: 'income' | 'expense' = amount > 0 ? 'income' : 'expense';
+          
+          const txn: ParsedTransaction = {
+            id: `temp-${i}-${Date.now()}`,
+            date: formattedDate,
+            description: description.substring(0, 255),
+            amount: Math.abs(amount),
+            type,
+            category_id: null,
+            categoryName: null,
+            isValid: true,
+          };
+          
+          // Validate
+          const validation = validateTransaction(txn);
+          txn.isValid = validation.isValid;
+          txn.validationError = validation.error;
+          
+          parsedTxns.push(txn);
+          
+        } catch (e) {
+          errors.push({ line: i + 1, reason: `Erreur de parsing: ${(e as Error).message}` });
+        }
+      }
+      
+      if (parsedTxns.length === 0) {
+        throw new Error('Aucune transaction valide trouvée dans le fichier.');
+      }
+      
+      setTransactions(parsedTxns);
+      setParseErrors(errors);
+      setIsProcessing(false);
+      setCurrentStep(2);
+      
+      toast.success(`${parsedTxns.length} transactions parsées !`);
+      if (errors.length > 0) {
+        toast.warning(`${errors.length} lignes ignorées avec des erreurs.`);
+      }
+      
+    } catch (err) {
+      console.error('Parse error:', err);
+      setGlobalError((err as Error).message || 'Erreur lors du traitement du fichier');
+      setIsProcessing(false);
+    }
+  }, []);
+
+  const handleFileDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile && droppedFile.name.toLowerCase().endsWith('.csv')) {
+      setFile(droppedFile);
+      parseCSVForPreview(droppedFile);
+    } else {
+      toast.error('Format non supporté. Utilisez un fichier CSV.');
+    }
+  }, [parseCSVForPreview]);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      parseCSVForPreview(selectedFile);
+    }
+  }, [parseCSVForPreview]);
+
+  // Update a transaction field
+  const updateTransaction = (id: string, field: keyof ParsedTransaction, value: string | number) => {
+    setTransactions(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      
+      const updated = { ...t, [field]: value };
+      
+      // Re-validate after edit
+      const validation = validateTransaction(updated);
+      updated.isValid = validation.isValid;
+      updated.validationError = validation.error;
+      
+      // Update type based on amount sign (if amount changed)
+      if (field === 'amount') {
+        const numValue = typeof value === 'number' ? value : parseFloat(value);
+        updated.amount = Math.abs(numValue);
+      }
+      
+      return updated;
+    }));
+  };
+
+  // Update category
+  const updateCategory = (id: string, categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    setTransactions(prev =>
+      prev.map(t => t.id === id 
+        ? { ...t, category_id: categoryId, categoryName: category?.name || null } 
+        : t
+      )
+    );
+  };
+
+  // Delete a transaction
+  const deleteTransaction = (id: string) => {
+    setTransactions(prev => prev.filter(t => t.id !== id));
+  };
+
+  // Toggle transaction type
+  const toggleType = (id: string) => {
+    setTransactions(prev => prev.map(t => 
+      t.id === id ? { ...t, type: t.type === 'income' ? 'expense' : 'income' } : t
+    ));
+  };
+
+  // Final import to database
+  const handleFinalImport = async () => {
+    const validTxns = transactions.filter(t => t.isValid);
+    
+    if (validTxns.length === 0) {
+      toast.error('Aucune transaction valide à importer.');
+      return;
+    }
+    
+    setIsImporting(true);
+    
+    try {
+      // First upload the file
       const result = await uploadStatement.mutateAsync({
-        file: uploadedFile,
+        file: file!,
         accountLabel: undefined,
         dateFrom: undefined,
         dateTo: undefined,
@@ -103,129 +337,76 @@ function FinanceImportWizardInner({ onComplete, onCancel }: FinanceImportWizardP
         throw new Error('Upload failed - no document ID returned');
       }
       
-      setDocumentId(result.document.id);
+      const documentId = result.document.id;
       
-      // Call the appropriate parsing edge function
-      const parseFunction = isPDF ? 'parse-statement-pdf' : 'parse-statement-csv';
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Non authentifié');
       
-      const { data: parseResult, error: parseError } = await supabase.functions.invoke(parseFunction, {
-        body: { documentId: result.document.id }
-      });
-      
-      if (parseError) throw parseError;
-      
-      // If PDF requires manual entry
-      if (parseResult?.requires_manual_entry) {
-        setParseError('Les fichiers PDF nécessitent une saisie manuelle. Veuillez exporter votre relevé en CSV.');
-        setIsProcessing(false);
-        return;
-      }
-      
-      // Fetch parsed transactions from DB
-      const { data: parsedTxns, error: fetchError } = await supabase
-        .from('finance_transactions')
-        .select('*, finance_categories(name)')
-        .eq('document_id', result.document.id)
-        .order('date', { ascending: false });
-      
-      if (fetchError) throw fetchError;
-      
-      // Transform to wizard format
-      const wizardTransactions: ParsedTransaction[] = (parsedTxns || []).map((t, idx) => ({
-        id: t.id,
+      // Insert transactions
+      const insertData = validTxns.map(t => ({
+        user_id: user.id,
         date: t.date,
-        description: t.description || `Transaction ${idx + 1}`,
-        amount: Number(t.amount),
-        type: t.type as 'income' | 'expense',
+        description: t.description,
+        amount: t.amount,
+        type: t.type,
         category_id: t.category_id,
-        suggestedCategory: (t.finance_categories as any)?.name || null,
-        isAnomaly: Number(t.amount) > 500, // Flag high amounts
-        anomalyReason: Number(t.amount) > 500 ? 'Montant élevé' : undefined,
-        selected: true,
+        document_id: documentId,
+        source: 'integration' as const,
       }));
       
-      if (wizardTransactions.length === 0) {
-        setParseError('Aucune transaction trouvée dans le fichier.');
-        setIsProcessing(false);
-        return;
-      }
+      const { error: insertError } = await supabase
+        .from('finance_transactions')
+        .insert(insertData);
       
-      setTransactions(wizardTransactions);
-      setIsProcessing(false);
-      setCurrentStep(2);
+      if (insertError) throw insertError;
       
-      toast.success(`${wizardTransactions.length} transactions importées !`);
+      // Update document with transaction count
+      await supabase
+        .from('documents')
+        .update({ 
+          parsed_status: 'completed',
+          transactions_count: validTxns.length,
+          parsed_at: new Date().toISOString()
+        })
+        .eq('id', documentId);
+      
+      setIsImporting(false);
+      setCurrentStep(3);
+      
+      toast.success(`${validTxns.length} transactions importées avec succès !`);
       
     } catch (err) {
-      console.error('Upload/parse error:', err);
-      setParseError((err as Error).message || 'Erreur lors du traitement du fichier');
-      setIsProcessing(false);
+      console.error('Import error:', err);
+      toast.error((err as Error).message || 'Erreur lors de l\'import');
+      setIsImporting(false);
     }
-  }, [uploadStatement]);
-
-  const handleFileDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && (droppedFile.name.endsWith('.csv') || droppedFile.name.endsWith('.pdf'))) {
-      setFile(droppedFile);
-      uploadAndParseFile(droppedFile);
-    } else {
-      toast.error('Format non supporté. Utilisez CSV ou PDF.');
-    }
-  }, [uploadAndParseFile]);
-
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      uploadAndParseFile(selectedFile);
-    }
-  }, [uploadAndParseFile]);
-
-  const toggleTransaction = (id: string) => {
-    setTransactions(prev => 
-      prev.map(t => t.id === id ? { ...t, selected: !t.selected } : t)
-    );
-  };
-
-  const updateCategory = async (id: string, categoryId: string) => {
-    // Update local state
-    setTransactions(prev =>
-      prev.map(t => t.id === id ? { ...t, category_id: categoryId } : t)
-    );
-    
-    // Update in database
-    await supabase
-      .from('finance_transactions')
-      .update({ category_id: categoryId })
-      .eq('id', id);
   };
 
   const handleComplete = () => {
-    toast.success('Import terminé avec succès !');
+    toast.success('Import terminé !');
     onComplete?.();
   };
 
   const handleCancel = () => {
-    // Reset state
     setCurrentStep(1);
     setFile(null);
-    setDocumentId(null);
     setTransactions([]);
-    setParseError(null);
-    setImportProgress(0);
+    setParseErrors([]);
+    setGlobalError(null);
     onCancel?.();
   };
 
-  const selectedCount = transactions.filter(t => t.selected).length;
-  const anomalyCount = transactions.filter(t => t.isAnomaly).length;
-  const totalAmount = transactions.filter(t => t.selected).reduce((sum, t) => 
-    t.type === 'income' ? sum + t.amount : sum - t.amount, 0
-  );
+  // Stats
+  const validCount = transactions.filter(t => t.isValid).length;
+  const invalidCount = transactions.filter(t => !t.isValid).length;
+  const totalIncome = transactions.filter(t => t.isValid && t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const totalExpense = transactions.filter(t => t.isValid && t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const netBalance = totalIncome - totalExpense;
 
   return (
     <div className="space-y-6">
-      {/* Cancel Button - Always visible */}
+      {/* Cancel Button */}
       <div className="flex justify-end">
         <Button variant="ghost" size="sm" onClick={handleCancel} className="gap-2">
           <X className="h-4 w-4" />
@@ -268,7 +449,7 @@ function FinanceImportWizardInner({ onComplete, onCancel }: FinanceImportWizardP
             <CardHeader className="text-center">
               <CardTitle className="text-2xl">Importer un relevé bancaire</CardTitle>
               <CardDescription>
-                Glissez-déposez votre fichier CSV pour analyser vos transactions
+                Glissez-déposez votre fichier CSV pour prévisualiser les transactions
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -294,9 +475,6 @@ function FinanceImportWizardInner({ onComplete, onCancel }: FinanceImportWizardP
                   <div className="space-y-4">
                     <Loader2 className="h-12 w-12 mx-auto animate-spin text-primary" />
                     <p className="text-muted-foreground">Analyse en cours...</p>
-                    <p className="text-xs text-muted-foreground">
-                      Upload, parsing et catégorisation automatique
-                    </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -307,115 +485,213 @@ function FinanceImportWizardInner({ onComplete, onCancel }: FinanceImportWizardP
                       <p className="font-medium">Glissez votre fichier ici</p>
                       <p className="text-sm text-muted-foreground">ou cliquez pour parcourir</p>
                     </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <Badge variant="default">CSV</Badge>
-                      <Badge variant="outline" className="text-muted-foreground">PDF (bientôt)</Badge>
-                    </div>
+                    <Badge variant="default">CSV</Badge>
                     <p className="text-xs text-muted-foreground">
-                      Les transactions seront automatiquement catégorisées
+                      Vous pourrez prévisualiser et modifier les transactions avant l'import
                     </p>
                   </div>
                 )}
               </div>
 
-              {parseError && (
-                <div className="mt-4 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-                  <div className="flex items-center gap-2 text-destructive">
-                    <XCircle className="h-5 w-5" />
-                    <span className="font-medium">Erreur</span>
-                  </div>
-                  <p className="text-sm text-destructive/80 mt-1">{parseError}</p>
-                </div>
+              {globalError && (
+                <Alert variant="destructive" className="mt-4">
+                  <XCircle className="h-4 w-4" />
+                  <AlertTitle>Erreur</AlertTitle>
+                  <AlertDescription>{globalError}</AlertDescription>
+                </Alert>
               )}
             </CardContent>
           </Card>
         </AnimatedContainer>
       )}
 
-      {/* Step 2: Preview */}
+      {/* Step 2: Preview & Edit */}
       {currentStep === 2 && (
         <AnimatedContainer animation="fade-up">
           <Card className="glass-strong">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     <Eye className="h-5 w-5" />
-                    Aperçu des transactions
+                    Prévisualisation des transactions
                   </CardTitle>
                   <CardDescription>
-                    {transactions.length} transactions importées
-                    {anomalyCount > 0 && (
-                      <span className="text-warning ml-2">• {anomalyCount} anomalies</span>
-                    )}
+                    Vérifiez et corrigez les données avant l'import
                   </CardDescription>
                 </div>
-                <Badge variant="outline" className="gap-1">
-                  <FileText className="h-3 w-3" />
-                  {file?.name}
-                </Badge>
+                <div className="flex items-center gap-4">
+                  <Badge variant="outline" className="gap-1">
+                    <FileText className="h-3 w-3" />
+                    {file?.name}
+                  </Badge>
+                  <div className="flex gap-2">
+                    <Badge variant="success" className="gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      {validCount} valides
+                    </Badge>
+                    {invalidCount > 0 && (
+                      <Badge variant="destructive" className="gap-1">
+                        <XCircle className="h-3 w-3" />
+                        {invalidCount} erreurs
+                      </Badge>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="border rounded-lg overflow-hidden max-h-[400px] overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="w-12">
-                        <Checkbox 
-                          checked={transactions.every(t => t.selected)}
-                          onCheckedChange={(checked) => {
-                            setTransactions(prev => prev.map(t => ({ ...t, selected: !!checked })));
-                          }}
-                        />
-                      </TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Montant</TableHead>
-                      <TableHead className="w-12">État</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.map((t) => (
-                      <TableRow 
-                        key={t.id} 
-                        className={cn(
-                          t.isAnomaly && 'bg-warning/5',
-                          !t.selected && 'opacity-50'
+              {/* Parse Errors Alert */}
+              {parseErrors.length > 0 && (
+                <Alert className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>{parseErrors.length} lignes ignorées</AlertTitle>
+                  <AlertDescription>
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-sm">Voir les détails</summary>
+                      <ul className="mt-2 text-xs space-y-1 max-h-32 overflow-y-auto">
+                        {parseErrors.slice(0, 10).map((err, idx) => (
+                          <li key={idx}>Ligne {err.line}: {err.reason}</li>
+                        ))}
+                        {parseErrors.length > 10 && (
+                          <li>...et {parseErrors.length - 10} autres erreurs</li>
                         )}
-                      >
-                        <TableCell>
-                          <Checkbox 
-                            checked={t.selected}
-                            onCheckedChange={() => toggleTransaction(t.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-sm">{t.date}</TableCell>
-                        <TableCell>
-                          <span className="font-medium">{t.description}</span>
-                          {t.suggestedCategory && (
-                            <Badge variant="secondary" className="ml-2 text-xs">
-                              {t.suggestedCategory}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className={cn(
-                          'text-right font-mono font-medium',
-                          t.type === 'income' ? 'text-success' : 'text-foreground'
-                        )}>
-                          {t.type === 'income' ? '+' : '-'}{t.amount.toFixed(2)} €
-                        </TableCell>
-                        <TableCell>
-                          {t.isAnomaly ? (
-                            <AlertTriangle className="h-4 w-4 text-warning" />
-                          ) : (
-                            <CheckCircle2 className="h-4 w-4 text-success" />
-                          )}
-                        </TableCell>
+                      </ul>
+                    </details>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Transactions Table */}
+              <div className="border rounded-lg overflow-hidden">
+                <div className="max-h-[450px] overflow-y-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-muted/90 backdrop-blur-sm z-10">
+                      <TableRow>
+                        <TableHead className="w-32">Date</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="w-32">Montant</TableHead>
+                        <TableHead className="w-24">Type</TableHead>
+                        <TableHead className="w-44">Catégorie</TableHead>
+                        <TableHead className="w-16">État</TableHead>
+                        <TableHead className="w-12"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {transactions.map((t) => (
+                        <TableRow 
+                          key={t.id} 
+                          className={cn(
+                            !t.isValid && 'bg-destructive/5'
+                          )}
+                        >
+                          <TableCell>
+                            <Input
+                              type="date"
+                              value={t.date}
+                              onChange={(e) => updateTransaction(t.id, 'date', e.target.value)}
+                              className={cn(
+                                'h-8 text-sm',
+                                !t.isValid && t.validationError?.includes('Date') && 'border-destructive'
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={t.description}
+                              onChange={(e) => updateTransaction(t.id, 'description', e.target.value)}
+                              className={cn(
+                                'h-8 text-sm',
+                                !t.isValid && t.validationError?.includes('Description') && 'border-destructive'
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={t.amount}
+                              onChange={(e) => updateTransaction(t.id, 'amount', parseFloat(e.target.value) || 0)}
+                              className={cn(
+                                'h-8 text-sm font-mono',
+                                !t.isValid && t.validationError?.includes('Montant') && 'border-destructive'
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleType(t.id)}
+                              className={cn(
+                                'h-8 text-xs font-medium',
+                                t.type === 'income' ? 'text-success' : 'text-destructive'
+                              )}
+                            >
+                              {t.type === 'income' ? '+Revenu' : '-Dépense'}
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            <Select 
+                              value={t.category_id || ''} 
+                              onValueChange={(val) => updateCategory(t.id, val)}
+                            >
+                              <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="Catégorie..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categories.filter(c => c.type === t.type).map(cat => (
+                                  <SelectItem key={cat.id} value={cat.id}>
+                                    {cat.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            {t.isValid ? (
+                              <CheckCircle2 className="h-4 w-4 text-success" />
+                            ) : (
+                              <div title={t.validationError}>
+                                <AlertTriangle className="h-4 w-4 text-destructive" />
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => deleteTransaction(t.id)}
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+              
+              {/* Summary */}
+              <div className="flex items-center justify-between mt-4 p-3 rounded-lg bg-muted/50">
+                <div className="flex gap-6 text-sm">
+                  <span>
+                    <span className="text-muted-foreground">Revenus:</span>{' '}
+                    <span className="font-medium text-success">+{totalIncome.toFixed(2)} €</span>
+                  </span>
+                  <span>
+                    <span className="text-muted-foreground">Dépenses:</span>{' '}
+                    <span className="font-medium text-destructive">-{totalExpense.toFixed(2)} €</span>
+                  </span>
+                  <span>
+                    <span className="text-muted-foreground">Solde:</span>{' '}
+                    <span className={cn('font-medium', netBalance >= 0 ? 'text-success' : 'text-destructive')}>
+                      {netBalance >= 0 ? '+' : ''}{netBalance.toFixed(2)} €
+                    </span>
+                  </span>
+                </div>
               </div>
               
               <div className="flex justify-between mt-6">
@@ -423,9 +699,22 @@ function FinanceImportWizardInner({ onComplete, onCancel }: FinanceImportWizardP
                   <ChevronLeft className="h-4 w-4 mr-2" />
                   Retour
                 </Button>
-                <Button onClick={() => setCurrentStep(3)} className="gradient-primary">
-                  Continuer
-                  <ChevronRight className="h-4 w-4 ml-2" />
+                <Button 
+                  onClick={handleFinalImport} 
+                  disabled={validCount === 0 || isImporting}
+                  className="gradient-primary"
+                >
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Import en cours...
+                    </>
+                  ) : (
+                    <>
+                      Importer {validCount} transactions
+                      <ChevronRight className="h-4 w-4 ml-2" />
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -433,80 +722,14 @@ function FinanceImportWizardInner({ onComplete, onCancel }: FinanceImportWizardP
         </AnimatedContainer>
       )}
 
-      {/* Step 3: Categories */}
+      {/* Step 3: Confirmation */}
       {currentStep === 3 && (
         <AnimatedContainer animation="fade-up">
           <Card className="glass-strong">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                Vérifier les catégories
-              </CardTitle>
-              <CardDescription>
-                Les catégories ont été assignées automatiquement. Ajustez si nécessaire.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                {transactions.filter(t => t.selected).map((t) => (
-                  <div 
-                    key={t.id}
-                    className={cn(
-                      'flex items-center justify-between p-3 rounded-lg border',
-                      t.isAnomaly ? 'border-warning/50 bg-warning/5' : 'border-border'
-                    )}
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{t.description}</p>
-                      <p className={cn(
-                        'text-sm',
-                        t.type === 'income' ? 'text-success' : 'text-muted-foreground'
-                      )}>
-                        {t.type === 'income' ? '+' : '-'}{t.amount.toFixed(2)} €
-                        {t.isAnomaly && (
-                          <span className="ml-2 text-warning">⚠️ {t.anomalyReason}</span>
-                        )}
-                      </p>
-                    </div>
-                    <Select 
-                      value={t.category_id || ''} 
-                      onValueChange={(val) => updateCategory(t.id, val)}
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder={t.suggestedCategory || 'Catégorie...'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.filter(c => c.type === t.type).map(cat => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex justify-between mt-6">
-                <Button variant="outline" onClick={() => setCurrentStep(2)}>
-                  <ChevronLeft className="h-4 w-4 mr-2" />
-                  Retour
-                </Button>
-                <Button onClick={() => setCurrentStep(4)} className="gradient-primary">
-                  Continuer
-                  <ChevronRight className="h-4 w-4 ml-2" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </AnimatedContainer>
-      )}
-
-      {/* Step 4: Confirmation */}
-      {currentStep === 4 && (
-        <AnimatedContainer animation="fade-up">
-          <Card className="glass-strong">
             <CardHeader className="text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
+                <CheckCircle2 className="h-8 w-8 text-success" />
+              </div>
               <CardTitle className="text-2xl">Import terminé !</CardTitle>
               <CardDescription>
                 Vos transactions ont été importées avec succès
@@ -516,25 +739,25 @@ function FinanceImportWizardInner({ onComplete, onCancel }: FinanceImportWizardP
               <div className="grid gap-4 md:grid-cols-3 mb-6">
                 <Card className="bg-muted/50">
                   <CardContent className="p-4 text-center">
-                    <p className="text-3xl font-bold text-primary">{selectedCount}</p>
-                    <p className="text-sm text-muted-foreground">Transactions</p>
+                    <p className="text-3xl font-bold text-primary">{validCount}</p>
+                    <p className="text-sm text-muted-foreground">Transactions importées</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-muted/50">
                   <CardContent className="p-4 text-center">
                     <p className={cn(
                       "text-3xl font-bold",
-                      totalAmount >= 0 ? 'text-success' : 'text-destructive'
+                      netBalance >= 0 ? 'text-success' : 'text-destructive'
                     )}>
-                      {totalAmount >= 0 ? '+' : ''}{totalAmount.toFixed(0)} €
+                      {netBalance >= 0 ? '+' : ''}{netBalance.toFixed(0)} €
                     </p>
                     <p className="text-sm text-muted-foreground">Solde net</p>
                   </CardContent>
                 </Card>
                 <Card className="bg-muted/50">
                   <CardContent className="p-4 text-center">
-                    <p className="text-3xl font-bold text-warning">{anomalyCount}</p>
-                    <p className="text-sm text-muted-foreground">Anomalies</p>
+                    <p className="text-3xl font-bold text-success">+{totalIncome.toFixed(0)} €</p>
+                    <p className="text-sm text-muted-foreground">Revenus</p>
                   </CardContent>
                 </Card>
               </div>
