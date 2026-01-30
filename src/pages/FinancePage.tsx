@@ -13,6 +13,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { useCategories, useCreateCategory, useTransactions, useCreateTransaction, useDeleteTransaction, useBudgets, useCreateBudget, useMonthlySpending } from '@/hooks/useFinance';
 import { useDocuments, useUploadStatement, useDeleteDocument } from '@/hooks/useDocuments';
 import { useGoals } from '@/hooks/useProjects';
+import { useSavingsGoals, useCreateSavingsGoal, useContributeToGoal, useDeleteSavingsGoal } from '@/hooks/useSavingsGoals';
+import { SavingsGoalCard } from '@/components/finance/SavingsGoalCard';
 import { ScoreRing } from '@/components/today/ScoreRing';
 import { cn } from '@/lib/utils';
 import { 
@@ -60,12 +62,15 @@ export default function FinancePage() {
   const { data: monthlyStats } = useMonthlySpending(currentMonth);
   const { data: documents = [] } = useDocuments('bank_statement');
   const { data: goals = [] } = useGoals();
+  const { data: savingsGoals = [] } = useSavingsGoals();
   const createTransaction = useCreateTransaction();
   const deleteTransaction = useDeleteTransaction();
   const createCategory = useCreateCategory();
   const createBudget = useCreateBudget();
   const uploadStatement = useUploadStatement();
   const deleteDocument = useDeleteDocument();
+  const contributeToGoal = useContributeToGoal();
+  const deleteSavingsGoal = useDeleteSavingsGoal();
 
   // Calculate financial health score
   const financialHealth = useMemo(() => {
@@ -477,6 +482,7 @@ export default function FinancePage() {
         <Tabs defaultValue="transactions" className="space-y-4">
           <TabsList className="glass-strong">
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="savings">Épargne</TabsTrigger>
             <TabsTrigger value="budgets">Budgets</TabsTrigger>
             <TabsTrigger value="statements">Relevés</TabsTrigger>
             <TabsTrigger value="categories">Catégories</TabsTrigger>
@@ -543,6 +549,33 @@ export default function FinancePage() {
                   </div>
                 </CardContent>
               </Card>
+            )}
+          </TabsContent>
+
+          {/* Savings Goals Tab */}
+          <TabsContent value="savings" className="space-y-4">
+            {savingsGoals.length === 0 ? (
+              <Card className="glass border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <PiggyBank className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground text-center mb-4">
+                    Aucun objectif d'épargne.<br />
+                    Créez des objectifs pour suivre votre progression.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {savingsGoals.map((goal) => (
+                  <SavingsGoalCard
+                    key={goal.id}
+                    goal={goal}
+                    onContribute={(goalId, amount) => contributeToGoal.mutate({ goalId, amount })}
+                    onDelete={(goalId) => deleteSavingsGoal.mutate(goalId)}
+                    isContributing={contributeToGoal.isPending}
+                  />
+                ))}
+              </div>
             )}
           </TabsContent>
 
