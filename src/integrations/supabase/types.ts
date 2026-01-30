@@ -83,6 +83,57 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_proposals: {
+        Row: {
+          confidence_score: number | null
+          context: Json | null
+          created_at: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          priority: string | null
+          proposed_actions: Json
+          reasoning: string | null
+          reviewed_at: string | null
+          status: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          context?: Json | null
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          priority?: string | null
+          proposed_actions?: Json
+          reasoning?: string | null
+          reviewed_at?: string | null
+          status?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          context?: Json | null
+          created_at?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          priority?: string | null
+          proposed_actions?: Json
+          reasoning?: string | null
+          reviewed_at?: string | null
+          status?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -112,6 +163,110 @@ export type Database = {
           id?: string
           new_value?: Json | null
           old_value?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      automation_events: {
+        Row: {
+          created_at: string
+          entity: string | null
+          entity_id: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          processed_at: string | null
+          result: Json | null
+          rule_id: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          result?: Json | null
+          rule_id?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity?: string | null
+          entity_id?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          result?: Json | null
+          rule_id?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_events_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_rules: {
+        Row: {
+          action_payload: Json
+          action_type: string
+          channel: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          name: string
+          priority: number | null
+          trigger_conditions: Json
+          trigger_count: number | null
+          trigger_event: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_payload?: Json
+          action_type: string
+          channel?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name: string
+          priority?: number | null
+          trigger_conditions?: Json
+          trigger_count?: number | null
+          trigger_event: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_payload?: Json
+          action_type?: string
+          channel?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name?: string
+          priority?: number | null
+          trigger_conditions?: Json
+          trigger_count?: number | null
+          trigger_event?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -653,6 +808,41 @@ export type Database = {
         }
         Relationships: []
       }
+      memberships: {
+        Row: {
+          id: string
+          invited_by: string | null
+          joined_at: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          id?: string
+          invited_by?: string | null
+          joined_at?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          id?: string
+          invited_by?: string | null
+          joined_at?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memberships_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       metric_registry: {
         Row: {
           created_at: string
@@ -1075,6 +1265,153 @@ export type Database = {
         }
         Relationships: []
       }
+      scores_daily: {
+        Row: {
+          burnout_index: number | null
+          computed_at: string
+          consistency_factor: number | null
+          created_at: string
+          date: string
+          finance_score: number | null
+          global_score: number | null
+          habits_score: number | null
+          health_score: number | null
+          id: string
+          metadata: Json | null
+          momentum_index: number | null
+          tasks_score: number | null
+          user_id: string
+        }
+        Insert: {
+          burnout_index?: number | null
+          computed_at?: string
+          consistency_factor?: number | null
+          created_at?: string
+          date: string
+          finance_score?: number | null
+          global_score?: number | null
+          habits_score?: number | null
+          health_score?: number | null
+          id?: string
+          metadata?: Json | null
+          momentum_index?: number | null
+          tasks_score?: number | null
+          user_id: string
+        }
+        Update: {
+          burnout_index?: number | null
+          computed_at?: string
+          consistency_factor?: number | null
+          created_at?: string
+          date?: string
+          finance_score?: number | null
+          global_score?: number | null
+          habits_score?: number | null
+          health_score?: number | null
+          id?: string
+          metadata?: Json | null
+          momentum_index?: number | null
+          tasks_score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scores_monthly: {
+        Row: {
+          achievements: Json | null
+          computed_at: string
+          created_at: string
+          finance_score: number | null
+          global_score: number | null
+          habits_score: number | null
+          health_score: number | null
+          id: string
+          insights: Json | null
+          metadata: Json | null
+          month: string
+          tasks_score: number | null
+          user_id: string
+        }
+        Insert: {
+          achievements?: Json | null
+          computed_at?: string
+          created_at?: string
+          finance_score?: number | null
+          global_score?: number | null
+          habits_score?: number | null
+          health_score?: number | null
+          id?: string
+          insights?: Json | null
+          metadata?: Json | null
+          month: string
+          tasks_score?: number | null
+          user_id: string
+        }
+        Update: {
+          achievements?: Json | null
+          computed_at?: string
+          created_at?: string
+          finance_score?: number | null
+          global_score?: number | null
+          habits_score?: number | null
+          health_score?: number | null
+          id?: string
+          insights?: Json | null
+          metadata?: Json | null
+          month?: string
+          tasks_score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scores_weekly: {
+        Row: {
+          computed_at: string
+          created_at: string
+          finance_score: number | null
+          global_score: number | null
+          habits_score: number | null
+          health_score: number | null
+          id: string
+          metadata: Json | null
+          tasks_score: number | null
+          trend_direction: string | null
+          user_id: string
+          week_over_week_change: number | null
+          week_start: string
+        }
+        Insert: {
+          computed_at?: string
+          created_at?: string
+          finance_score?: number | null
+          global_score?: number | null
+          habits_score?: number | null
+          health_score?: number | null
+          id?: string
+          metadata?: Json | null
+          tasks_score?: number | null
+          trend_direction?: string | null
+          user_id: string
+          week_over_week_change?: number | null
+          week_start: string
+        }
+        Update: {
+          computed_at?: string
+          created_at?: string
+          finance_score?: number | null
+          global_score?: number | null
+          habits_score?: number | null
+          health_score?: number | null
+          id?: string
+          metadata?: Json | null
+          tasks_score?: number | null
+          trend_direction?: string | null
+          user_id?: string
+          week_over_week_change?: number | null
+          week_start?: string
+        }
+        Relationships: []
+      }
       streaks: {
         Row: {
           current_streak: number
@@ -1112,6 +1449,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_events: {
+        Row: {
+          created_at: string
+          entity: string
+          entity_id: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          processed: boolean | null
+          source: Database["public"]["Enums"]["event_source"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          processed?: boolean | null
+          source?: Database["public"]["Enums"]["event_source"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          processed?: boolean | null
+          source?: Database["public"]["Enums"]["event_source"]
+          user_id?: string
+        }
+        Relationships: []
       }
       system_health: {
         Row: {
@@ -1347,6 +1720,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_stats: {
         Row: {
           created_at: string
@@ -1374,15 +1768,66 @@ export type Database = {
         }
         Relationships: []
       }
+      workspaces: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          plan: Database["public"]["Enums"]["plan_tier"]
+          settings: Json | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          settings?: Json | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          settings?: Json | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_workspace_member: {
+        Args: { _user_id: string; _workspace_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "owner" | "admin" | "member"
+      event_source:
+        | "ui"
+        | "api"
+        | "automation"
+        | "ai"
+        | "integration"
+        | "system"
+      plan_tier: "free" | "pro" | "enterprise"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1509,6 +1954,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["owner", "admin", "member"],
+      event_source: ["ui", "api", "automation", "ai", "integration", "system"],
+      plan_tier: ["free", "pro", "enterprise"],
+    },
   },
 } as const
