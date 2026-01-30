@@ -137,13 +137,13 @@ export default function IntelligenceHubPage() {
       results.push({
         type: 'positive',
         title: 'Temps de focus élevé',
-        description: `${trendData.focus.current} minutes en moyenne. Productivité optimale.`,
+        description: `${trendData.focus.current} minutes en moyenne. Discipline optimale.`,
       });
     } else if (trendData.focus.current < 30) {
       results.push({
         type: 'warning',
         title: 'Peu de temps de focus',
-        description: 'Planifiez des blocs de travail profond.',
+        description: 'Planifiez des blocs de concentration pour renforcer votre discipline.',
       });
     }
 
