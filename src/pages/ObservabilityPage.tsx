@@ -8,6 +8,7 @@ import { useJobRuns, useSystemHealth, useAuditLogStats } from '@/hooks/useAdmin'
 import { useSystemEvents, useAutomationEvents } from '@/hooks/useObservability';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { WorkspaceHealthDashboard } from '@/components/admin/WorkspaceHealthDashboard';
 import { 
   Activity, 
   Server, 
@@ -22,7 +23,8 @@ import {
   BarChart3,
   History,
   HeartPulse,
-  Loader2
+  Loader2,
+  Building2
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -196,6 +198,10 @@ export default function ObservabilityPage() {
               <Server className="h-4 w-4" />
               Santé Système
             </TabsTrigger>
+            <TabsTrigger value="workspace" className="gap-2">
+              <Building2 className="h-4 w-4" />
+              Business
+            </TabsTrigger>
             <TabsTrigger value="jobs" className="gap-2">
               <Zap className="h-4 w-4" />
               Jobs
@@ -253,6 +259,11 @@ export default function ObservabilityPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Workspace Business Dashboard */}
+          <TabsContent value="workspace" className="space-y-4">
+            <WorkspaceHealthDashboard />
           </TabsContent>
 
           {/* Job Runs */}

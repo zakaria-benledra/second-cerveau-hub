@@ -49,11 +49,10 @@ const navGroups = [
     ],
   },
   {
-    label: 'Habitudes & Routines',
+    label: 'Habitudes & Focus',
     icon: Heart,
     items: [
       { icon: Target, label: 'Habitudes', path: '/habits' },
-      { icon: ListChecks, label: 'Routines', path: '/routines' },
       { icon: Timer, label: 'Focus', path: '/focus' },
     ],
   },
