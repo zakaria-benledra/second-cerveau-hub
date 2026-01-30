@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { useCategories, useCreateCategory, useTransactions, useCreateTransaction, useDeleteTransaction, useBudgets, useCreateBudget, useMonthlySpending } from '@/hooks/useFinance';
-import { DollarSign, Plus, TrendingUp, TrendingDown, Wallet, PiggyBank, Trash2 } from 'lucide-react';
+import { useDocuments, useUploadStatement, useDeleteDocument } from '@/hooks/useDocuments';
+import { DollarSign, Plus, TrendingUp, TrendingDown, Wallet, PiggyBank, Trash2, Upload, FileText, Loader2, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -19,18 +20,24 @@ export default function FinancePage() {
   const [isTransactionOpen, setIsTransactionOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isBudgetOpen, setIsBudgetOpen] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [newTransaction, setNewTransaction] = useState({ amount: '', description: '', category_id: '', type: 'expense', date: format(new Date(), 'yyyy-MM-dd') });
   const [newCategory, setNewCategory] = useState({ name: '', type: 'expense' });
   const [newBudget, setNewBudget] = useState({ category_id: '', monthly_limit: '' });
+  const [uploadForm, setUploadForm] = useState({ accountLabel: '', dateFrom: '', dateTo: '' });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: categories = [] } = useCategories();
   const { data: transactions = [], isLoading } = useTransactions(currentMonth);
   const { data: budgets = [] } = useBudgets();
   const { data: monthlyStats } = useMonthlySpending(currentMonth);
+  const { data: documents = [] } = useDocuments('bank_statement');
   const createTransaction = useCreateTransaction();
   const deleteTransaction = useDeleteTransaction();
   const createCategory = useCreateCategory();
   const createBudget = useCreateBudget();
+  const uploadStatement = useUploadStatement();
+  const deleteDocument = useDeleteDocument();
 
   const handleAddTransaction = () => {
     if (!newTransaction.amount) return;
@@ -69,6 +76,33 @@ export default function FinancePage() {
         setIsBudgetOpen(false);
       }
     });
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    uploadStatement.mutate({
+      file,
+      accountLabel: uploadForm.accountLabel || undefined,
+      dateFrom: uploadForm.dateFrom || undefined,
+      dateTo: uploadForm.dateTo || undefined,
+    }, {
+      onSuccess: () => {
+        setUploadForm({ accountLabel: '', dateFrom: '', dateTo: '' });
+        setIsUploadOpen(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    });
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'failed': return <XCircle className="h-4 w-4 text-destructive" />;
+      case 'processing': return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
+      default: return <Clock className="h-4 w-4 text-muted-foreground" />;
+    }
   };
 
   return (
@@ -143,6 +177,7 @@ export default function FinancePage() {
         <Tabs defaultValue="transactions" className="space-y-4">
           <TabsList className="glass">
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="statements">Relevés</TabsTrigger>
             <TabsTrigger value="budgets">Budgets</TabsTrigger>
             <TabsTrigger value="categories">Catégories</TabsTrigger>
           </TabsList>
@@ -270,6 +305,120 @@ export default function FinancePage() {
                   </div>
                 </CardContent>
               </Card>
+            )}
+          </TabsContent>
+
+          {/* NEW: Bank Statements Tab */}
+          <TabsContent value="statements" className="space-y-4">
+            <div className="flex justify-end">
+              <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Upload className="h-4 w-4" />
+                    Importer un relevé
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Importer un relevé bancaire</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <div className="space-y-2">
+                      <Label>Fichier (CSV ou PDF)</Label>
+                      <Input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv,.pdf"
+                        onChange={handleFileUpload}
+                        disabled={uploadStatement.isPending}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Format CSV recommandé pour l'import automatique. Les PDF nécessitent une saisie manuelle.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Compte (optionnel)</Label>
+                      <Input
+                        value={uploadForm.accountLabel}
+                        onChange={(e) => setUploadForm({ ...uploadForm, accountLabel: e.target.value })}
+                        placeholder="Compte courant, Livret A..."
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Du</Label>
+                        <Input
+                          type="date"
+                          value={uploadForm.dateFrom}
+                          onChange={(e) => setUploadForm({ ...uploadForm, dateFrom: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Au</Label>
+                        <Input
+                          type="date"
+                          value={uploadForm.dateTo}
+                          onChange={(e) => setUploadForm({ ...uploadForm, dateTo: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    {uploadStatement.isPending && (
+                      <div className="flex items-center gap-2 text-primary">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Import en cours...
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {documents.length === 0 ? (
+              <Card className="glass border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground text-center">
+                    Aucun relevé importé.<br />
+                    Importez vos relevés bancaires pour analyser vos transactions.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {documents.map((doc) => (
+                  <Card key={doc.id} className="glass">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-8 w-8 text-primary" />
+                        <div>
+                          <p className="font-medium">{doc.filename}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(doc.created_at), 'd MMM yyyy', { locale: fr })}
+                            {doc.account_label && ` • ${doc.account_label}`}
+                            {doc.transactions_count > 0 && ` • ${doc.transactions_count} transactions`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(doc.parsed_status)}
+                          <Badge variant={doc.parsed_status === 'completed' ? 'default' : doc.parsed_status === 'failed' ? 'destructive' : 'secondary'}>
+                            {doc.parsed_status === 'completed' ? 'Traité' : doc.parsed_status === 'failed' ? 'Échec' : doc.parsed_status === 'processing' ? 'En cours' : 'En attente'}
+                          </Badge>
+                        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="text-destructive h-8 w-8"
+                          onClick={() => deleteDocument.mutate(doc.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </TabsContent>
 

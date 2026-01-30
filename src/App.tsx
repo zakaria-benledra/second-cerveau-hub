@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import AuthPage from "./pages/AuthPage";
 import TodayPage from "./pages/TodayPage";
 import TasksPage from "./pages/TasksPage";
+import KanbanPage from "./pages/KanbanPage";
 import HabitsPage from "./pages/HabitsPage";
 import InboxPage from "./pages/InboxPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -57,6 +58,7 @@ const App = () => (
           
           <Route path="/" element={<ProtectedRoute><TodayPage /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+          <Route path="/kanban" element={<ProtectedRoute><KanbanPage /></ProtectedRoute>} />
           <Route path="/habits" element={<ProtectedRoute><HabitsPage /></ProtectedRoute>} />
           <Route path="/routines" element={<ProtectedRoute><RoutinesPage /></ProtectedRoute>} />
           <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
