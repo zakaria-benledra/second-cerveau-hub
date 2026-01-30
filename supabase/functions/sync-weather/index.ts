@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { getWorkspaceContext } from '../_shared/workspace.ts'
+import { getRequiredWorkspaceId } from '../_shared/workspace.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -100,13 +100,8 @@ Deno.serve(async (req) => {
       })
     }
 
-    const workspaceContext = await getWorkspaceContext(supabase, user.id)
-    if (!workspaceContext.workspaceId) {
-      return new Response(JSON.stringify({ error: 'No workspace found' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    // Bootstrap workspace if needed (getRequiredWorkspaceId creates one if missing)
+    const workspaceId = await getRequiredWorkspaceId(supabase, user.id)
 
     const body = await req.json().catch(() => ({}))
     const today = new Date()
@@ -154,7 +149,7 @@ Deno.serve(async (req) => {
       .from('weather_snapshots')
       .insert({
         user_id: user.id,
-        workspace_id: workspaceContext.workspaceId,
+        workspace_id: workspaceId,
         date: dateStr,
         location: weatherData.location,
         weather: weatherData.weather,
