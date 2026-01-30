@@ -618,12 +618,18 @@ async function approveProposal(supabase: any, userId: string, payload: any): Pro
     })
     .eq("id", proposal_id);
 
-  // Store undo data
+  // Store undo data with full reversibility info
   await supabase
     .from("undo_stack")
     .insert({
       user_id: userId,
+      workspace_id: proposal.workspace_id,
       action_id: action.id,
+      entity: "ai_proposals",
+      entity_id: proposal.id,
+      operation: "create",
+      previous_state: null,
+      current_state: proposal,
       revert_payload: { original_proposal: proposal }
     });
 
