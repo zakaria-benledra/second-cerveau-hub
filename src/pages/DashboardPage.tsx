@@ -3,7 +3,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { useQuery } from '@tanstack/react-query';
 import { fetchWeekStats, fetchTodayStats } from '@/lib/api/stats';
-import { Loader2, TrendingUp, TrendingDown, Target, Flame, Clock, AlertTriangle } from 'lucide-react';
+import { 
+  Loader2, 
+  TrendingUp, 
+  TrendingDown, 
+  Target, 
+  Flame, 
+  Clock, 
+  AlertTriangle,
+  CheckCircle2,
+  BarChart3,
+  Zap
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+} from 'recharts';
+import { format, parseISO } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function DashboardPage() {
   const { data: todayStats, isLoading: loadingToday } = useQuery({
@@ -24,9 +49,19 @@ export default function DashboardPage() {
         completionRate: weekStats.reduce((sum, d) => sum + (d.tasks_planned > 0 ? d.tasks_completed / d.tasks_planned : 0), 0) / weekStats.length,
         habitAdherence: weekStats.reduce((sum, d) => sum + (d.habits_total > 0 ? d.habits_completed / d.habits_total : 0), 0) / weekStats.length,
         avgFocusMinutes: weekStats.reduce((sum, d) => sum + d.focus_minutes, 0) / weekStats.length,
-        avgOverload: weekStats.reduce((sum, d) => sum + d.overload_index, 0) / weekStats.length,
+        avgOverload: weekStats.reduce((sum, d) => sum + (d.overload_index || 0), 0) / weekStats.length,
       }
     : null;
+
+  // Prepare chart data
+  const chartData = weekStats?.map(stat => ({
+    date: format(parseISO(stat.date), 'EEE', { locale: fr }),
+    fullDate: format(parseISO(stat.date), 'dd MMM', { locale: fr }),
+    completion: stat.tasks_planned > 0 ? Math.round((stat.tasks_completed / stat.tasks_planned) * 100) : 0,
+    habits: stat.habits_total > 0 ? Math.round((stat.habits_completed / stat.habits_total) * 100) : 0,
+    focus: stat.focus_minutes,
+    overload: Math.round((stat.overload_index || 0) * 100),
+  })) || [];
 
   if (isLoading) {
     return (
@@ -48,71 +83,94 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard BI</h1>
-          <p className="text-muted-foreground">
-            Vos indicateurs de performance — données issues de dailyStats uniquement
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Vos indicateurs de performance — données issues de Stats uniquement
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <BarChart3 className="h-4 w-4" />
+            <span>BI Mode</span>
+          </div>
         </div>
 
         {/* Today KPIs */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-2">
+          <Card className="hover-lift">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Target className="h-4 w-4 text-primary" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{completionRate}%</div>
-              <Progress value={completionRate} className="mt-2" />
+              <div className="text-3xl font-bold">{completionRate}%</div>
+              <Progress value={completionRate} className="mt-3 h-2" />
               <p className="text-xs text-muted-foreground mt-2">
                 {todayStats?.tasks_completed || 0} / {todayStats?.tasks_planned || 0} tâches
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-2">
+          <Card className="hover-lift">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Habit Adherence</CardTitle>
-              <Flame className="h-4 w-4 text-muted-foreground" />
+              <div className="p-2 rounded-lg bg-warning/10">
+                <Flame className="h-4 w-4 text-warning" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{habitRate}%</div>
-              <Progress value={habitRate} className="mt-2" />
+              <div className="text-3xl font-bold">{habitRate}%</div>
+              <Progress value={habitRate} className="mt-3 h-2" />
               <p className="text-xs text-muted-foreground mt-2">
                 {todayStats?.habits_completed || 0} / {todayStats?.habits_total || 0} habitudes
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-2">
+          <Card className="hover-lift">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Focus Time</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div className="p-2 rounded-lg bg-info/10">
+                <Clock className="h-4 w-4 text-info" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{todayStats?.focus_minutes || 0} min</div>
-              <Progress value={Math.min(100, ((todayStats?.focus_minutes || 0) / 240) * 100)} className="mt-2" />
+              <div className="text-3xl font-bold">{todayStats?.focus_minutes || 0} min</div>
+              <Progress value={Math.min(100, ((todayStats?.focus_minutes || 0) / 240) * 100)} className="mt-3 h-2" />
               <p className="text-xs text-muted-foreground mt-2">
                 Objectif: 4h de focus
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-2">
+          <Card className="hover-lift">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Overload Index</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <div className={cn(
+                "p-2 rounded-lg",
+                (todayStats?.overload_index || 0) > 1 ? 'bg-destructive/10' : 'bg-success/10'
+              )}>
+                <AlertTriangle className={cn(
+                  "h-4 w-4",
+                  (todayStats?.overload_index || 0) > 1 ? 'text-destructive' : 'text-success'
+                )} />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${(todayStats?.overload_index || 0) > 1 ? 'text-destructive' : ''}`}>
+              <div className={cn(
+                "text-3xl font-bold",
+                (todayStats?.overload_index || 0) > 1 && 'text-destructive'
+              )}>
                 {((todayStats?.overload_index || 0) * 100).toFixed(0)}%
               </div>
               <Progress 
                 value={Math.min(100, (todayStats?.overload_index || 0) * 100)} 
-                className="mt-2" 
+                className="mt-3 h-2" 
               />
               <p className="text-xs text-muted-foreground mt-2">
                 {(todayStats?.overload_index || 0) > 1 ? 'Surcharge détectée' : 'Charge normale'}
@@ -121,58 +179,163 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Week Summary */}
-        {weekAvg && (
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="border-2">
+        {/* Charts */}
+        {chartData.length > 0 && (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Performance Hebdomadaire
+                </CardTitle>
+                <CardDescription>Taux de completion et adhérence habitudes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="colorCompletion" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(262, 83%, 58%)" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="hsl(262, 83%, 58%)" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorHabits" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(175, 70%, 45%)" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="hsl(175, 70%, 45%)" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="date" className="text-xs" />
+                      <YAxis domain={[0, 100]} className="text-xs" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '0.75rem',
+                        }}
+                        labelFormatter={(label) => chartData.find(d => d.date === label)?.fullDate || label}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="completion" 
+                        stroke="hsl(262, 83%, 58%)" 
+                        fillOpacity={1}
+                        fill="url(#colorCompletion)"
+                        strokeWidth={2}
+                        name="Tâches %"
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="habits" 
+                        stroke="hsl(175, 70%, 45%)" 
+                        fillOpacity={1}
+                        fill="url(#colorHabits)"
+                        strokeWidth={2}
+                        name="Habitudes %"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-info" />
+                  Focus Time Trend
+                </CardTitle>
+                <CardDescription>Minutes de focus par jour</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="date" className="text-xs" />
+                      <YAxis className="text-xs" />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '0.75rem',
+                        }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="focus" 
+                        stroke="hsl(199, 89%, 48%)" 
+                        strokeWidth={2}
+                        dot={{ r: 4, strokeWidth: 2 }}
+                        name="Focus (min)"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Week Summary */}
+        {weekAvg && (
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
                   Tendances Semaine
                 </CardTitle>
                 <CardDescription>Moyennes sur 7 jours</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
                   <span className="text-sm text-muted-foreground">Completion Rate Moy.</span>
                   <span className="font-bold">{(weekAvg.completionRate * 100).toFixed(0)}%</span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
                   <span className="text-sm text-muted-foreground">Habit Adherence Moy.</span>
                   <span className="font-bold">{(weekAvg.habitAdherence * 100).toFixed(0)}%</span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
                   <span className="text-sm text-muted-foreground">Focus Moy./Jour</span>
                   <span className="font-bold">{weekAvg.avgFocusMinutes.toFixed(0)} min</span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
                   <span className="text-sm text-muted-foreground">Overload Moy.</span>
-                  <span className={`font-bold ${weekAvg.avgOverload > 1 ? 'text-destructive' : ''}`}>
+                  <span className={cn(
+                    "font-bold",
+                    weekAvg.avgOverload > 1 && 'text-destructive'
+                  )}>
                     {(weekAvg.avgOverload * 100).toFixed(0)}%
                   </span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-2">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
+                  <Zap className="h-5 w-5 text-accent" />
                   Clarity Score
                 </CardTitle>
                 <CardDescription>Qualité de planification</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold mb-4">
-                  {((todayStats?.clarity_score || 0) * 100).toFixed(0)}%
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="text-5xl font-bold text-gradient">
+                    {((todayStats?.clarity_score || 0) * 100).toFixed(0)}%
+                  </div>
+                  <CheckCircle2 className={cn(
+                    "h-8 w-8",
+                    (todayStats?.clarity_score || 0) >= 0.8 ? "text-success" : "text-muted-foreground"
+                  )} />
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-4">
                   Tâches avec estimation + échéance
                 </p>
-                <div className="mt-4 p-3 bg-muted rounded-md border-2 border-border">
-                  <p className="text-xs font-mono">
-                    clarity_score = tasks_with(estimate + due_date) / total_tasks
-                  </p>
+                <div className="p-4 rounded-lg bg-muted/50 font-mono text-xs">
+                  clarity_score = tasks_with(estimate + due_date) / total_tasks
                 </div>
               </CardContent>
             </Card>
@@ -181,10 +344,10 @@ export default function DashboardPage() {
 
         {/* No data state */}
         {!todayStats && !weekStats?.length && (
-          <Card className="border-2 border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <TrendingDown className="h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="font-semibold text-lg mb-2">Aucune donnée disponible</h3>
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <TrendingDown className="h-16 w-16 text-muted-foreground/50 mb-4" />
+              <h3 className="font-semibold text-xl mb-2">Aucune donnée disponible</h3>
               <p className="text-muted-foreground text-center max-w-md">
                 Commencez à utiliser l'application pour voir vos statistiques.
                 Les données sont calculées automatiquement chaque nuit.

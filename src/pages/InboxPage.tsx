@@ -32,9 +32,11 @@ import {
   Mail,
   StickyNote,
   Zap,
-  Calendar
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 import type { CreateInboxInput } from '@/lib/api/inbox';
+import { cn } from '@/lib/utils';
 
 const sourceIcons: Record<string, React.ReactNode> = {
   email: <Mail className="h-4 w-4" />,
@@ -89,24 +91,24 @@ export default function InboxPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mt-1">
               {newItems.length} élément{newItems.length > 1 ? 's' : ''} à traiter
             </p>
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="border-2">
+              <Button variant="gradient">
                 <Plus className="h-4 w-4 mr-2" />
                 Capturer
               </Button>
             </DialogTrigger>
-            <DialogContent className="border-2">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>Capture rapide</DialogTitle>
                 <DialogDescription>
@@ -121,7 +123,6 @@ export default function InboxPage() {
                     value={newItem.title}
                     onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
                     placeholder="Ex: Rappeler le client demain"
-                    className="border-2"
                   />
                 </div>
                 <div className="space-y-2">
@@ -131,18 +132,16 @@ export default function InboxPage() {
                     value={newItem.content || ''}
                     onChange={(e) => setNewItem({ ...newItem, content: e.target.value })}
                     placeholder="Plus de contexte..."
-                    className="border-2"
                   />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-2">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Annuler
                 </Button>
                 <Button 
                   onClick={handleCreateItem} 
                   disabled={createItem.isPending || !newItem.title.trim()}
-                  className="border-2"
                 >
                   {createItem.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Capturer
@@ -152,11 +151,37 @@ export default function InboxPage() {
           </Dialog>
         </div>
 
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="hover-lift">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-warning/10">
+                <Inbox className="h-5 w-5 text-warning" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{newItems.length}</p>
+                <p className="text-xs text-muted-foreground">À traiter</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="hover-lift">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-success/10">
+                <Archive className="h-5 w-5 text-success" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{processedItems.length}</p>
+                <p className="text-xs text-muted-foreground">Traités</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* New Items */}
-        <Card className="border-2">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Inbox className="h-5 w-5" />
+              <Inbox className="h-5 w-5 text-primary" />
               À traiter
             </CardTitle>
             <CardDescription>
@@ -167,9 +192,9 @@ export default function InboxPage() {
             {newItems.map((item) => (
               <div
                 key={item.id}
-                className="flex items-start gap-4 p-4 border-2 hover:bg-accent transition-colors group"
+                className="flex items-start gap-4 p-4 rounded-xl border hover:bg-muted/50 transition-colors group hover-lift"
               >
-                <div className="p-2 border-2 bg-muted">
+                <div className="p-2.5 rounded-lg bg-muted">
                   {sourceIcons[item.source]}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -180,10 +205,10 @@ export default function InboxPage() {
                     </p>
                   )}
                   <div className="flex gap-2 mt-2">
-                    <Badge variant="outline" className="border-2 text-xs">
+                    <Badge variant="muted" className="text-xs">
                       {sourceLabels[item.source]}
                     </Badge>
-                    <Badge variant="outline" className="border-2 text-xs">
+                    <Badge variant="outline" className="text-xs">
                       {new Date(item.created_at).toLocaleDateString('fr-FR')}
                     </Badge>
                   </div>
@@ -191,26 +216,24 @@ export default function InboxPage() {
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button
                     variant="outline"
-                    size="icon"
+                    size="icon-sm"
                     onClick={() => convertToTask.mutate(item.id)}
                     disabled={convertToTask.isPending}
                     title="Convertir en tâche"
-                    className="border-2"
                   >
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
-                    size="icon"
+                    size="icon-sm"
                     onClick={() => archiveItem.mutate(item.id)}
                     title="Archiver"
-                    className="border-2"
                   >
                     <Archive className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
-                    size="icon"
+                    size="icon-sm"
                     onClick={() => deleteItem.mutate(item.id)}
                     title="Supprimer"
                   >
@@ -222,11 +245,12 @@ export default function InboxPage() {
 
             {newItems.length === 0 && (
               <div className="text-center py-12">
-                <Inbox className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                <h3 className="font-semibold text-lg mb-1">Inbox vide</h3>
                 <p className="text-muted-foreground mb-4">
-                  Inbox vide — bravo ! ✨
+                  Bravo ! Vous avez tout traité ✨
                 </p>
-                <Button onClick={() => setIsDialogOpen(true)} variant="outline" className="border-2">
+                <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Capturer quelque chose
                 </Button>
@@ -237,9 +261,9 @@ export default function InboxPage() {
 
         {/* Processed Items */}
         {processedItems.length > 0 && (
-          <Card className="border-2">
+          <Card className="bg-muted/30">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-muted-foreground">
+              <CardTitle className="flex items-center gap-2 text-muted-foreground text-base">
                 <Archive className="h-5 w-5" />
                 Traités récemment
               </CardTitle>
@@ -248,13 +272,13 @@ export default function InboxPage() {
               {processedItems.slice(0, 5).map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 p-3 border-2 bg-muted/50"
+                  className="flex items-center gap-3 p-3 rounded-lg bg-background/50"
                 >
                   {sourceIcons[item.source]}
                   <span className="text-sm text-muted-foreground flex-1 truncate">
                     {item.title}
                   </span>
-                  <Badge variant="outline" className="border-2 text-xs">
+                  <Badge variant="success" className="text-xs">
                     Converti
                   </Badge>
                 </div>

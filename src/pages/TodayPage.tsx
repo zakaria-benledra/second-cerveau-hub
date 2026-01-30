@@ -23,16 +23,19 @@ import {
   Play, 
   Zap,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  TrendingUp,
+  Sparkles,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const priorityColors: Record<string, string> = {
-  urgent: 'border-destructive bg-destructive/10 text-destructive',
-  high: 'border-orange-500 bg-orange-500/10 text-orange-700',
-  medium: 'border-primary bg-primary/10 text-primary',
-  low: 'border-muted-foreground bg-muted text-muted-foreground',
+  urgent: 'bg-destructive/10 text-destructive border-destructive/30',
+  high: 'bg-warning/10 text-warning border-warning/30',
+  medium: 'bg-primary/10 text-primary border-primary/30',
+  low: 'bg-muted text-muted-foreground border-muted',
 };
 
 export default function TodayPage() {
@@ -87,12 +90,12 @@ export default function TodayPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight capitalize">{formattedDate}</h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mt-1">
               {totalTasks} tâches planifiées · {completedCount} terminées
             </p>
           </div>
@@ -101,56 +104,55 @@ export default function TodayPage() {
             size="sm" 
             onClick={handleRefreshStats}
             disabled={isRefreshing}
-            className="border-2"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Rafraîchir Stats
+            <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
+            Actualiser
           </Button>
         </div>
 
-        {/* Quick Stats */}
+        {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-4">
-          <Card className="border-2">
-            <CardContent className="pt-4">
+          <Card className="hover-lift">
+            <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 border-2 border-primary">
+                <div className="p-2.5 rounded-xl bg-primary/10">
                   <CheckCircle2 className="h-5 w-5 text-primary" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-2xl font-bold">{completedCount}/{totalTasks}</p>
                   <p className="text-xs text-muted-foreground">Tâches</p>
                 </div>
               </div>
               <Progress 
                 value={totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0} 
-                className="mt-3" 
+                className="mt-4 h-2" 
               />
             </CardContent>
           </Card>
 
-          <Card className="border-2">
-            <CardContent className="pt-4">
+          <Card className="hover-lift">
+            <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-500/10 border-2 border-orange-500">
-                  <Flame className="h-5 w-5 text-orange-500" />
+                <div className="p-2.5 rounded-xl bg-warning/10">
+                  <Flame className="h-5 w-5 text-warning" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-2xl font-bold">{completedHabits.length}/{activeHabits.length}</p>
                   <p className="text-xs text-muted-foreground">Habitudes</p>
                 </div>
               </div>
               <Progress 
                 value={activeHabits.length > 0 ? (completedHabits.length / activeHabits.length) * 100 : 0} 
-                className="mt-3" 
+                className="mt-4 h-2" 
               />
             </CardContent>
           </Card>
 
-          <Card className="border-2">
-            <CardContent className="pt-4">
+          <Card className="hover-lift">
+            <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 border-2 border-blue-500">
-                  <Clock className="h-5 w-5 text-blue-500" />
+                <div className="p-2.5 rounded-xl bg-info/10">
+                  <Clock className="h-5 w-5 text-info" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{stats?.focus_minutes || 0}</p>
@@ -160,11 +162,17 @@ export default function TodayPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-2">
-            <CardContent className="pt-4">
+          <Card className="hover-lift">
+            <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className={`p-2 border-2 ${(stats?.overload_index || 0) > 1 ? 'bg-destructive/10 border-destructive' : 'bg-green-500/10 border-green-500'}`}>
-                  <AlertTriangle className={`h-5 w-5 ${(stats?.overload_index || 0) > 1 ? 'text-destructive' : 'text-green-500'}`} />
+                <div className={cn(
+                  "p-2.5 rounded-xl",
+                  (stats?.overload_index || 0) > 1 ? 'bg-destructive/10' : 'bg-success/10'
+                )}>
+                  <AlertTriangle className={cn(
+                    "h-5 w-5",
+                    (stats?.overload_index || 0) > 1 ? 'text-destructive' : 'text-success'
+                  )} />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{((stats?.overload_index || 0) * 100).toFixed(0)}%</p>
@@ -176,32 +184,37 @@ export default function TodayPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Next Best Action */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Next Best Action */}
             {nextBestAction && nextBestAction.status === 'todo' && (
-              <Card className="border-2 border-primary bg-primary/5">
+              <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5 overflow-hidden">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">Next Best Action</CardTitle>
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Zap className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Next Best Action</CardTitle>
+                      <CardDescription>
+                        Haute priorité · Échéance proche · Estimation courte
+                      </CardDescription>
+                    </div>
                   </div>
-                  <CardDescription>
-                    Haute priorité · Échéance proche · Estimation courte
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-2">
                       <p className="font-semibold text-lg">{nextBestAction.title}</p>
                       {nextBestAction.description && (
                         <p className="text-sm text-muted-foreground">{nextBestAction.description}</p>
                       )}
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex gap-2">
                         <Badge className={priorityColors[nextBestAction.priority]}>
                           {nextBestAction.priority}
                         </Badge>
                         {nextBestAction.estimate_min && (
-                          <Badge variant="outline" className="border-2">
+                          <Badge variant="outline">
                             <Clock className="h-3 w-3 mr-1" />
                             {nextBestAction.estimate_min} min
                           </Badge>
@@ -209,9 +222,11 @@ export default function TodayPage() {
                       </div>
                     </div>
                     <Button 
+                      variant="gradient"
+                      size="lg"
                       onClick={() => completeTask.mutate(nextBestAction.id)}
                       disabled={completeTask.isPending}
-                      className="border-2"
+                      className="shrink-0"
                     >
                       <Play className="h-4 w-4 mr-2" />
                       Commencer
@@ -222,24 +237,29 @@ export default function TodayPage() {
             )}
 
             {/* Tasks List */}
-            <Card className="border-2">
+            <Card>
               <CardHeader>
-                <CardTitle>Tâches du jour</CardTitle>
-                <CardDescription>
-                  {inProgressTasks.length} en cours · {todoTasks.length} à faire
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Tâches du jour</CardTitle>
+                    <CardDescription>
+                      {inProgressTasks.length} en cours · {todoTasks.length} à faire
+                    </CardDescription>
+                  </div>
+                  <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2">
                 {[...inProgressTasks, ...todoTasks].map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center gap-3 p-3 border-2 hover:bg-accent transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                   >
                     <Checkbox
                       checked={task.status === 'done'}
                       onCheckedChange={() => completeTask.mutate(task.id)}
                       disabled={completeTask.isPending}
-                      className="border-2"
+                      className="rounded-md"
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{task.title}</p>
@@ -248,12 +268,12 @@ export default function TodayPage() {
                           {task.priority}
                         </Badge>
                         {task.estimate_min && (
-                          <Badge variant="outline" className="border-2">
+                          <Badge variant="muted">
                             {task.estimate_min} min
                           </Badge>
                         )}
                         {task.status === 'in_progress' && (
-                          <Badge className="bg-blue-500/10 border-blue-500 text-blue-700 border-2">
+                          <Badge variant="info">
                             En cours
                           </Badge>
                         )}
@@ -263,41 +283,44 @@ export default function TodayPage() {
                 ))}
 
                 {todoTasks.length === 0 && inProgressTasks.length === 0 && (
-                  <p className="text-center py-8 text-muted-foreground">
-                    Aucune tâche pour aujourd'hui
-                  </p>
+                  <div className="text-center py-8">
+                    <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                    <p className="text-muted-foreground">
+                      Aucune tâche pour aujourd'hui
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Habits */}
-            <Card className="border-2">
+            <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">Habitudes</CardTitle>
-                  <Flame className="h-4 w-4 text-orange-500" />
+                  <Flame className="h-4 w-4 text-warning" />
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 {activeHabits.map((habit) => (
                   <div
                     key={habit.id}
-                    className="flex items-center gap-3 p-2 border-2 hover:bg-accent transition-colors cursor-pointer"
+                    className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
                     onClick={() => toggleHabit.mutate(habit.id)}
                   >
                     <Checkbox
                       checked={habit.todayLog?.completed || false}
                       disabled={toggleHabit.isPending}
-                      className="border-2"
+                      className="rounded-md"
                     />
                     <span className="text-lg">{habit.icon || '✨'}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{habit.name}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{habit.name}</p>
                       {habit.streak && habit.streak.current_streak > 0 && (
-                        <p className="text-xs text-orange-500">
+                        <p className="text-xs text-warning">
                           🔥 {habit.streak.current_streak} jours
                         </p>
                       )}
@@ -314,13 +337,13 @@ export default function TodayPage() {
             </Card>
 
             {/* Inbox Preview */}
-            <Card className="border-2">
+            <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">Inbox</CardTitle>
                   <div className="flex items-center gap-2">
                     {newInboxCount > 0 && (
-                      <Badge variant="default" className="border-2">
+                      <Badge variant="default">
                         {newInboxCount}
                       </Badge>
                     )}
@@ -334,9 +357,12 @@ export default function TodayPage() {
                     {newInboxCount} élément{newInboxCount > 1 ? 's' : ''} à traiter
                   </p>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Inbox vide ✨
-                  </p>
+                  <div className="text-center py-4">
+                    <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Inbox vide
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Zap,
   Brain,
+  Timer,
+  TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,42 +27,43 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { icon: Home, label: 'Today', path: '/' },
-  { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
-  { icon: Target, label: 'Habits', path: '/habits' },
-  { icon: Inbox, label: 'Inbox', path: '/inbox' },
-  { icon: FolderKanban, label: 'Projects', path: '/projects' },
-  { icon: Calendar, label: 'Calendar', path: '/calendar' },
-  { icon: Zap, label: 'Focus', path: '/focus' },
-  { icon: BookOpen, label: 'Learning', path: '/learning' },
-  { icon: Wallet, label: 'Finance', path: '/finance' },
-  { icon: BarChart3, label: 'Dashboard', path: '/dashboard' },
-  { icon: Brain, label: 'AI Agent', path: '/agent' },
+  { icon: Home, label: 'Aujourd\'hui', path: '/', color: 'text-primary' },
+  { icon: CheckSquare, label: 'Tâches', path: '/tasks', color: 'text-info' },
+  { icon: Target, label: 'Habitudes', path: '/habits', color: 'text-success' },
+  { icon: Inbox, label: 'Inbox', path: '/inbox', color: 'text-warning' },
+  { icon: FolderKanban, label: 'Projets', path: '/projects', color: 'text-accent' },
+  { icon: Timer, label: 'Focus', path: '/focus', color: 'text-destructive' },
+  { icon: TrendingUp, label: 'Objectifs', path: '/goals', color: 'text-primary' },
+  { icon: Calendar, label: 'Calendrier', path: '/calendar', color: 'text-info' },
+  { icon: BookOpen, label: 'Apprentissage', path: '/learning', color: 'text-success' },
+  { icon: Wallet, label: 'Finances', path: '/finance', color: 'text-warning' },
+  { icon: BarChart3, label: 'Dashboard', path: '/dashboard', color: 'text-accent' },
+  { icon: Brain, label: 'Agent IA', path: '/agent', color: 'text-primary' },
 ];
 
 const bottomItems = [
-  { icon: Settings, label: 'Settings', path: '/settings' },
+  { icon: Settings, label: 'Paramètres', path: '/settings', color: 'text-muted-foreground' },
 ];
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
 
-  const NavItem = ({ icon: Icon, label, path }: typeof navItems[0]) => {
+  const NavItem = ({ icon: Icon, label, path, color }: typeof navItems[0]) => {
     const isActive = location.pathname === path;
     
     const content = (
       <Link
         to={path}
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all border-2',
+          'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
           isActive
-            ? 'bg-primary text-primary-foreground border-primary shadow-xs'
-            : 'border-transparent hover:bg-accent hover:border-border',
+            ? 'bg-primary/10 text-primary shadow-sm'
+            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
           collapsed && 'justify-center px-2'
         )}
       >
-        <Icon className="h-5 w-5 flex-shrink-0" />
-        {!collapsed && <span>{label}</span>}
+        <Icon className={cn('h-5 w-5 flex-shrink-0', isActive ? 'text-primary' : color)} />
+        {!collapsed && <span className="truncate">{label}</span>}
       </Link>
     );
 
@@ -68,7 +71,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       return (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
-          <TooltipContent side="right" className="border-2 shadow-xs">
+          <TooltipContent side="right" className="rounded-lg shadow-lg">
             {label}
           </TooltipContent>
         </Tooltip>
@@ -82,28 +85,31 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     <div className="flex h-full flex-col">
       {/* Logo */}
       <div className={cn(
-        'flex h-16 items-center border-b-2 border-border px-4',
+        'flex h-16 items-center border-b border-sidebar-border px-4',
         collapsed && 'justify-center px-2'
       )}>
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center border-2 border-foreground bg-foreground text-background font-bold">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary text-primary-foreground font-bold text-sm shadow-md">
             SC
           </div>
           {!collapsed && (
-            <span className="font-bold text-lg tracking-tight">SECOND CERVEAU</span>
+            <div className="flex flex-col">
+              <span className="font-bold text-sm text-sidebar-foreground tracking-tight">SECOND</span>
+              <span className="text-xs text-sidebar-foreground/60 -mt-0.5">CERVEAU</span>
+            </div>
           )}
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-2 overflow-y-auto">
+      <nav className="flex-1 space-y-1 p-3 overflow-y-auto">
         {navItems.map((item) => (
           <NavItem key={item.path} {...item} />
         ))}
       </nav>
 
       {/* Bottom Section */}
-      <div className="border-t-2 border-border p-2 space-y-1">
+      <div className="border-t border-sidebar-border p-3 space-y-1">
         {bottomItems.map((item) => (
           <NavItem key={item.path} {...item} />
         ))}
@@ -114,7 +120,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           size="sm"
           onClick={onToggle}
           className={cn(
-            'w-full justify-center border-2 border-transparent hover:border-border',
+            'w-full justify-center rounded-lg text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent',
             !collapsed && 'justify-start px-3'
           )}
         >
@@ -123,7 +129,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           ) : (
             <>
               <ChevronLeft className="h-4 w-4 mr-2" />
-              <span>Collapse</span>
+              <span>Réduire</span>
             </>
           )}
         </Button>

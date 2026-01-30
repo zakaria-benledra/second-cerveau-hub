@@ -31,14 +31,15 @@ import {
   useDeleteTask,
   useUpdateTask 
 } from '@/hooks/useTasks';
-import { Plus, Clock, Loader2, Trash2 } from 'lucide-react';
+import { Plus, Clock, Loader2, Trash2, CheckCircle2, Circle, PlayCircle, ListTodo } from 'lucide-react';
 import type { CreateTaskInput } from '@/lib/api/tasks';
+import { cn } from '@/lib/utils';
 
 const priorityColors: Record<string, string> = {
-  urgent: 'border-destructive bg-destructive/10 text-destructive',
-  high: 'border-orange-500 bg-orange-500/10 text-orange-700',
-  medium: 'border-primary bg-primary/10 text-primary',
-  low: 'border-muted-foreground bg-muted text-muted-foreground',
+  urgent: 'bg-destructive/10 text-destructive border-destructive/30',
+  high: 'bg-warning/10 text-warning border-warning/30',
+  medium: 'bg-primary/10 text-primary border-primary/30',
+  low: 'bg-muted text-muted-foreground border-muted',
 };
 
 const statusLabels: Record<string, string> = {
@@ -85,7 +86,7 @@ export default function TasksPage() {
   }
 
   const TaskCard = ({ task }: { task: NonNullable<typeof tasks>[0] }) => (
-    <div className="flex items-start gap-3 p-3 border-2 hover:bg-accent transition-colors group">
+    <div className="flex items-start gap-3 p-4 rounded-xl border hover:bg-muted/50 transition-all group hover-lift">
       <Checkbox
         checked={task.status === 'done'}
         onCheckedChange={() => {
@@ -95,10 +96,13 @@ export default function TasksPage() {
             completeTask.mutate(task.id);
           }
         }}
-        className="mt-1 border-2"
+        className="mt-1 rounded-md"
       />
       <div className="flex-1 min-w-0">
-        <p className={`font-medium ${task.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>
+        <p className={cn(
+          "font-medium",
+          task.status === 'done' && 'line-through text-muted-foreground'
+        )}>
           {task.title}
         </p>
         {task.description && (
@@ -111,13 +115,13 @@ export default function TasksPage() {
             {task.priority}
           </Badge>
           {task.estimate_min && (
-            <Badge variant="outline" className="border-2">
+            <Badge variant="muted">
               <Clock className="h-3 w-3 mr-1" />
               {task.estimate_min} min
             </Badge>
           )}
           {task.due_date && (
-            <Badge variant="outline" className="border-2">
+            <Badge variant="outline">
               {new Date(task.due_date).toLocaleDateString('fr-FR')}
             </Badge>
           )}
@@ -125,7 +129,7 @@ export default function TasksPage() {
       </div>
       <Button
         variant="ghost"
-        size="icon"
+        size="icon-sm"
         className="opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={() => deleteTask.mutate(task.id)}
       >
@@ -136,24 +140,24 @@ export default function TasksPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Tâches</h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mt-1">
               {tasks?.length || 0} tâches au total
             </p>
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="border-2">
+              <Button variant="gradient">
                 <Plus className="h-4 w-4 mr-2" />
                 Nouvelle tâche
               </Button>
             </DialogTrigger>
-            <DialogContent className="border-2">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>Créer une tâche</DialogTitle>
                 <DialogDescription>
@@ -168,7 +172,6 @@ export default function TasksPage() {
                     value={newTask.title}
                     onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                     placeholder="Ex: Finir le rapport trimestriel"
-                    className="border-2"
                   />
                 </div>
                 <div className="space-y-2">
@@ -178,7 +181,6 @@ export default function TasksPage() {
                     value={newTask.description || ''}
                     onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                     placeholder="Détails optionnels..."
-                    className="border-2"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -188,7 +190,7 @@ export default function TasksPage() {
                       value={newTask.priority}
                       onValueChange={(v) => setNewTask({ ...newTask, priority: v as CreateTaskInput['priority'] })}
                     >
-                      <SelectTrigger className="border-2">
+                      <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -207,7 +209,6 @@ export default function TasksPage() {
                       value={newTask.estimate_min || ''}
                       onChange={(e) => setNewTask({ ...newTask, estimate_min: parseInt(e.target.value) || undefined })}
                       placeholder="30"
-                      className="border-2"
                     />
                   </div>
                 </div>
@@ -218,18 +219,16 @@ export default function TasksPage() {
                     type="date"
                     value={newTask.due_date || ''}
                     onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value || undefined })}
-                    className="border-2"
                   />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-2">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Annuler
                 </Button>
                 <Button 
                   onClick={handleCreateTask} 
                   disabled={createTask.isPending || !newTask.title.trim()}
-                  className="border-2"
                 >
                   {createTask.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Créer
@@ -239,78 +238,121 @@ export default function TasksPage() {
           </Dialog>
         </div>
 
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4">
+          <Card className="hover-lift">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <ListTodo className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{todoTasks.length}</p>
+                <p className="text-xs text-muted-foreground">À faire</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="hover-lift">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-info/10">
+                <PlayCircle className="h-5 w-5 text-info" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{inProgressTasks.length}</p>
+                <p className="text-xs text-muted-foreground">En cours</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="hover-lift">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-success/10">
+                <CheckCircle2 className="h-5 w-5 text-success" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{doneTasks.length}</p>
+                <p className="text-xs text-muted-foreground">Terminé</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Tabs */}
         <Tabs defaultValue="todo" className="w-full">
-          <TabsList className="border-2 w-full md:w-auto">
-            <TabsTrigger value="todo" className="flex-1 md:flex-none">
+          <TabsList className="w-full md:w-auto grid grid-cols-3 md:inline-flex">
+            <TabsTrigger value="todo" className="gap-2">
+              <Circle className="h-3 w-3" />
               À faire ({todoTasks.length})
             </TabsTrigger>
-            <TabsTrigger value="in_progress" className="flex-1 md:flex-none">
+            <TabsTrigger value="in_progress" className="gap-2">
+              <PlayCircle className="h-3 w-3" />
               En cours ({inProgressTasks.length})
             </TabsTrigger>
-            <TabsTrigger value="done" className="flex-1 md:flex-none">
+            <TabsTrigger value="done" className="gap-2">
+              <CheckCircle2 className="h-3 w-3" />
               Terminé ({doneTasks.length})
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="todo" className="mt-4">
-            <Card className="border-2">
+          <TabsContent value="todo" className="mt-6">
+            <Card>
               <CardHeader>
                 <CardTitle>{statusLabels.todo}</CardTitle>
                 <CardDescription>
                   Tâches en attente d'exécution
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
                 {todoTasks.map((task) => (
                   <TaskCard key={task.id} task={task} />
                 ))}
                 {todoTasks.length === 0 && (
-                  <p className="text-center py-8 text-muted-foreground">
-                    Aucune tâche à faire
-                  </p>
+                  <div className="text-center py-12">
+                    <ListTodo className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                    <p className="text-muted-foreground">Aucune tâche à faire</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="in_progress" className="mt-4">
-            <Card className="border-2">
+          <TabsContent value="in_progress" className="mt-6">
+            <Card>
               <CardHeader>
                 <CardTitle>{statusLabels.in_progress}</CardTitle>
                 <CardDescription>
                   Tâches actuellement en cours
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
                 {inProgressTasks.map((task) => (
                   <TaskCard key={task.id} task={task} />
                 ))}
                 {inProgressTasks.length === 0 && (
-                  <p className="text-center py-8 text-muted-foreground">
-                    Aucune tâche en cours
-                  </p>
+                  <div className="text-center py-12">
+                    <PlayCircle className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                    <p className="text-muted-foreground">Aucune tâche en cours</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="done" className="mt-4">
-            <Card className="border-2">
+          <TabsContent value="done" className="mt-6">
+            <Card>
               <CardHeader>
                 <CardTitle>{statusLabels.done}</CardTitle>
                 <CardDescription>
                   Tâches terminées
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
                 {doneTasks.slice(0, 20).map((task) => (
                   <TaskCard key={task.id} task={task} />
                 ))}
                 {doneTasks.length === 0 && (
-                  <p className="text-center py-8 text-muted-foreground">
-                    Aucune tâche terminée
-                  </p>
+                  <div className="text-center py-12">
+                    <CheckCircle2 className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                    <p className="text-muted-foreground">Aucune tâche terminée</p>
+                  </div>
                 )}
                 {doneTasks.length > 20 && (
                   <p className="text-center py-4 text-muted-foreground text-sm">
