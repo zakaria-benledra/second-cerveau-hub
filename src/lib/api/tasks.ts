@@ -194,8 +194,8 @@ export async function getNextBestAction(): Promise<Task | null> {
     .order('priority', { ascending: false })
     .order('estimate_min', { ascending: true, nullsFirst: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error) throw error;
   return data as Task | null;
 }
