@@ -187,7 +187,7 @@ export default function TodayPage() {
                 <Button 
                   variant="link" 
                   className="px-0 mt-2"
-                  onClick={() => navigate('/observability?tab=interventions')}
+                  onClick={() => navigate('/ai-interventions')}
                 >
                   Voir détails et historique →
                 </Button>
