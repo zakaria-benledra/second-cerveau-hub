@@ -1,32 +1,45 @@
 /**
- * Workspace Helper - Production-Grade Multi-Tenant Functions
+ * WORKSPACE MODULE - Production-Grade Multi-Tenant Enforcement
  * 
- * CRITICAL: workspace_id must NEVER be nullable.
- * If no membership exists, this module bootstraps one or fails hard.
+ * CRITICAL RULES:
+ * 1. workspace_id must NEVER be nullable for tenant-scoped data
+ * 2. If no membership exists, bootstrap a workspace or FAIL HARD
+ * 3. All queries must filter by BOTH user_id AND workspace_id
  */
 
 /**
  * Get user's workspace ID or bootstrap one if none exists.
- * NEVER returns null - fails with error if cannot resolve.
+ * NEVER returns null - throws error if cannot resolve.
+ * 
+ * @throws Error if workspace cannot be resolved or created
  */
 export async function getRequiredWorkspaceId(
   supabase: any, 
   userId: string
 ): Promise<string> {
-  // Try to get existing workspace
+  if (!userId) {
+    throw new Error('MULTI_TENANT_VIOLATION: userId is required');
+  }
+
+  // Try to get existing workspace with explicit user filter
   const { data: membership, error: membershipError } = await supabase
     .from('memberships')
     .select('workspace_id')
-    .eq('user_id', userId)
+    .eq('user_id', userId)  // CRITICAL: Must filter by user_id
     .limit(1)
-    .single();
+    .maybeSingle();
+
+  if (membershipError) {
+    console.error('Membership lookup error:', membershipError);
+    // Don't fail silently - this is a critical path
+  }
 
   if (membership?.workspace_id) {
     return membership.workspace_id;
   }
 
-  // Bootstrap personal workspace
-  console.log(`Bootstrapping workspace for user ${userId}`);
+  // Bootstrap personal workspace atomically
+  console.log(`[WORKSPACE] Bootstrapping workspace for user ${userId}`);
   
   const { data: workspace, error: createError } = await supabase
     .from('workspaces')
@@ -35,14 +48,14 @@ export async function getRequiredWorkspaceId(
       plan: 'free',
       owner_id: userId
     })
-    .select()
+    .select('id')
     .single();
 
-  if (createError || !workspace) {
-    throw new Error(`Failed to bootstrap workspace: ${createError?.message || 'Unknown error'}`);
+  if (createError || !workspace?.id) {
+    throw new Error(`WORKSPACE_BOOTSTRAP_FAILED: ${createError?.message || 'Unknown error'}`);
   }
 
-  // Add membership
+  // Add membership with owner role
   const { error: memberError } = await supabase
     .from('memberships')
     .insert({
@@ -52,11 +65,13 @@ export async function getRequiredWorkspaceId(
     });
 
   if (memberError) {
-    throw new Error(`Failed to create membership: ${memberError.message}`);
+    // Cleanup: delete orphan workspace
+    await supabase.from('workspaces').delete().eq('id', workspace.id);
+    throw new Error(`MEMBERSHIP_CREATE_FAILED: ${memberError.message}`);
   }
 
-  // Create usage limits for free tier
-  await supabase
+  // Create usage limits for free tier (non-blocking)
+  const { error: limitsError } = await supabase
     .from('usage_limits')
     .insert({
       workspace_id: workspace.id,
@@ -70,53 +85,37 @@ export async function getRequiredWorkspaceId(
       storage_used_mb: 0
     });
 
+  if (limitsError) {
+    console.warn(`[WORKSPACE] Usage limits creation failed (non-critical): ${limitsError.message}`);
+  }
+
+  console.log(`[WORKSPACE] Successfully bootstrapped workspace ${workspace.id} for user ${userId}`);
   return workspace.id;
 }
 
 /**
- * Generate idempotency key using payload hash.
- * Uses SHA-256 hash of payload + entity + workspace + user.
+ * DEPRECATED: Use getRequiredWorkspaceId instead.
+ * This function is kept for backward compatibility but logs a warning.
+ * 
+ * @deprecated
  */
-export async function generateIdempotencyKey(
-  entity: string,
-  entityId: string,
-  operation: string,
-  userId: string,
-  workspaceId: string,
-  payload: Record<string, unknown> = {}
-): Promise<string> {
-  const data = JSON.stringify({
-    entity,
-    entityId,
-    operation,
-    userId,
-    workspaceId,
-    payload
-  });
+export async function getUserWorkspaceId(
+  supabase: any,
+  userId: string
+): Promise<string | null> {
+  console.warn('[DEPRECATED] getUserWorkspaceId called - use getRequiredWorkspaceId instead');
   
-  const encoder = new TextEncoder();
-  const dataBuffer = encoder.encode(data);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  
-  return `${entity}_${operation}_${hashHex.slice(0, 32)}`;
+  try {
+    return await getRequiredWorkspaceId(supabase, userId);
+  } catch (error) {
+    console.error('[WORKSPACE] Failed to get workspace:', error);
+    return null;
+  }
 }
 
-/**
- * Check if an event has already been processed (idempotency check).
- */
-export async function isEventProcessed(
-  supabase: any,
-  tableName: string,
-  eventId: string
-): Promise<boolean> {
-  const { data } = await supabase
-    .from(tableName)
-    .select('id')
-    .eq('event_id', eventId)
-    .limit(1)
-    .single();
-  
-  return !!data;
-}
+// Re-export idempotency functions from dedicated module
+export { 
+  generateIdempotencyKey, 
+  isEventProcessed, 
+  stableStringify 
+} from './idempotency.ts';

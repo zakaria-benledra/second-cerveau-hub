@@ -1,9 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getRequiredWorkspaceId } from '../_shared/workspace.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+/**
+ * NIGHTLY STATS JOB - Multi-Tenant Compliant
+ * 
+ * Computes daily statistics for all users.
+ * All inserts include workspace_id (never null).
+ */
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -54,6 +62,16 @@ Deno.serve(async (req) => {
     for (const profile of profiles) {
       try {
         const userId = profile.user_id
+
+        // ========== MULTI-TENANT: Get required workspace_id (never null) ==========
+        let workspaceId: string
+        try {
+          workspaceId = await getRequiredWorkspaceId(supabase, userId)
+        } catch (wsError) {
+          console.error(`Failed to get workspace for user ${userId}:`, wsError)
+          failed++
+          continue
+        }
 
         // Calculate tasks planned (due today or start today)
         const { count: tasksPlanned } = await supabase
@@ -136,9 +154,10 @@ Deno.serve(async (req) => {
           ? ((clarifiedTasks || 0) / (totalTasks || 1)) 
           : 1
 
-        // Upsert daily stats (idempotent)
+        // ========== MULTI-TENANT UPSERT (workspace_id required) ==========
         const statsData = {
           user_id: userId,
+          workspace_id: workspaceId, // MULTI-TENANT (never null)
           date: today,
           tasks_planned: tasksPlanned || 0,
           tasks_completed: tasksCompleted || 0,
@@ -157,6 +176,7 @@ Deno.serve(async (req) => {
         if (overloadIndex > 1.2) {
           await supabase.from('system_events').insert({
             user_id: userId,
+            workspace_id: workspaceId, // MULTI-TENANT
             event_type: 'overload.detected',
             entity: 'daily_stats',
             payload: { overload_index: overloadIndex, date: today },
@@ -184,6 +204,7 @@ Deno.serve(async (req) => {
             if (!todayLog || !todayLog.completed) {
               await supabase.from('system_events').insert({
                 user_id: userId,
+                workspace_id: workspaceId, // MULTI-TENANT
                 event_type: 'habit.missed',
                 entity: 'habits',
                 entity_id: habit.id,
