@@ -11,7 +11,8 @@ import { TaskDialog } from '@/components/tasks/TaskDialog';
 import { KanbanHeader } from '@/components/kanban/KanbanHeader';
 import { KanbanColumn } from '@/components/kanban/KanbanColumn';
 import { KanbanMetricsPanel } from '@/components/kanban/KanbanMetricsPanel';
-import { GlobalTimeFilter, type TimeRange } from '@/components/filters/GlobalTimeFilter';
+import { KanbanSearchFilters, type SortOption, type PriorityFilter } from '@/components/kanban/KanbanSearchFilters';
+import { type TimeRange, useTimeRangeDates } from '@/components/filters/GlobalTimeFilter';
 import { Loader2, Undo2, LayoutGrid, BarChart3 } from 'lucide-react';
 import type { CreateTaskInput, UpdateTaskInput } from '@/lib/api/tasks';
 
@@ -21,6 +22,8 @@ const COLUMNS: { id: KanbanStatus; title: string; accent: string; glow: string }
   { id: 'doing', title: 'En Cours', accent: 'border-warning/30', glow: 'shadow-warning/20' },
   { id: 'done', title: 'Terminé', accent: 'border-success/30', glow: 'shadow-success/20' },
 ];
+
+const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
 
 // Calculate impact score for a task
 function calculateImpactScore(task: KanbanTask): number {
@@ -47,6 +50,14 @@ export default function KanbanPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [draggedTask, setDraggedTask] = useState<KanbanTask | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<KanbanStatus | null>(null);
+  const [activeTab, setActiveTab] = useState<'board' | 'metrics'>('board');
+  
+  // Search and filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+  const [sortBy, setSortBy] = useState<SortOption>('priority');
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
+  const { startDate } = useTimeRangeDates(timeRange);
 
   // Create lookup maps for projects and goals
   const projectsMap = useMemo(() => {
@@ -56,6 +67,65 @@ export default function KanbanPage() {
   const goalsMap = useMemo(() => {
     return goals.reduce((acc, g) => ({ ...acc, [g.id]: g.title }), {} as Record<string, string>);
   }, [goals]);
+
+  // Filter and sort tasks
+  const filterAndSortTasks = useCallback((tasks: KanbanTask[]) => {
+    let filtered = tasks;
+
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(t => 
+        t.title.toLowerCase().includes(query) ||
+        t.description?.toLowerCase().includes(query)
+      );
+    }
+
+    // Priority filter
+    if (priorityFilter !== 'all') {
+      filtered = filtered.filter(t => t.priority === priorityFilter);
+    }
+
+    // Time range filter (by created_at)
+    filtered = filtered.filter(t => t.created_at >= startDate);
+
+    // Sort
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'due_date':
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        case 'priority':
+          return (PRIORITY_ORDER[a.priority] || 2) - (PRIORITY_ORDER[b.priority] || 2);
+        case 'impact':
+          return calculateImpactScore(b) - calculateImpactScore(a);
+        case 'created':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
+    return sorted;
+  }, [searchQuery, priorityFilter, startDate, sortBy]);
+
+  // Calculate active filters count
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (searchQuery) count++;
+    if (priorityFilter !== 'all') count++;
+    if (timeRange !== '30d') count++;
+    if (sortBy !== 'priority') count++;
+    return count;
+  }, [searchQuery, priorityFilter, timeRange, sortBy]);
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setPriorityFilter('all');
+    setTimeRange('30d');
+    setSortBy('priority');
+  };
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -147,35 +217,72 @@ export default function KanbanPage() {
           onCreateTask={() => setIsCreateDialogOpen(true)}
         />
 
-        {/* Kanban Board */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {COLUMNS.map((column) => {
-            // Filter out completed tasks from non-done columns
-            const tasks = column.id === 'done' 
-              ? (columns?.[column.id] || [])
-              : (columns?.[column.id] || []).filter(t => t.kanban_status !== 'done');
-            
-            return (
-              <KanbanColumn
-                key={column.id}
-                id={column.id}
-                title={column.title}
-                tasks={tasks}
-                accentColor={column.accent}
-                glowColor={column.glow}
-                isDropTarget={dragOverColumn === column.id}
-                draggedTaskId={draggedTask?.id}
-                projectsMap={projectsMap}
-                goalsMap={goalsMap}
-                onDragOver={(e) => handleDragOver(e, column.id)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, column.id)}
-                onTaskDragStart={handleDragStart}
-                onTaskDragEnd={handleDragEnd}
-              />
-            );
-          })}
-        </div>
+        {/* Tabs: Board / Metrics */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'board' | 'metrics')}>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <TabsList className="glass">
+              <TabsTrigger value="board" className="gap-2">
+                <LayoutGrid className="h-4 w-4" />
+                Board
+              </TabsTrigger>
+              <TabsTrigger value="metrics" className="gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Métriques
+              </TabsTrigger>
+            </TabsList>
+
+            {activeTab === 'board' && (
+              <div className="flex-1 min-w-[300px]">
+                <KanbanSearchFilters
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  timeRange={timeRange}
+                  onTimeRangeChange={setTimeRange}
+                  sortBy={sortBy}
+                  onSortChange={setSortBy}
+                  priorityFilter={priorityFilter}
+                  onPriorityChange={setPriorityFilter}
+                  activeFiltersCount={activeFiltersCount}
+                  onClearFilters={clearFilters}
+                />
+              </div>
+            )}
+          </div>
+
+          <TabsContent value="board" className="mt-4">
+            {/* Kanban Board */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {COLUMNS.map((column) => {
+                const rawTasks = columns?.[column.id] || [];
+                const tasks = filterAndSortTasks(rawTasks);
+                
+                return (
+                  <KanbanColumn
+                    key={column.id}
+                    id={column.id}
+                    title={column.title}
+                    tasks={tasks}
+                    accentColor={column.accent}
+                    glowColor={column.glow}
+                    isDropTarget={dragOverColumn === column.id}
+                    draggedTaskId={draggedTask?.id}
+                    projectsMap={projectsMap}
+                    goalsMap={goalsMap}
+                    onDragOver={(e) => handleDragOver(e, column.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, column.id)}
+                    onTaskDragStart={handleDragStart}
+                    onTaskDragEnd={handleDragEnd}
+                  />
+                );
+              })}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="metrics" className="mt-4">
+            <KanbanMetricsPanel />
+          </TabsContent>
+        </Tabs>
 
         {/* Loading Indicator + Undo Button */}
         <div className="fixed bottom-4 right-4 flex items-center gap-2">

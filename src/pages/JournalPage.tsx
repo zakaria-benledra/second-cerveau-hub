@@ -10,9 +10,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTodayJournalEntry, useSaveJournalEntry, useNotes, useCreateNote, useDeleteNote, useJournalEntries } from '@/hooks/useJournal';
 import { useJournalAI, journalDomains, moodToScore } from '@/hooks/useJournalAI';
 import { GlobalTimeFilter, useTimeRangeDates, type TimeRange } from '@/components/filters/GlobalTimeFilter';
-import { BookHeart, Sparkles, Smile, Meh, Frown, Battery, BatteryMedium, BatteryLow, Plus, Trash2, FileText, Brain, Lightbulb, Clock, Filter } from 'lucide-react';
-import { format, parseISO, isAfter, isBefore } from 'date-fns';
+import { 
+  BookHeart, Sparkles, Smile, Meh, Frown, Battery, BatteryMedium, BatteryLow, 
+  Plus, Trash2, FileText, Brain, Lightbulb, Clock, Filter, Search, 
+  LayoutTemplate, RefreshCw, MessageSquare 
+} from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+
+// Reflection structure templates
+const REFLECTION_TEMPLATES = [
+  {
+    id: 'situation-emotion-learning',
+    label: 'Situation → Émotion → Apprentissage',
+    template: `**Situation:**
+[Décrivez ce qui s'est passé]
+
+**Émotion ressentie:**
+[Comment vous êtes-vous senti(e)?]
+
+**Apprentissage:**
+[Qu'avez-vous appris de cette expérience?]`
+  },
+  {
+    id: 'what-went-well',
+    label: 'Ce qui a bien fonctionné',
+    template: `**Ce qui a bien fonctionné aujourd'hui:**
+- 
+
+**Pourquoi cela a fonctionné:**
+
+
+**Comment reproduire ce succès:**
+`
+  },
+  {
+    id: 'obstacle-strategy',
+    label: 'Obstacle → Stratégie',
+    template: `**Obstacle rencontré:**
+[Décrivez le défi]
+
+**Impact sur moi:**
+[Comment cela m'a affecté]
+
+**Stratégie pour la prochaine fois:**
+[Ce que je ferai différemment]`
+  }
+];
 
 export default function JournalPage() {
   const { data: todayEntry, isLoading: loadingEntry } = useTodayJournalEntry();
@@ -26,11 +71,9 @@ export default function JournalPage() {
   const [mood, setMood] = useState(todayEntry?.mood || '');
   const [energy, setEnergy] = useState(todayEntry?.energy_level || '');
   const [domain, setDomain] = useState<string>('');
-  const [gratitude, setGratitude] = useState<string[]>(todayEntry?.gratitude || ['', '', '']);
   const [reflections, setReflections] = useState(todayEntry?.reflections || '');
-  const [wins, setWins] = useState<string[]>(todayEntry?.wins || ['']);
-  const [challenges, setChallenges] = useState<string[]>(todayEntry?.challenges || ['']);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [newNote, setNewNote] = useState({ title: '', content: '' });
   
@@ -45,10 +88,7 @@ export default function JournalPage() {
     if (todayEntry) {
       setMood(todayEntry.mood || '');
       setEnergy(todayEntry.energy_level || '');
-      setGratitude(todayEntry.gratitude || ['', '', '']);
       setReflections(todayEntry.reflections || '');
-      setWins(todayEntry.wins || ['']);
-      setChallenges(todayEntry.challenges || ['']);
     }
   }, [todayEntry]);
 
@@ -56,10 +96,8 @@ export default function JournalPage() {
     saveJournal.mutate({
       mood,
       energy_level: energy,
-      gratitude: gratitude.filter(g => g.trim()),
       reflections,
-      wins: wins.filter(w => w.trim()),
-      challenges: challenges.filter(c => c.trim()),
+      // Note: gratitude, wins, challenges removed - now in Habits behavioral section
     });
   };
 
@@ -74,6 +112,10 @@ export default function JournalPage() {
 
   const handleUseSuggestion = (suggestion: string) => {
     setReflections(prev => prev ? `${prev}\n\n${suggestion}` : suggestion);
+  };
+
+  const handleApplyTemplate = (template: string) => {
+    setReflections(prev => prev ? `${prev}\n\n${template}` : template);
   };
 
   const handleAddNote = () => {
@@ -91,7 +133,9 @@ export default function JournalPage() {
     const entryDate = entry.date;
     const inDateRange = entryDate >= startDate && entryDate <= endDate;
     const matchesMood = moodFilter === 'all' || entry.mood === moodFilter;
-    return inDateRange && matchesMood;
+    const matchesSearch = !searchQuery || 
+      (entry.reflections?.toLowerCase().includes(searchQuery.toLowerCase()));
+    return inDateRange && matchesMood && matchesSearch;
   });
 
   const moodOptions = [
@@ -115,6 +159,10 @@ export default function JournalPage() {
             <h1 className="text-3xl font-bold tracking-tight">Journal Intelligent</h1>
             <p className="text-muted-foreground">{format(new Date(), 'EEEE d MMMM yyyy', { locale: fr })}</p>
           </div>
+          <Badge variant="outline" className="text-xs">
+            <MessageSquare className="h-3 w-3 mr-1" />
+            Réflexions uniquement
+          </Badge>
         </div>
 
         <Tabs defaultValue="today" className="space-y-4">
@@ -208,6 +256,36 @@ export default function JournalPage() {
               </Card>
             </div>
 
+            {/* Structure Templates */}
+            <Card className="glass">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <LayoutTemplate className="h-5 w-5 text-accent" />
+                    Structurer mes pensées
+                  </CardTitle>
+                </div>
+                <CardDescription>
+                  Utilisez un modèle pour organiser votre réflexion
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {REFLECTION_TEMPLATES.map((template) => (
+                    <Button
+                      key={template.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleApplyTemplate(template.template)}
+                      className="text-xs"
+                    >
+                      {template.label}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* AI Suggestions */}
             <Card className="glass border-primary/20">
               <CardHeader>
@@ -222,7 +300,14 @@ export default function JournalPage() {
                     onClick={handleGetAISuggestions}
                     disabled={journalAI.isGettingSuggestions}
                   >
-                    {journalAI.isGettingSuggestions ? 'Réflexion...' : 'Obtenir des suggestions'}
+                    {journalAI.isGettingSuggestions ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Réflexion...
+                      </>
+                    ) : (
+                      'Obtenir des suggestions'
+                    )}
                   </Button>
                 </div>
                 <CardDescription>
@@ -250,103 +335,20 @@ export default function JournalPage() {
               )}
             </Card>
 
-            {/* Gratitude */}
-            <Card className="glass">
-              <CardHeader>
-                <CardTitle>🙏 Gratitudes</CardTitle>
-                <CardDescription>3 choses pour lesquelles tu es reconnaissant(e)</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {gratitude.map((item, index) => (
-                  <Input
-                    key={index}
-                    value={item}
-                    onChange={(e) => {
-                      const updated = [...gratitude];
-                      updated[index] = e.target.value;
-                      setGratitude(updated);
-                    }}
-                    placeholder={`Gratitude ${index + 1}...`}
-                  />
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Wins & Challenges */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card className="glass">
-                <CardHeader>
-                  <CardTitle>🏆 Victoires</CardTitle>
-                  <CardDescription>Ce qui s'est bien passé</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {wins.map((item, index) => (
-                    <Input
-                      key={index}
-                      value={item}
-                      onChange={(e) => {
-                        const updated = [...wins];
-                        updated[index] = e.target.value;
-                        setWins(updated);
-                      }}
-                      placeholder="Une victoire..."
-                    />
-                  ))}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setWins([...wins, ''])}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Ajouter
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="glass">
-                <CardHeader>
-                  <CardTitle>💪 Défis</CardTitle>
-                  <CardDescription>Obstacles rencontrés</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {challenges.map((item, index) => (
-                    <Input
-                      key={index}
-                      value={item}
-                      onChange={(e) => {
-                        const updated = [...challenges];
-                        updated[index] = e.target.value;
-                        setChallenges(updated);
-                      }}
-                      placeholder="Un défi..."
-                    />
-                  ))}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setChallenges([...challenges, ''])}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Ajouter
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Reflections */}
+            {/* Reflections - Main writing area */}
             <Card className="glass">
               <CardHeader>
                 <CardTitle>✍️ Réflexions</CardTitle>
-                <CardDescription>Pensées, idées, observations...</CardDescription>
+                <CardDescription>
+                  Pensées, idées, observations... Le cœur de votre journal.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <Textarea
                   value={reflections}
                   onChange={(e) => setReflections(e.target.value)}
-                  placeholder="Écris librement..."
-                  className="min-h-32"
+                  placeholder="Écrivez librement vos pensées du jour..."
+                  className="min-h-48 text-base leading-relaxed"
                 />
               </CardContent>
             </Card>
@@ -354,6 +356,16 @@ export default function JournalPage() {
             <Button onClick={handleSave} className="w-full" disabled={saveJournal.isPending}>
               {saveJournal.isPending ? 'Sauvegarde...' : 'Sauvegarder le journal'}
             </Button>
+
+            {/* Info about behavioral section */}
+            <Card className="glass-hover border-dashed">
+              <CardContent className="py-4">
+                <p className="text-sm text-muted-foreground text-center">
+                  💡 <strong>Gratitudes, Victoires et Défis</strong> sont maintenant dans la section 
+                  <a href="/habits" className="text-primary hover:underline ml-1">Habitudes → Comportement</a>
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="timeline" className="space-y-4">
@@ -377,6 +389,17 @@ export default function JournalPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <div className="flex-1 min-w-[200px]">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Rechercher..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -401,12 +424,13 @@ export default function JournalPage() {
                     <Card key={entry.id} className="glass hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex items-start gap-4">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          <div className={cn(
+                            'w-10 h-10 rounded-full flex items-center justify-center',
                             entry.mood === 'great' ? 'bg-success/20' :
                             entry.mood === 'good' ? 'bg-info/20' :
                             entry.mood === 'okay' ? 'bg-warning/20' :
                             'bg-destructive/20'
-                          }`}>
+                          )}>
                             <MoodIcon className={`h-5 w-5 ${moodOption?.color || ''}`} />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -415,24 +439,17 @@ export default function JournalPage() {
                                 {format(parseISO(entry.date), 'EEEE d MMMM', { locale: fr })}
                               </span>
                               {entry.energy_level && (
-                                <Badge variant="outline" className="text-xs capitalize">
-                                  {entry.energy_level}
+                                <Badge variant="outline" className="text-xs">
+                                  {entry.energy_level === 'high' ? '⚡ Haute' :
+                                   entry.energy_level === 'medium' ? '🔋 Moyenne' : '🪫 Basse'}
                                 </Badge>
                               )}
                             </div>
                             {entry.reflections && (
-                              <p className="text-sm text-muted-foreground line-clamp-2">
+                              <p className="text-sm text-muted-foreground line-clamp-3 mt-2">
                                 {entry.reflections}
                               </p>
                             )}
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              {entry.wins?.slice(0, 2).map((w, i) => (
-                                <Badge key={i} variant="secondary" className="text-xs">🏆 {w}</Badge>
-                              ))}
-                              {entry.gratitude?.slice(0, 1).map((g, i) => (
-                                <Badge key={i} variant="outline" className="text-xs">🙏 {g}</Badge>
-                              ))}
-                            </div>
                           </div>
                         </div>
                       </CardContent>
@@ -444,28 +461,37 @@ export default function JournalPage() {
           </TabsContent>
 
           <TabsContent value="notes" className="space-y-4">
+            {/* Quick Note */}
             <Card className="glass">
               <CardHeader>
-                <CardTitle>Nouvelle note</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Note rapide
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3">
                 <Input
+                  placeholder="Titre (optionnel)"
                   value={newNote.title}
                   onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
-                  placeholder="Titre (optionnel)"
                 />
                 <Textarea
+                  placeholder="Contenu de la note..."
                   value={newNote.content}
                   onChange={(e) => setNewNote({ ...newNote, content: e.target.value })}
-                  placeholder="Contenu de la note..."
-                  className="min-h-24"
+                  className="min-h-20"
                 />
-                <Button onClick={handleAddNote} disabled={createNote.isPending || !newNote.content}>
+                <Button 
+                  onClick={handleAddNote} 
+                  disabled={!newNote.content.trim() || createNote.isPending}
+                  className="w-full"
+                >
                   {createNote.isPending ? 'Ajout...' : 'Ajouter la note'}
                 </Button>
               </CardContent>
             </Card>
 
+            {/* Notes List */}
             {loadingNotes ? (
               <div className="text-center py-8 text-muted-foreground">Chargement...</div>
             ) : notes.length === 0 ? (
@@ -476,27 +502,31 @@ export default function JournalPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2">
                 {notes.map((note) => (
-                  <Card key={note.id} className="glass group">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <CardTitle className="text-lg">{note.title || 'Sans titre'}</CardTitle>
+                  <Card key={note.id} className="glass-hover">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          {note.title && (
+                            <h4 className="font-medium mb-1 truncate">{note.title}</h4>
+                          )}
+                          <p className="text-sm text-muted-foreground line-clamp-3">
+                            {note.content}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {format(parseISO(note.created_at), 'd MMM yyyy', { locale: fr })}
+                          </p>
+                        </div>
                         <Button
-                          size="icon"
                           variant="ghost"
-                          className="opacity-0 group-hover:opacity-100 text-destructive h-8 w-8"
+                          size="icon"
                           onClick={() => deleteNote.mutate(note.id)}
+                          disabled={deleteNote.isPending}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
-                      <CardDescription>
-                        {format(new Date(note.created_at), 'd MMM yyyy', { locale: fr })}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground line-clamp-4">{note.content}</p>
                     </CardContent>
                   </Card>
                 ))}
