@@ -1,7 +1,16 @@
+/**
+ * Executive Dashboard - BI Contract Compliant
+ * 
+ * IMPORTANT: This dashboard reads ONLY from:
+ * - scores_daily (via useTodayScore, useScoreHistory)
+ * - daily_stats (via useExecutiveKPIs)
+ * 
+ * It does NOT query core tables (tasks, habits, etc.) directly.
+ */
+
 import { useNavigate } from 'react-router-dom';
 import { useTodayScore, useScoreHistory } from '@/hooks/useScores';
-import { useAllTasks } from '@/hooks/useTasks';
-import { useHabitsWithLogs } from '@/hooks/useHabits';
+import { useExecutiveKPIs, useDailyStats } from '@/hooks/useBIStats';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -19,6 +28,7 @@ import {
   Loader2,
   AlertTriangle,
   Zap,
+  Clock,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -39,20 +49,14 @@ import { fr } from 'date-fns/locale';
 
 export default function ExecutiveDashboardPage() {
   const navigate = useNavigate();
-  const { data: todayScore, isLoading } = useTodayScore();
+  const { data: todayScore, isLoading: scoreLoading } = useTodayScore();
   const { data: scoreHistory = [] } = useScoreHistory(7);
-  const { data: tasks = [] } = useAllTasks();
-  const { data: habitsData = [] } = useHabitsWithLogs();
+  const { kpis, isLoading: kpisLoading } = useExecutiveKPIs();
+  const { data: dailyStats = [] } = useDailyStats(7);
 
-  const habits = habitsData;
-  const activeTasks = tasks.filter(t => t.status !== 'done');
-  const completedToday = tasks.filter(t => 
-    t.status === 'done' && 
-    t.completed_at && 
-    new Date(t.completed_at).toDateString() === new Date().toDateString()
-  );
+  const isLoading = scoreLoading || kpisLoading;
 
-  // Radar data for score breakdown
+  // Radar data for score breakdown (from scores_daily)
   const radarData = todayScore ? [
     { subject: 'Habitudes', value: todayScore.habits_score || 0, fullMark: 100 },
     { subject: 'Tâches', value: todayScore.tasks_score || 0, fullMark: 100 },
@@ -60,7 +64,7 @@ export default function ExecutiveDashboardPage() {
     { subject: 'Santé', value: todayScore.health_score || 0, fullMark: 100 },
   ] : [];
 
-  // Weekly trend data
+  // Weekly trend data (from scores_daily)
   const weeklyData = scoreHistory.map(s => ({
     date: format(new Date(s.date), 'EEE', { locale: fr }),
     score: s.global_score || 0,
@@ -73,6 +77,12 @@ export default function ExecutiveDashboardPage() {
     if (momentum < 45) return <TrendingDown className="h-5 w-5 text-destructive" />;
     return <Minus className="h-5 w-5 text-muted-foreground" />;
   };
+
+  // Get active task/habit counts from daily_stats (last day)
+  const latestStats = dailyStats.length > 0 ? dailyStats[dailyStats.length - 1] : null;
+  const todayCompleted = latestStats?.tasks_completed || 0;
+  const activeTasks = latestStats?.tasks_planned || 0;
+  const activeHabits = latestStats?.habits_total || 0;
 
   if (isLoading) {
     return (
@@ -92,7 +102,7 @@ export default function ExecutiveDashboardPage() {
             Dashboard Exécutif
           </h1>
           <p className="text-muted-foreground mt-1">
-            Vue d'ensemble de votre performance
+            Vue d'ensemble de votre performance (BI Mode)
           </p>
         </div>
         <Button variant="outline" onClick={() => navigate('/bi/behavior')}>
@@ -158,7 +168,7 @@ export default function ExecutiveDashboardPage() {
         </Card>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards - Using BI Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card 
           className="cursor-pointer hover:border-primary/50 transition-colors"
@@ -170,11 +180,11 @@ export default function ExecutiveDashboardPage() {
                 <Target className="h-6 w-6 text-chart-1" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{todayScore?.habits_score?.toFixed(0) || 0}%</div>
-                <div className="text-sm text-muted-foreground">Habitudes</div>
+                <div className="text-2xl font-bold">{kpis.habitAdherence}%</div>
+                <div className="text-sm text-muted-foreground">Habitudes (7j)</div>
               </div>
             </div>
-            <Progress value={todayScore?.habits_score || 0} className="mt-3 h-1" />
+            <Progress value={kpis.habitAdherence} className="mt-3 h-1" />
           </CardContent>
         </Card>
 
@@ -188,29 +198,11 @@ export default function ExecutiveDashboardPage() {
                 <CheckSquare className="h-6 w-6 text-chart-2" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{todayScore?.tasks_score?.toFixed(0) || 0}%</div>
-                <div className="text-sm text-muted-foreground">Tâches</div>
+                <div className="text-2xl font-bold">{kpis.taskCompletionRate}%</div>
+                <div className="text-sm text-muted-foreground">Tâches (7j)</div>
               </div>
             </div>
-            <Progress value={todayScore?.tasks_score || 0} className="mt-3 h-1" />
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="cursor-pointer hover:border-primary/50 transition-colors"
-          onClick={() => navigate('/finance')}
-        >
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-chart-3/10">
-                <Wallet className="h-6 w-6 text-chart-3" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold">{todayScore?.finance_score?.toFixed(0) || 0}%</div>
-                <div className="text-sm text-muted-foreground">Finance</div>
-              </div>
-            </div>
-            <Progress value={todayScore?.finance_score || 0} className="mt-3 h-1" />
+            <Progress value={kpis.taskCompletionRate} className="mt-3 h-1" />
           </CardContent>
         </Card>
 
@@ -220,15 +212,33 @@ export default function ExecutiveDashboardPage() {
         >
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-chart-4/10">
-                <Heart className="h-6 w-6 text-chart-4" />
+              <div className="p-2 rounded-lg bg-chart-3/10">
+                <Clock className="h-6 w-6 text-chart-3" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{todayScore?.health_score?.toFixed(0) || 0}%</div>
-                <div className="text-sm text-muted-foreground">Santé</div>
+                <div className="text-2xl font-bold">{kpis.avgFocusPerDay} min</div>
+                <div className="text-sm text-muted-foreground">Focus/jour</div>
               </div>
             </div>
-            <Progress value={todayScore?.health_score || 0} className="mt-3 h-1" />
+            <Progress value={Math.min(100, (kpis.avgFocusPerDay / 240) * 100)} className="mt-3 h-1" />
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="cursor-pointer hover:border-primary/50 transition-colors"
+          onClick={() => navigate('/finance')}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-chart-4/10">
+                <Wallet className="h-6 w-6 text-chart-4" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{todayScore?.finance_score?.toFixed(0) || 0}%</div>
+                <div className="text-sm text-muted-foreground">Finance</div>
+              </div>
+            </div>
+            <Progress value={todayScore?.finance_score || 0} className="mt-3 h-1" />
           </CardContent>
         </Card>
       </div>
@@ -266,14 +276,14 @@ export default function ExecutiveDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Quick Stats */}
+      {/* Quick Stats from daily_stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-3xl font-bold">{activeTasks.length}</div>
-                <div className="text-sm text-muted-foreground">Tâches actives</div>
+                <div className="text-3xl font-bold">{activeTasks}</div>
+                <div className="text-sm text-muted-foreground">Tâches planifiées</div>
               </div>
               <CheckSquare className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -284,7 +294,7 @@ export default function ExecutiveDashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-3xl font-bold">{completedToday.length}</div>
+                <div className="text-3xl font-bold">{todayCompleted}</div>
                 <div className="text-sm text-muted-foreground">Complétées aujourd'hui</div>
               </div>
               <Zap className="h-8 w-8 text-muted-foreground" />
@@ -296,7 +306,7 @@ export default function ExecutiveDashboardPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-3xl font-bold">{habits.filter((h: any) => h.is_active).length}</div>
+                <div className="text-3xl font-bold">{activeHabits}</div>
                 <div className="text-sm text-muted-foreground">Habitudes actives</div>
               </div>
               <Target className="h-8 w-8 text-muted-foreground" />

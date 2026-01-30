@@ -1,73 +1,65 @@
-import { useTransactions, useCategories, useBudgets } from '@/hooks/useFinance';
+/**
+ * Financial Health Dashboard - BI Contract Compliant
+ * 
+ * IMPORTANT: This dashboard reads ONLY from:
+ * - scores_daily (finance_score via useFinanceStatsBI)
+ * - monthly_stats (via useFinanceStatsBI)
+ * 
+ * For operational finance data (transaction entry, budget management),
+ * users should use the main Finance page (/finance).
+ */
+
+import { useFinanceStatsBI, useScoresDailyBI } from '@/hooks/useBIStats';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Wallet, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { Loader2, Wallet, TrendingUp, TrendingDown, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
-  PieChart,
-  Pie,
-  Cell,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  AreaChart,
+  Area,
 } from 'recharts';
-
-const COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-];
+import { format, parseISO } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function FinancialHealthPage() {
-  const { data: transactions = [], isLoading: txLoading } = useTransactions();
-  const { data: categories = [] } = useCategories();
-  const { data: budgets = [] } = useBudgets();
+  const { financeScores, avgFinanceScore, financeTrend, isLoading } = useFinanceStatsBI(6);
+  const { data: scores = [] } = useScoresDailyBI(30);
 
-  const isLoading = txLoading;
+  // Prepare chart data from scores_daily
+  const chartData = financeScores.map(s => ({
+    date: format(parseISO(s.date), 'dd/MM', { locale: fr }),
+    score: s.score,
+  }));
 
-  // Calculate totals
-  const income = transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-  
-  const expenses = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + Number(t.amount), 0);
+  // Finance score distribution over time
+  const weeklyAverages = [];
+  for (let i = 0; i < scores.length; i += 7) {
+    const week = scores.slice(i, i + 7);
+    if (week.length > 0) {
+      const avg = Math.round(week.reduce((sum, s) => sum + s.finance_score, 0) / week.length);
+      weeklyAverages.push({
+        week: `S${Math.floor(i / 7) + 1}`,
+        score: avg,
+      });
+    }
+  }
 
-  const balance = income - expenses;
-  const totalBudget = budgets.reduce((sum, b) => sum + Number(b.monthly_limit), 0);
-  const budgetUsage = totalBudget > 0 ? (expenses / totalBudget) * 100 : 0;
+  // Calculate health status based on score
+  const getHealthStatus = (score: number) => {
+    if (score >= 80) return { label: 'Excellent', color: 'text-chart-2', bg: 'bg-chart-2/10' };
+    if (score >= 60) return { label: 'Bon', color: 'text-chart-4', bg: 'bg-chart-4/10' };
+    if (score >= 40) return { label: 'Attention', color: 'text-warning', bg: 'bg-warning/10' };
+    return { label: 'Critique', color: 'text-destructive', bg: 'bg-destructive/10' };
+  };
 
-  // Expenses by category
-  const expensesByCategory = categories
-    .filter(c => c.type === 'expense')
-    .map((category, index) => {
-      const categoryExpenses = transactions
-        .filter(t => t.category_id === category.id && t.type === 'expense')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-      return {
-        name: category.name,
-        value: categoryExpenses,
-        color: category.color || COLORS[index % COLORS.length],
-      };
-    })
-    .filter(c => c.value > 0);
-
-  // Budget status per category
-  const budgetStatus = budgets.map(budget => {
-    const category = categories.find(c => c.id === budget.category_id);
-    const spent = transactions
-      .filter(t => t.category_id === budget.category_id && t.type === 'expense')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-    const percentage = (spent / Number(budget.monthly_limit)) * 100;
-    return {
-      category: category?.name || 'Sans catégorie',
-      limit: Number(budget.monthly_limit),
-      spent,
-      percentage: Math.min(percentage, 100),
-      overBudget: percentage > 100,
-    };
-  });
+  const healthStatus = getHealthStatus(avgFinanceScore);
 
   if (isLoading) {
     return (
@@ -80,159 +72,189 @@ export default function FinancialHealthPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Wallet className="h-8 w-8 text-primary" />
-          Santé Financière
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Analyse de vos finances et budgets
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Wallet className="h-8 w-8 text-primary" />
+            Santé Financière
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Analyse de votre score financier (BI Mode)
+          </p>
+        </div>
+        <Link 
+          to="/finance" 
+          className="text-sm text-primary hover:underline flex items-center gap-2"
+        >
+          <BarChart3 className="h-4 w-4" />
+          Gérer mes finances
+        </Link>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className={healthStatus.bg}>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <TrendingUp className="h-8 w-8 text-chart-2" />
+              <Wallet className={`h-8 w-8 ${healthStatus.color}`} />
               <div>
-                <div className="text-2xl font-bold text-chart-2">{income.toLocaleString('fr-FR')} €</div>
-                <div className="text-sm text-muted-foreground">Revenus</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <TrendingDown className="h-8 w-8 text-destructive" />
-              <div>
-                <div className="text-2xl font-bold text-destructive">{expenses.toLocaleString('fr-FR')} €</div>
-                <div className="text-sm text-muted-foreground">Dépenses</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <Wallet className="h-8 w-8 text-primary" />
-              <div>
-                <div className={`text-2xl font-bold ${balance >= 0 ? 'text-chart-2' : 'text-destructive'}`}>
-                  {balance.toLocaleString('fr-FR')} €
+                <div className={`text-3xl font-bold ${healthStatus.color}`}>
+                  {avgFinanceScore}%
                 </div>
-                <div className="text-sm text-muted-foreground">Balance</div>
+                <div className="text-sm text-muted-foreground">Score moyen (30j)</div>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className={budgetUsage > 90 ? 'border-destructive' : ''}>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              {financeTrend >= 0 ? (
+                <TrendingUp className="h-8 w-8 text-chart-2" />
+              ) : (
+                <TrendingDown className="h-8 w-8 text-destructive" />
+              )}
+              <div>
+                <div className={`text-2xl font-bold ${financeTrend >= 0 ? 'text-chart-2' : 'text-destructive'}`}>
+                  {financeTrend >= 0 ? '+' : ''}{financeTrend}%
+                </div>
+                <div className="text-sm text-muted-foreground">Tendance (7j)</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${healthStatus.bg}`}>
+                <AlertTriangle className={`h-6 w-6 ${healthStatus.color}`} />
+              </div>
+              <div>
+                <div className={`text-xl font-bold ${healthStatus.color}`}>
+                  {healthStatus.label}
+                </div>
+                <div className="text-sm text-muted-foreground">État</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardContent className="pt-6">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Budget utilisé</span>
-                <span className="font-bold">{budgetUsage.toFixed(0)}%</span>
+                <span className="text-sm text-muted-foreground">Objectif</span>
+                <span className="font-bold">{avgFinanceScore}/100</span>
               </div>
-              <Progress value={budgetUsage} className="h-2" />
+              <Progress value={avgFinanceScore} className="h-2" />
+              <p className="text-xs text-muted-foreground mt-2">
+                Cible: 80%+
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Pie Chart - Expenses by Category */}
+      {/* Finance Score Trend */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Évolution du score financier</CardTitle>
+          <CardDescription>Données issues de scores_daily (30 jours)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {chartData.length === 0 ? (
+            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+              Aucune donnée de score disponible
+            </div>
+          ) : (
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorFinance" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    interval={Math.floor(chartData.length / 7)}
+                  />
+                  <YAxis 
+                    domain={[0, 100]} 
+                    tick={{ fill: 'hsl(var(--muted-foreground))' }} 
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                    formatter={(value: number) => [`${value}%`, 'Score Finance']}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="score"
+                    stroke="hsl(var(--primary))"
+                    fill="url(#colorFinance)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Weekly Comparison */}
+      {weeklyAverages.length > 1 && (
         <Card>
           <CardHeader>
-            <CardTitle>Répartition des dépenses</CardTitle>
+            <CardTitle>Comparaison hebdomadaire</CardTitle>
           </CardHeader>
           <CardContent>
-            {expensesByCategory.length === 0 ? (
-              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                Aucune dépense enregistrée
-              </div>
-            ) : (
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={expensesByCategory}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    >
-                      {expensesByCategory.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number) => `${value.toLocaleString('fr-FR')} €`}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Budget Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>État des budgets</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {budgetStatus.length === 0 ? (
-              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                Aucun budget configuré
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {budgetStatus.map((budget, i) => (
-                  <div key={i} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{budget.category}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          {budget.spent.toLocaleString('fr-FR')} / {budget.limit.toLocaleString('fr-FR')} €
-                        </span>
-                        {budget.overBudget && (
-                          <AlertTriangle className="h-4 w-4 text-destructive" />
-                        )}
-                      </div>
-                    </div>
-                    <Progress 
-                      value={budget.percentage} 
-                      className={`h-2 ${budget.overBudget ? '[&>div]:bg-destructive' : ''}`}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Alerts */}
-      {budgetStatus.some(b => b.overBudget) && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <AlertTriangle className="h-8 w-8 text-destructive" />
-              <div>
-                <h3 className="font-semibold">Budgets dépassés</h3>
-                <p className="text-sm text-muted-foreground">
-                  {budgetStatus.filter(b => b.overBudget).map(b => b.category).join(', ')}
-                </p>
-              </div>
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={weeklyAverages}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="week" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="score"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={{ r: 4, strokeWidth: 2 }}
+                    name="Score moyen"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Info Card */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-4">
+            <BarChart3 className="h-8 w-8 text-primary mt-1" />
+            <div>
+              <h3 className="font-semibold">Mode BI activé</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Ce dashboard affiche les scores agrégés depuis la table <code className="px-1 py-0.5 bg-muted rounded text-xs">scores_daily</code>.
+                Pour gérer vos transactions et budgets, utilisez la{' '}
+                <Link to="/finance" className="text-primary hover:underline">page Finance</Link>.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
