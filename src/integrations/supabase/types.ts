@@ -1959,6 +1959,7 @@ export type Database = {
       }
       streaks: {
         Row: {
+          created_at: string | null
           current_streak: number
           habit_id: string
           id: string
@@ -1966,8 +1967,10 @@ export type Database = {
           max_streak: number
           updated_at: string
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
+          created_at?: string | null
           current_streak?: number
           habit_id: string
           id?: string
@@ -1975,8 +1978,10 @@ export type Database = {
           max_streak?: number
           updated_at?: string
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
+          created_at?: string | null
           current_streak?: number
           habit_id?: string
           id?: string
@@ -1984,6 +1989,7 @@ export type Database = {
           max_streak?: number
           updated_at?: string
           user_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -1991,6 +1997,13 @@ export type Database = {
             columns: ["habit_id"]
             isOneToOne: true
             referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "streaks_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -2062,6 +2075,7 @@ export type Database = {
           processed: boolean | null
           source: Database["public"]["Enums"]["event_source"]
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -2073,6 +2087,7 @@ export type Database = {
           processed?: boolean | null
           source?: Database["public"]["Enums"]["event_source"]
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -2084,8 +2099,17 @@ export type Database = {
           processed?: boolean | null
           source?: Database["public"]["Enums"]["event_source"]
           user_id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "system_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_health: {
         Row: {
@@ -2276,23 +2300,50 @@ export type Database = {
         Row: {
           action_id: string
           created_at: string
+          current_state: Json | null
+          entity: string | null
+          entity_id: string | null
+          expires_at: string | null
           id: string
+          is_undone: boolean | null
+          operation: string | null
+          previous_state: Json | null
           revert_payload: Json
+          undone_at: string | null
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           action_id: string
           created_at?: string
+          current_state?: Json | null
+          entity?: string | null
+          entity_id?: string | null
+          expires_at?: string | null
           id?: string
+          is_undone?: boolean | null
+          operation?: string | null
+          previous_state?: Json | null
           revert_payload: Json
+          undone_at?: string | null
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           action_id?: string
           created_at?: string
+          current_state?: Json | null
+          entity?: string | null
+          entity_id?: string | null
+          expires_at?: string | null
           id?: string
+          is_undone?: boolean | null
+          operation?: string | null
+          previous_state?: Json | null
           revert_payload?: Json
+          undone_at?: string | null
           user_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -2300,6 +2351,13 @@ export type Database = {
             columns: ["action_id"]
             isOneToOne: false
             referencedRelation: "agent_actions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "undo_stack_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -2310,29 +2368,49 @@ export type Database = {
           created_at: string
           day: string
           id: string
+          metadata: Json | null
+          operation: string | null
+          service: string | null
           tokens_in: number
           tokens_out: number
           user_id: string
+          workspace_id: string | null
         }
         Insert: {
           cost_estimate?: number | null
           created_at?: string
           day: string
           id?: string
+          metadata?: Json | null
+          operation?: string | null
+          service?: string | null
           tokens_in?: number
           tokens_out?: number
           user_id: string
+          workspace_id?: string | null
         }
         Update: {
           cost_estimate?: number | null
           created_at?: string
           day?: string
           id?: string
+          metadata?: Json | null
+          operation?: string | null
+          service?: string | null
           tokens_in?: number
           tokens_out?: number
           user_id?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "usage_ledger_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       usage_limits: {
         Row: {
