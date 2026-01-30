@@ -33,6 +33,7 @@ import ObservabilityPage from "./pages/ObservabilityPage";
 import ProductIntelligencePage from "./pages/ProductIntelligencePage";
 import AIInterventionsPage from "./pages/AIInterventionsPage";
 import IdentityDashboard from "./pages/IdentityDashboard";
+import BehaviorHubPage from "./pages/BehaviorHubPage";
 import NotFound from "./pages/NotFound";
 
 // BI Dashboards
@@ -87,6 +88,7 @@ const App = () => (
           <Route path="/observability" element={<ProtectedRoute><ObservabilityPage /></ProtectedRoute>} />
           <Route path="/product-intelligence" element={<ProtectedRoute><ProductIntelligencePage /></ProtectedRoute>} />
           <Route path="/ai-interventions" element={<ProtectedRoute><AIInterventionsPage /></ProtectedRoute>} />
+          <Route path="/behavior-hub" element={<ProtectedRoute><BehaviorHubPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           
