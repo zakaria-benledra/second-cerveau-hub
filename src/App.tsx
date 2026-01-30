@@ -21,6 +21,8 @@ import SettingsPage from "./pages/SettingsPage";
 import CalendarPage from "./pages/CalendarPage";
 import RoutinesPage from "./pages/RoutinesPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import ScoresPage from "./pages/ScoresPage";
+import AutomationPage from "./pages/AutomationPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -56,6 +58,8 @@ const App = () => (
           <Route path="/learning" element={<ProtectedRoute><LearningPage /></ProtectedRoute>} />
           <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
           <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
+          <Route path="/scores" element={<ProtectedRoute><ScoresPage /></ProtectedRoute>} />
+          <Route path="/automation" element={<ProtectedRoute><AutomationPage /></ProtectedRoute>} />
           <Route path="/agent" element={<ProtectedRoute><AgentPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />

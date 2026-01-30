@@ -22,6 +22,8 @@ import {
   LayoutDashboard,
   Lightbulb,
   Heart,
+  Zap,
+  Award,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -71,12 +73,20 @@ const navGroups = [
     ],
   },
   {
-    label: 'Gestion',
+    label: 'Intelligence',
     icon: LayoutDashboard,
     items: [
-      { icon: Wallet, label: 'Finances', path: '/finance' },
-      { icon: BarChart3, label: 'Dashboard', path: '/dashboard' },
+      { icon: Award, label: 'Scores', path: '/scores' },
+      { icon: Zap, label: 'Automations', path: '/automation' },
       { icon: Brain, label: 'Agent IA', path: '/agent' },
+      { icon: BarChart3, label: 'Dashboard', path: '/dashboard' },
+    ],
+  },
+  {
+    label: 'Gestion',
+    icon: Wallet,
+    items: [
+      { icon: Wallet, label: 'Finances', path: '/finance' },
     ],
   },
 ];
