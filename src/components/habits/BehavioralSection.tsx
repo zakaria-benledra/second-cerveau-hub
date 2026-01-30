@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,18 +23,17 @@ export function BehavioralSection({ className }: BehavioralSectionProps) {
   const saveBehavioral = useSaveBehavioralEntry();
 
   const [isExpanded, setIsExpanded] = useState(true);
-  const [gratitude, setGratitude] = useState<string[]>(todayEntry?.gratitude || ['', '', '']);
-  const [wins, setWins] = useState<string[]>(todayEntry?.wins || ['']);
-  const [challenges, setChallenges] = useState<string[]>(todayEntry?.challenges || ['']);
+  const [gratitude, setGratitude] = useState<string[]>(['', '', '']);
+  const [wins, setWins] = useState<string[]>(['']);
+  const [challenges, setChallenges] = useState<string[]>(['']);
 
-  // Update form when data loads
-  useState(() => {
-    if (todayEntry) {
-      setGratitude(todayEntry.gratitude || ['', '', '']);
-      setWins(todayEntry.wins || ['']);
-      setChallenges(todayEntry.challenges || ['']);
-    }
-  });
+  // Update form when data loads (useEffect to avoid render-loop)
+  useEffect(() => {
+    if (!todayEntry) return;
+    setGratitude((todayEntry.gratitude && todayEntry.gratitude.length > 0) ? todayEntry.gratitude : ['', '', '']);
+    setWins((todayEntry.wins && todayEntry.wins.length > 0) ? todayEntry.wins : ['']);
+    setChallenges((todayEntry.challenges && todayEntry.challenges.length > 0) ? todayEntry.challenges : ['']);
+  }, [todayEntry?.id]);
 
   const handleSave = () => {
     saveBehavioral.mutate({
