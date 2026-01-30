@@ -6,32 +6,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/**
- * SCORING ENGINE
- * 
- * Formula:
- * GLOBAL_SCORE = (HABITS_SCORE × 0.35) + (TASKS_SCORE × 0.25) + (FINANCE_SCORE × 0.20) + (HEALTH_SCORE × 0.20)
- * 
- * Subscores:
- * - HABITS_SCORE = completed / expected × consistency_factor
- * - TASKS_SCORE = completed / planned × priority_weight
- * - FINANCE_SCORE = 1 - (spent / budget)
- * - HEALTH_SCORE = sessions / target_sessions
- */
+// ============= VALIDATION =============
 
-interface ScoreData {
-  habits_score: number;
-  tasks_score: number;
-  finance_score: number;
-  health_score: number;
-  global_score: number;
-  momentum_index: number;
-  burnout_index: number;
-  consistency_factor: number;
+function isUUID(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
 }
 
+function isDate(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+async function getUserWorkspaceId(supabase: any, userId: string): Promise<string | null> {
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('workspace_id')
+    .eq('user_id', userId)
+    .limit(1)
+    .single();
+  return membership?.workspace_id || null;
+}
+
+/**
+ * SCORING ENGINE with Multi-Tenant Support
+ * 
+ * Formula:
+ * GLOBAL_SCORE = (HABITS × 0.35) + (TASKS × 0.25) + (FINANCE × 0.20) + (HEALTH × 0.20)
+ */
+
 async function computeHabitsScore(supabase: any, userId: string, date: string): Promise<{ score: number; consistency: number }> {
-  // Get active habits
   const { data: habits } = await supabase
     .from("habits")
     .select("id")
@@ -40,7 +45,6 @@ async function computeHabitsScore(supabase: any, userId: string, date: string): 
 
   if (!habits?.length) return { score: 100, consistency: 1 };
 
-  // Get habit logs for today
   const { data: logs } = await supabase
     .from("habit_logs")
     .select("habit_id, completed")
@@ -50,7 +54,7 @@ async function computeHabitsScore(supabase: any, userId: string, date: string): 
   const completed = logs?.filter((l: any) => l.completed).length || 0;
   const expected = habits.length;
 
-  // Calculate consistency factor from last 7 days
+  // 7-day consistency
   const weekAgo = new Date(date);
   weekAgo.setDate(weekAgo.getDate() - 7);
   
@@ -71,7 +75,6 @@ async function computeHabitsScore(supabase: any, userId: string, date: string): 
 }
 
 async function computeTasksScore(supabase: any, userId: string, date: string): Promise<number> {
-  // Get tasks planned for today
   const { data: tasks } = await supabase
     .from("tasks")
     .select("id, status, priority")
@@ -81,7 +84,6 @@ async function computeTasksScore(supabase: any, userId: string, date: string): P
 
   if (!tasks?.length) return 100;
 
-  // Priority weights
   const priorityWeight: Record<string, number> = {
     urgent: 1.5,
     high: 1.25,
@@ -107,7 +109,6 @@ async function computeTasksScore(supabase: any, userId: string, date: string): P
 async function computeFinanceScore(supabase: any, userId: string, date: string): Promise<number> {
   const monthStart = date.substring(0, 7) + "-01";
   
-  // Get budgets
   const { data: budgets } = await supabase
     .from("budgets")
     .select("monthly_limit")
@@ -117,7 +118,6 @@ async function computeFinanceScore(supabase: any, userId: string, date: string):
   
   if (totalBudget === 0) return 100;
 
-  // Get expenses this month
   const { data: transactions } = await supabase
     .from("finance_transactions")
     .select("amount, type")
@@ -133,7 +133,6 @@ async function computeFinanceScore(supabase: any, userId: string, date: string):
 }
 
 async function computeHealthScore(supabase: any, userId: string, date: string): Promise<number> {
-  // Get focus sessions for today (health proxy)
   const dateStart = `${date}T00:00:00`;
   const dateEnd = `${date}T23:59:59`;
   
@@ -145,8 +144,6 @@ async function computeHealthScore(supabase: any, userId: string, date: string): 
     .lte("start_time", dateEnd);
 
   const totalMinutes = sessions?.reduce((sum: number, s: any) => sum + (s.duration_min || 0), 0) || 0;
-  
-  // Target: 120 minutes of focused work
   const targetMinutes = 120;
   const score = (totalMinutes / targetMinutes) * 100;
   
@@ -156,7 +153,6 @@ async function computeHealthScore(supabase: any, userId: string, date: string): 
 function computeMomentum(scores: number[]): number {
   if (scores.length < 2) return 50;
   
-  // Calculate trend from recent scores
   const recent = scores.slice(-7);
   const firstHalf = recent.slice(0, Math.floor(recent.length / 2));
   const secondHalf = recent.slice(Math.floor(recent.length / 2));
@@ -164,17 +160,11 @@ function computeMomentum(scores: number[]): number {
   const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
   const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
   
-  // Momentum: 50 = stable, >50 = improving, <50 = declining
   const momentum = 50 + (secondAvg - firstAvg);
   return Math.min(100, Math.max(0, momentum));
 }
 
 function computeBurnoutIndex(taskScore: number, habitsScore: number, recentScores: number[]): number {
-  // High burnout indicators:
-  // - Low task completion
-  // - Low habit adherence
-  // - Declining trend
-  
   const avgRecent = recentScores.length > 0 
     ? recentScores.reduce((a, b) => a + b, 0) / recentScores.length 
     : 50;
@@ -197,11 +187,27 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { user_id, date } = await req.json();
+    const body = await req.json();
     
-    if (!user_id || !date) {
-      throw new Error("user_id and date are required");
+    // ========== STRONG VALIDATION ==========
+    if (!isUUID(body.user_id)) {
+      return new Response(
+        JSON.stringify({ error: "user_id must be a valid UUID" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    if (!isDate(body.date)) {
+      return new Response(
+        JSON.stringify({ error: "date must be in YYYY-MM-DD format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { user_id, date } = body;
+
+    // Get user's workspace_id for multi-tenant upsert
+    const workspaceId = await getUserWorkspaceId(supabase, user_id);
 
     // Compute all subscores
     const { score: habitsScore, consistency } = await computeHabitsScore(supabase, user_id, date);
@@ -232,11 +238,12 @@ serve(async (req) => {
     const momentumIndex = computeMomentum([...recentValues, globalScore]);
     const burnoutIndex = computeBurnoutIndex(tasksScore, habitsScore, recentValues);
 
-    // Upsert daily score
+    // ========== MULTI-TENANT UPSERT ==========
     const { data: scoreData, error } = await supabase
       .from("scores_daily")
       .upsert({
         user_id,
+        workspace_id: workspaceId, // MULTI-TENANT
         date,
         global_score: Math.round(globalScore * 100) / 100,
         habits_score: Math.round(habitsScore * 100) / 100,

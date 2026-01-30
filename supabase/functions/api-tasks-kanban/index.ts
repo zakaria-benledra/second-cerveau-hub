@@ -5,6 +5,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// ============= VALIDATION (inline for Deno edge function) =============
+
+const KANBAN_STATUS = ['backlog', 'todo', 'doing', 'done'] as const;
+type KanbanStatus = typeof KANBAN_STATUS[number];
+
+function isUUID(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
+
+function isValidStatus(status: unknown): status is KanbanStatus {
+  return typeof status === 'string' && KANBAN_STATUS.includes(status as KanbanStatus);
+}
+
+function generateEventId(entity: string, entityId: string, eventType: string): string {
+  const bucket = Math.floor(Date.now() / 1000);
+  return `${entity}_${entityId}_${eventType}_${bucket}`;
+}
+
+async function getUserWorkspaceId(supabase: any, userId: string): Promise<string | null> {
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('workspace_id')
+    .eq('user_id', userId)
+    .limit(1)
+    .single();
+  return membership?.workspace_id || null;
+}
+
+// ============= MAIN HANDLER =============
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -33,6 +65,9 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Get user's workspace_id for multi-tenant inserts
+    const workspaceId = await getUserWorkspaceId(supabase, user.id)
+
     const url = new URL(req.url)
     const action = url.searchParams.get('action')
 
@@ -47,7 +82,6 @@ Deno.serve(async (req) => {
 
       if (error) throw error
 
-      // Group by status
       const columns = {
         backlog: tasks?.filter(t => t.kanban_status === 'backlog' || !t.kanban_status) || [],
         todo: tasks?.filter(t => t.kanban_status === 'todo') || [],
@@ -63,25 +97,53 @@ Deno.serve(async (req) => {
     // POST - Move task to new column/position
     if (req.method === 'POST' && action === 'move') {
       const body = await req.json()
+      
+      // ========== STRONG VALIDATION ==========
       const { taskId, newStatus, newSortOrder, previousTaskId } = body
 
-      if (!taskId || !newStatus) {
-        return new Response(JSON.stringify({ error: 'taskId and newStatus required' }), {
+      if (!isUUID(taskId)) {
+        return new Response(JSON.stringify({ 
+          error: 'Validation failed', 
+          details: 'taskId must be a valid UUID' 
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
-      // Validate status
-      const validStatuses = ['backlog', 'todo', 'doing', 'done']
-      if (!validStatuses.includes(newStatus)) {
-        return new Response(JSON.stringify({ error: 'Invalid status' }), {
+      if (!isValidStatus(newStatus)) {
+        return new Response(JSON.stringify({ 
+          error: 'Validation failed', 
+          details: `newStatus must be one of: ${KANBAN_STATUS.join(', ')}` 
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
 
-      // Get old task for audit
+      // ========== IDEMPOTENCY CHECK ==========
+      const eventId = generateEventId('tasks', taskId, `move_${newStatus}`)
+      
+      // Check if this exact event already processed
+      const { data: existingEvent } = await supabase
+        .from('task_events')
+        .select('id')
+        .eq('event_id', eventId)
+        .single()
+
+      if (existingEvent) {
+        // Return success but skip duplicate processing
+        console.log(`Idempotent skip: ${eventId}`)
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: 'Event already processed (idempotent)',
+          event_id: eventId 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Get old task for audit (with user_id check for security)
       const { data: oldTask } = await supabase
         .from('tasks')
         .select('*')
@@ -106,7 +168,6 @@ Deno.serve(async (req) => {
           .single()
         sortOrder = (prevTask?.sort_order || 0) + 1
       } else if (sortOrder === undefined) {
-        // Get max sort order in target column
         const { data: maxTask } = await supabase
           .from('tasks')
           .select('sort_order')
@@ -144,6 +205,8 @@ Deno.serve(async (req) => {
 
       if (error) throw error
 
+      // ========== MULTI-TENANT INSERTS (user_id + workspace_id) ==========
+
       // Log to audit_log
       await supabase.from('audit_log').insert({
         user_id: user.id,
@@ -154,10 +217,12 @@ Deno.serve(async (req) => {
         new_value: { kanban_status: newStatus, sort_order: sortOrder }
       })
 
-      // Write to task_events for timeline history
+      // Write to task_events with event_id for idempotency
       await supabase.from('task_events').insert({
         user_id: user.id,
+        workspace_id: workspaceId, // MULTI-TENANT
         task_id: taskId,
+        event_id: eventId, // IDEMPOTENCY
         event_type: newStatus === 'done' ? 'completed' : 'status_changed',
         payload: { 
           from_status: oldTask.kanban_status, 
@@ -167,18 +232,27 @@ Deno.serve(async (req) => {
         }
       })
 
-      // Write to undo_stack for reversibility
+      // Write to undo_stack with event_id for idempotency
+      const undoEventId = generateEventId('undo', taskId, `kanban_${newStatus}`)
       await supabase.from('undo_stack').insert({
         user_id: user.id,
+        workspace_id: workspaceId, // MULTI-TENANT
+        event_id: undoEventId, // IDEMPOTENCY
+        action_id: crypto.randomUUID(),
         entity: 'tasks',
         entity_id: taskId,
         operation: 'KANBAN_MOVE',
         previous_state: { kanban_status: oldTask.kanban_status, sort_order: oldTask.sort_order, status: oldTask.status },
         current_state: { kanban_status: newStatus, sort_order: sortOrder, status: updates.status || oldTask.status },
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h expiry
+        revert_payload: { taskId, newStatus: oldTask.kanban_status, newSortOrder: oldTask.sort_order },
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
       })
 
-      return new Response(JSON.stringify({ success: true, task: data }), {
+      return new Response(JSON.stringify({ 
+        success: true, 
+        task: data,
+        event_id: eventId 
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -189,7 +263,33 @@ Deno.serve(async (req) => {
       const { taskIds, status } = body
 
       if (!taskIds || !Array.isArray(taskIds)) {
-        return new Response(JSON.stringify({ error: 'taskIds array required' }), {
+        return new Response(JSON.stringify({ 
+          error: 'Validation failed',
+          details: 'taskIds must be an array of UUIDs' 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Validate all taskIds
+      for (const id of taskIds) {
+        if (!isUUID(id)) {
+          return new Response(JSON.stringify({ 
+            error: 'Validation failed',
+            details: `Invalid UUID in taskIds: ${id}` 
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+      }
+
+      if (status && !isValidStatus(status)) {
+        return new Response(JSON.stringify({ 
+          error: 'Validation failed',
+          details: `status must be one of: ${KANBAN_STATUS.join(', ')}` 
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })

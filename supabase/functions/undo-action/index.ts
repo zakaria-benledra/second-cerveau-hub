@@ -6,11 +6,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ============= VALIDATION =============
+
+function isUUID(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
+
+function isDate(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function generateEventId(entity: string, entityId: string, eventType: string): string {
+  const bucket = Math.floor(Date.now() / 1000);
+  return `${entity}_${entityId}_${eventType}_${bucket}`;
+}
+
+async function getUserWorkspaceId(supabase: any, userId: string): Promise<string | null> {
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('workspace_id')
+    .eq('user_id', userId)
+    .limit(1)
+    .single();
+  return membership?.workspace_id || null;
+}
+
 /**
  * UNDO ACTION
  * 
  * Reverses AI-executed actions using the undo_stack.
- * This is critical for the PROPOSE → APPROVE → EXECUTE → AUDIT → UNDO cycle.
+ * Supports: KANBAN_MOVE, create, update, delete operations
  */
 
 interface UndoRequest {
@@ -29,11 +57,41 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { user_id, action_id, undo_id }: UndoRequest = await req.json();
-
-    if (!user_id || (!action_id && !undo_id)) {
-      throw new Error("user_id and either action_id or undo_id are required");
+    const body = await req.json();
+    
+    // ========== STRONG VALIDATION ==========
+    if (!isUUID(body.user_id)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "user_id must be a valid UUID" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    if (!body.action_id && !body.undo_id) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Either action_id or undo_id is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (body.action_id && !isUUID(body.action_id)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "action_id must be a valid UUID" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (body.undo_id && !isUUID(body.undo_id)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "undo_id must be a valid UUID" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { user_id, action_id, undo_id }: UndoRequest = body;
+
+    // Get user's workspace_id
+    const workspaceId = await getUserWorkspaceId(supabase, user_id);
 
     // Find the undo record
     let query = supabase
@@ -48,7 +106,9 @@ serve(async (req) => {
       query = query.eq("action_id", action_id);
     }
 
-    const { data: undoRecords, error: undoError } = await query.order("created_at", { ascending: false }).limit(1);
+    const { data: undoRecords, error: undoError } = await query
+      .order("created_at", { ascending: false })
+      .limit(1);
 
     if (undoError) throw undoError;
     if (!undoRecords || undoRecords.length === 0) {
@@ -60,11 +120,29 @@ serve(async (req) => {
 
     const undoRecord = undoRecords[0];
 
+    // ========== IDEMPOTENCY CHECK ==========
+    const eventId = generateEventId('undo', undoRecord.id, 'revert');
+    const { data: existingEvent } = await supabase
+      .from('task_events')
+      .select('id')
+      .eq('event_id', eventId)
+      .single();
+
+    if (existingEvent) {
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Undo already processed (idempotent)",
+          event_id: eventId 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Perform the undo based on operation type
     let undoResult;
     switch (undoRecord.operation) {
       case "create":
-        // Delete the created entity
         undoResult = await supabase
           .from(undoRecord.entity)
           .delete()
@@ -73,9 +151,9 @@ serve(async (req) => {
         break;
 
       case "update":
-        // Restore to previous state
+      case "KANBAN_MOVE":
         if (undoRecord.previous_state) {
-          const { id, created_at, ...restoreData } = undoRecord.previous_state;
+          const { id, created_at, user_id: _, workspace_id: __, ...restoreData } = undoRecord.previous_state;
           undoResult = await supabase
             .from(undoRecord.entity)
             .update(restoreData)
@@ -85,7 +163,6 @@ serve(async (req) => {
         break;
 
       case "delete":
-        // Re-insert the deleted entity
         if (undoRecord.previous_state) {
           const { id, ...insertData } = undoRecord.previous_state;
           undoResult = await supabase
@@ -122,6 +199,21 @@ serve(async (req) => {
         .eq("id", undoRecord.action_id);
     }
 
+    // Log revert event to task_events (with idempotency)
+    if (undoRecord.entity === 'tasks') {
+      await supabase.from("task_events").insert({
+        user_id,
+        workspace_id: workspaceId, // MULTI-TENANT
+        task_id: undoRecord.entity_id,
+        event_id: eventId, // IDEMPOTENCY
+        event_type: 'reverted',
+        payload: {
+          undo_id: undoRecord.id,
+          restored_state: undoRecord.previous_state
+        }
+      });
+    }
+
     // Log to audit
     await supabase.from("audit_log").insert({
       user_id,
@@ -135,6 +227,7 @@ serve(async (req) => {
     // Emit undo event
     await supabase.from("system_events").insert({
       user_id,
+      workspace_id: workspaceId, // MULTI-TENANT
       event_type: "action.undone",
       entity: undoRecord.entity,
       entity_id: undoRecord.entity_id,
@@ -153,6 +246,7 @@ serve(async (req) => {
         entity: undoRecord.entity,
         entity_id: undoRecord.entity_id,
         operation: undoRecord.operation,
+        event_id: eventId,
         message: `Successfully undone ${undoRecord.operation} on ${undoRecord.entity}`,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

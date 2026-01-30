@@ -652,6 +652,7 @@ export type Database = {
           provider: string
           provider_account_id: string | null
           refresh_token: string | null
+          refresh_token_encrypted: string | null
           scopes: string[] | null
           updated_at: string
           user_id: string
@@ -666,6 +667,7 @@ export type Database = {
           provider: string
           provider_account_id?: string | null
           refresh_token?: string | null
+          refresh_token_encrypted?: string | null
           scopes?: string[] | null
           updated_at?: string
           user_id: string
@@ -680,6 +682,7 @@ export type Database = {
           provider?: string
           provider_account_id?: string | null
           refresh_token?: string | null
+          refresh_token_encrypted?: string | null
           scopes?: string[] | null
           updated_at?: string
           user_id?: string
@@ -2105,6 +2108,76 @@ export type Database = {
           },
         ]
       }
+      savings_goals: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          current_amount: number
+          deadline: string | null
+          goal_id: string | null
+          id: string
+          name: string
+          source: string | null
+          status: string
+          target_amount: number
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          current_amount?: number
+          deadline?: string | null
+          goal_id?: string | null
+          id?: string
+          name: string
+          source?: string | null
+          status?: string
+          target_amount?: number
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          current_amount?: number
+          deadline?: string | null
+          goal_id?: string | null
+          id?: string
+          name?: string
+          source?: string | null
+          status?: string
+          target_amount?: number
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_goals_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "savings_goals_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "savings_goals_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scores_daily: {
         Row: {
           burnout_index: number | null
@@ -2475,6 +2548,7 @@ export type Database = {
       task_events: {
         Row: {
           created_at: string
+          event_id: string | null
           event_type: string
           id: string
           payload: Json | null
@@ -2484,6 +2558,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          event_id?: string | null
           event_type: string
           id?: string
           payload?: Json | null
@@ -2493,6 +2568,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          event_id?: string | null
           event_type?: string
           id?: string
           payload?: Json | null
@@ -2669,6 +2745,7 @@ export type Database = {
           current_state: Json | null
           entity: string | null
           entity_id: string | null
+          event_id: string | null
           expires_at: string | null
           id: string
           is_undone: boolean | null
@@ -2685,6 +2762,7 @@ export type Database = {
           current_state?: Json | null
           entity?: string | null
           entity_id?: string | null
+          event_id?: string | null
           expires_at?: string | null
           id?: string
           is_undone?: boolean | null
@@ -2701,6 +2779,7 @@ export type Database = {
           current_state?: Json | null
           entity?: string | null
           entity_id?: string | null
+          event_id?: string | null
           expires_at?: string | null
           id?: string
           is_undone?: boolean | null
@@ -2939,6 +3018,7 @@ export type Database = {
         Args: { _limit_type: string; _workspace_id: string }
         Returns: boolean
       }
+      compute_savings_progress: { Args: { goal_id: string }; Returns: number }
       delete_user_data: { Args: { target_user_id: string }; Returns: boolean }
       export_user_data: { Args: { target_user_id: string }; Returns: Json }
       get_user_workspace: { Args: { _user_id: string }; Returns: string }
@@ -2977,6 +3057,14 @@ export type Database = {
         | "system"
       kanban_status: "backlog" | "todo" | "doing" | "done"
       plan_tier: "free" | "pro" | "enterprise"
+      task_event_type:
+        | "created"
+        | "updated"
+        | "status_changed"
+        | "completed"
+        | "reverted"
+        | "deleted"
+        | "archived"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3108,6 +3196,15 @@ export const Constants = {
       event_source: ["ui", "api", "automation", "ai", "integration", "system"],
       kanban_status: ["backlog", "todo", "doing", "done"],
       plan_tier: ["free", "pro", "enterprise"],
+      task_event_type: [
+        "created",
+        "updated",
+        "status_changed",
+        "completed",
+        "reverted",
+        "deleted",
+        "archived",
+      ],
     },
   },
 } as const
