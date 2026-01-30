@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useHabitsWithLogs, useCreateHabit, useToggleHabitLog, useDeleteHabit } from '@/hooks/useHabits';
+import { useHabitHistory } from '@/hooks/useHabitsKPI';
 import { useRoutines, useTodayRoutineLogs, useLogRoutineCompletion } from '@/hooks/useRoutines';
 import { ScoreRing } from '@/components/today/ScoreRing';
 import { 
@@ -38,6 +39,7 @@ import {
   Moon,
   ListChecks
 } from 'lucide-react';
+import { HabitTimeline } from '@/components/habits/HabitTimeline';
 import type { CreateHabitInput } from '@/lib/api/habits';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
@@ -55,6 +57,7 @@ export default function HabitsPage() {
   const { data: habits, isLoading: habitsLoading } = useHabitsWithLogs();
   const { data: routines = [], isLoading: routinesLoading } = useRoutines();
   const { data: todayLogs = [] } = useTodayRoutineLogs();
+  const { data: weekHistory = [], isLoading: historyLoading } = useHabitHistory(7);
   const createHabit = useCreateHabit();
   const toggleHabit = useToggleHabitLog();
   const deleteHabit = useDeleteHabit();
@@ -107,21 +110,10 @@ export default function HabitsPage() {
     logCompletion.mutate({ routineId, completedItems: newCompleted });
   };
 
-  // 7-day history (mock)
-  const weekHistory = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = subDays(new Date(), 6 - i);
-      const completed = Math.floor(Math.random() * (activeHabits.length + 1));
-      return {
-        date,
-        completed,
-        total: activeHabits.length,
-        rate: activeHabits.length > 0 ? (completed / activeHabits.length) * 100 : 0,
-      };
-    });
-  }, [activeHabits.length]);
+  // Use real history from useHabitHistory hook (above)
+  // weekHistory is already loaded via useHabitHistory(7)
 
-  const isLoading = habitsLoading || routinesLoading;
+  const isLoading = habitsLoading || routinesLoading || historyLoading;
 
   if (isLoading) {
     return (
@@ -562,78 +554,34 @@ export default function HabitsPage() {
             </p>
           </TabsContent>
 
-          {/* History Tab */}
+          {/* History Tab - Uses real data from HabitTimeline component */}
           <TabsContent value="history" className="space-y-4">
-            <Card className="glass-strong">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Historique des 30 derniers jours
-                </CardTitle>
-                <CardDescription>
-                  Suivez votre progression et identifiez les patterns
-                </CardDescription>
+            <HabitTimeline days={30} />
+            
+            {/* Today's Completed Summary */}
+            <Card className="glass">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Aujourd'hui ({completedHabits.length}/{activeHabits.length})</CardTitle>
               </CardHeader>
-              <CardContent>
-                {/* Week by Week view */}
-                <div className="space-y-6">
-                  {[0, 1, 2, 3].map((weekOffset) => (
-                    <div key={weekOffset}>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                        {weekOffset === 0 ? 'Cette semaine' : weekOffset === 1 ? 'Semaine dernière' : `Il y a ${weekOffset} semaines`}
-                      </h4>
-                      <div className="flex items-end justify-between gap-1 h-20">
-                        {Array.from({ length: 7 }, (_, i) => {
-                          const dayIndex = weekOffset * 7 + (6 - i);
-                          const date = subDays(new Date(), dayIndex);
-                          const rate = Math.floor(Math.random() * 100);
-                          return (
-                            <div 
-                              key={i}
-                              className="flex-1 flex flex-col items-center gap-1"
-                            >
-                              <div 
-                                className={cn(
-                                  'w-full rounded-sm transition-all',
-                                  rate >= 80 ? 'bg-success' : rate >= 50 ? 'bg-warning' : rate > 0 ? 'bg-muted-foreground/30' : 'bg-muted/20'
-                                )}
-                                style={{ height: `${Math.max(4, rate * 0.6)}px` }}
-                              />
-                              <span className="text-[10px] text-muted-foreground">
-                                {format(date, 'E', { locale: fr })}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Completed Habits History */}
-                <div className="mt-8">
-                  <h4 className="text-sm font-medium mb-4">Aujourd'hui ({completedHabits.length}/{activeHabits.length})</h4>
-                  <div className="space-y-2">
-                    {completedHabits.map((habit) => (
-                      <div key={habit.id} className="flex items-center gap-3 p-2 rounded-lg bg-success/10">
-                        <CheckCircle2 className="h-4 w-4 text-success" />
-                        <span className="text-2xl">{habit.icon || '✨'}</span>
-                        <span className="text-sm line-through text-muted-foreground">{habit.name}</span>
-                        {habit.streak && habit.streak.current_streak > 0 && (
-                          <Badge className="bg-warning/15 text-warning border-0 text-xs ml-auto">
-                            <Flame className="h-3 w-3 mr-1" />
-                            {habit.streak.current_streak}
-                          </Badge>
-                        )}
-                      </div>
-                    ))}
-                    {completedHabits.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        Aucune habitude complétée aujourd'hui
-                      </p>
+              <CardContent className="space-y-2">
+                {completedHabits.map((habit) => (
+                  <div key={habit.id} className="flex items-center gap-3 p-2 rounded-lg bg-success/10">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <span className="text-2xl">{habit.icon || '✨'}</span>
+                    <span className="text-sm line-through text-muted-foreground">{habit.name}</span>
+                    {habit.streak && habit.streak.current_streak > 0 && (
+                      <Badge className="bg-warning/15 text-warning border-0 text-xs ml-auto">
+                        <Flame className="h-3 w-3 mr-1" />
+                        {habit.streak.current_streak}
+                      </Badge>
                     )}
                   </div>
-                </div>
+                ))}
+                {completedHabits.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Aucune habitude complétée aujourd'hui
+                  </p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

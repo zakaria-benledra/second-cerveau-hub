@@ -922,6 +922,53 @@ export type Database = {
           },
         ]
       }
+      finance_rules: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          keywords: string[]
+          priority: number | null
+          regex_pattern: string | null
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[]
+          priority?: number | null
+          regex_pattern?: string | null
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          keywords?: string[]
+          priority?: number | null
+          regex_pattern?: string | null
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_rules_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       finance_transactions: {
         Row: {
           amount: number
@@ -932,6 +979,7 @@ export type Database = {
           description: string | null
           document_id: string | null
           external_id: string | null
+          goal_id: string | null
           id: string
           source: string | null
           type: string
@@ -947,6 +995,7 @@ export type Database = {
           description?: string | null
           document_id?: string | null
           external_id?: string | null
+          goal_id?: string | null
           id?: string
           source?: string | null
           type?: string
@@ -962,6 +1011,7 @@ export type Database = {
           description?: string | null
           document_id?: string | null
           external_id?: string | null
+          goal_id?: string | null
           id?: string
           source?: string | null
           type?: string
@@ -988,6 +1038,13 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_transactions_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "savings_goals"
             referencedColumns: ["id"]
           },
           {
@@ -1259,6 +1316,53 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits_kpi: {
+        Row: {
+          completed: boolean | null
+          consistency_30d: number | null
+          consistency_7d: number | null
+          created_at: string
+          date: string
+          habit_id: string | null
+          id: string
+          streak_at_date: number | null
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          consistency_30d?: number | null
+          consistency_7d?: number | null
+          created_at?: string
+          date: string
+          habit_id?: string | null
+          id?: string
+          streak_at_date?: number | null
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          consistency_30d?: number | null
+          consistency_7d?: number | null
+          created_at?: string
+          date?: string
+          habit_id?: string | null
+          id?: string
+          streak_at_date?: number | null
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habits_kpi_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
             referencedColumns: ["id"]
           },
         ]
