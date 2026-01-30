@@ -88,7 +88,7 @@ export default function RoutinesPage() {
     const progress = checklist.length > 0 ? (completedItems.length / checklist.length) * 100 : 0;
 
     return (
-      <Card className="glass-card">
+      <Card className="glass-hover">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -256,7 +256,7 @@ export default function RoutinesPage() {
                 <Badge variant="secondary">{morningRoutines.length}</Badge>
               </div>
               {morningRoutines.length === 0 ? (
-                <Card className="glass-card">
+                <Card className="glass">
                   <CardContent className="py-8 text-center text-muted-foreground">
                     <ListChecks className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Aucune routine matinale</p>
@@ -278,7 +278,7 @@ export default function RoutinesPage() {
                 <Badge variant="secondary">{eveningRoutines.length}</Badge>
               </div>
               {eveningRoutines.length === 0 ? (
-                <Card className="glass-card">
+                <Card className="glass">
                   <CardContent className="py-8 text-center text-muted-foreground">
                     <ListChecks className="w-12 h-12 mx-auto mb-4 opacity-50" />
                     <p>Aucune routine du soir</p>
