@@ -32,10 +32,11 @@ export function useCurrentIdentity() {
         .maybeSingle();
 
       // Default values if no scores exist
-      // Normalize burnout_index: if > 1, assume it's already a percentage
+      // Normalize indices: if > 1, assume they're already percentages
       const globalScore = scores?.global_score ?? 50;
       const consistencyFactor = scores?.consistency_factor ?? 0.5;
-      const momentumIndex = scores?.momentum_index ?? 0;
+      const rawMomentum = scores?.momentum_index ?? 0;
+      const momentumIndex = rawMomentum > 1 ? rawMomentum / 100 : rawMomentum;
       const rawBurnout = scores?.burnout_index ?? 0;
       const burnoutIndex = rawBurnout > 1 ? rawBurnout / 100 : rawBurnout;
 
