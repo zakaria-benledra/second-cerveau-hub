@@ -56,9 +56,9 @@ export async function fetchTodayStats(): Promise<DailyStats | null> {
     .from('daily_stats')
     .select('*')
     .eq('date', today)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') throw error;
+  if (error) throw error;
   return data as DailyStats | null;
 }
 
@@ -134,11 +134,11 @@ export async function calculateTodayStats(): Promise<DailyStats> {
 
   const focusMinutes = focusSessions?.reduce((sum, s) => sum + (s.duration_min || 0), 0) || 0;
 
-  // Get user's daily capacity
+  // Get user's daily capacity (best effort - use default if not found)
   const { data: preferences } = await supabase
     .from('preferences')
     .select('daily_capacity_min')
-    .single();
+    .maybeSingle();
 
   const dailyCapacity = preferences?.daily_capacity_min || 480;
 
