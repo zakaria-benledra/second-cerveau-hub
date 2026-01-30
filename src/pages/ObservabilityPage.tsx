@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useJobRuns, useSystemHealth, useAuditLogStats } from '@/hooks/useAdmin';
 import { useSystemEvents, useAutomationEvents } from '@/hooks/useObservability';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Activity, 
   Server, 
@@ -18,20 +20,41 @@ import {
   Zap,
   Eye,
   BarChart3,
-  History
+  History,
+  HeartPulse,
+  Loader2
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function ObservabilityPage() {
   const [activeTab, setActiveTab] = useState('health');
+  const queryClient = useQueryClient();
   
   const { data: systemHealth = [], isLoading: healthLoading, refetch: refetchHealth } = useSystemHealth();
   const { data: jobRuns = [], isLoading: jobsLoading, refetch: refetchJobs } = useJobRuns(undefined, 20);
   const { data: systemEvents = [], isLoading: eventsLoading } = useSystemEvents(50);
   const { data: automationEvents = [] } = useAutomationEvents(20);
   const { data: auditStats } = useAuditLogStats();
+
+  // Health check mutation
+  const healthCheckMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('health-check');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Vérification terminée: ${data.overall_status}`);
+      queryClient.invalidateQueries({ queryKey: ['systemHealth'] });
+      refetchHealth();
+    },
+    onError: (error) => {
+      toast.error(`Erreur: ${error.message}`);
+    }
+  });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -76,14 +99,29 @@ export default function ObservabilityPage() {
             <h1 className="text-3xl font-bold tracking-tight text-gradient">Observabilité</h1>
             <p className="text-muted-foreground">Monitoring système, jobs et événements</p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => { refetchHealth(); refetchJobs(); }}
-            className="gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Actualiser
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => healthCheckMutation.mutate()}
+              disabled={healthCheckMutation.isPending}
+              className="gap-2"
+            >
+              {healthCheckMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <HeartPulse className="h-4 w-4" />
+              )}
+              Vérifier
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => { refetchHealth(); refetchJobs(); }}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Actualiser
+            </Button>
+          </div>
         </div>
 
         {/* Summary Cards */}
