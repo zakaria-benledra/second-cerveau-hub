@@ -4,7 +4,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
   useAutomationRules, 
   useAutomationEvents,
@@ -20,14 +37,14 @@ import {
   CheckCircle2, 
   XCircle, 
   Loader2,
-  Play,
-  Pause,
   Trash2,
   Sparkles,
   TrendingUp,
   AlertTriangle,
-  Bell,
   Target,
+  ArrowRight,
+  Settings,
+  Play,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,11 +57,26 @@ const triggerIcons: Record<string, typeof Zap> = {
 };
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-warning/10 text-warning',
-  processing: 'bg-info/10 text-info',
-  completed: 'bg-success/10 text-success',
-  failed: 'bg-destructive/10 text-destructive',
+  pending: 'bg-warning/15 text-warning',
+  processing: 'bg-info/15 text-info',
+  completed: 'bg-success/15 text-success',
+  failed: 'bg-destructive/15 text-destructive',
 };
+
+const triggerOptions = [
+  { value: 'habit.missed', label: 'Habitude manquée' },
+  { value: 'task.overdue', label: 'Tâche en retard' },
+  { value: 'budget.threshold_reached', label: 'Budget dépassé' },
+  { value: 'goal.completed', label: 'Objectif atteint' },
+  { value: 'score.dropped', label: 'Score en baisse' },
+];
+
+const actionOptions = [
+  { value: 'notify', label: 'Envoyer notification' },
+  { value: 'create_task', label: 'Créer une tâche' },
+  { value: 'ai_suggest', label: 'Suggestion IA' },
+  { value: 'update_score', label: 'Mettre à jour score' },
+];
 
 export default function AutomationPage() {
   const { data: rules, isLoading: rulesLoading } = useAutomationRules();
@@ -53,6 +85,14 @@ export default function AutomationPage() {
   const updateRule = useUpdateAutomationRule();
   const deleteRule = useDeleteAutomationRule();
 
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [newRule, setNewRule] = useState({
+    name: '',
+    trigger_event: '',
+    action_type: '',
+    description: '',
+  });
+
   const handleAddTemplate = async (template: typeof AUTOMATION_TEMPLATES[0]) => {
     await createRule.mutateAsync({
       name: template.name,
@@ -60,6 +100,20 @@ export default function AutomationPage() {
       trigger_event: template.trigger_event,
       action_type: template.action_type,
     });
+  };
+
+  const handleCreateRule = async () => {
+    if (!newRule.name || !newRule.trigger_event || !newRule.action_type) return;
+    
+    await createRule.mutateAsync({
+      name: newRule.name,
+      description: newRule.description,
+      trigger_event: newRule.trigger_event,
+      action_type: newRule.action_type,
+    });
+    
+    setNewRule({ name: '', trigger_event: '', action_type: '', description: '' });
+    setIsBuilderOpen(false);
   };
 
   const handleToggleRule = async (id: string, isActive: boolean) => {
@@ -81,31 +135,140 @@ export default function AutomationPage() {
   }
 
   const activeRules = rules?.filter(r => r.is_active) || [];
-  const inactiveRules = rules?.filter(r => !r.is_active) || [];
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight text-gradient flex items-center gap-2">
               <Zap className="h-8 w-8 text-primary" />
               Automations
             </h1>
             <p className="text-muted-foreground mt-1">
-              Règles IF/THEN pour automatiser vos actions
+              Règles IF → THEN pour automatiser votre système
             </p>
           </div>
+          
           <div className="flex gap-2">
-            <Badge variant="secondary" className="px-3 py-1">
+            <Badge variant="outline" className="px-3 py-1.5 text-sm">
               {activeRules.length} actives
             </Badge>
+            
+            <Dialog open={isBuilderOpen} onOpenChange={setIsBuilderOpen}>
+              <DialogTrigger asChild>
+                <Button className="gradient-primary text-primary-foreground shadow-lg">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvelle règle
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="glass-strong sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-primary" />
+                    Créer une automation
+                  </DialogTitle>
+                </DialogHeader>
+                
+                <div className="space-y-6 py-4">
+                  {/* Rule Name */}
+                  <div className="space-y-2">
+                    <Label>Nom de la règle</Label>
+                    <Input
+                      placeholder="Ex: Alerte habitude manquée"
+                      value={newRule.name}
+                      onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
+                      className="glass-hover"
+                    />
+                  </div>
+                  
+                  {/* Visual IF → THEN Builder */}
+                  <div className="space-y-4">
+                    {/* IF Section */}
+                    <div className="p-4 rounded-xl border border-border/50 bg-card/50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge className="bg-primary/15 text-primary">IF</Badge>
+                        <span className="text-sm text-muted-foreground">Quand cet événement se produit</span>
+                      </div>
+                      <Select
+                        value={newRule.trigger_event}
+                        onValueChange={(v) => setNewRule({ ...newRule, trigger_event: v })}
+                      >
+                        <SelectTrigger className="glass-hover">
+                          <SelectValue placeholder="Choisir un déclencheur..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {triggerOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Arrow */}
+                    <div className="flex justify-center">
+                      <ArrowRight className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    
+                    {/* THEN Section */}
+                    <div className="p-4 rounded-xl border border-border/50 bg-card/50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge className="bg-accent/15 text-accent">THEN</Badge>
+                        <span className="text-sm text-muted-foreground">Exécuter cette action</span>
+                      </div>
+                      <Select
+                        value={newRule.action_type}
+                        onValueChange={(v) => setNewRule({ ...newRule, action_type: v })}
+                      >
+                        <SelectTrigger className="glass-hover">
+                          <SelectValue placeholder="Choisir une action..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {actionOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <Label>Description (optionnel)</Label>
+                    <Input
+                      placeholder="Décrire ce que fait cette règle..."
+                      value={newRule.description}
+                      onChange={(e) => setNewRule({ ...newRule, description: e.target.value })}
+                      className="glass-hover"
+                    />
+                  </div>
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsBuilderOpen(false)}>
+                    Annuler
+                  </Button>
+                  <Button 
+                    onClick={handleCreateRule}
+                    disabled={!newRule.name || !newRule.trigger_event || !newRule.action_type || createRule.isPending}
+                    className="gradient-primary"
+                  >
+                    {createRule.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Créer la règle
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
         <Tabs defaultValue="rules" className="w-full">
-          <TabsList>
+          <TabsList className="glass-strong">
             <TabsTrigger value="rules" className="gap-2">
               <Zap className="h-4 w-4" />
               Règles ({rules?.length || 0})
@@ -121,36 +284,36 @@ export default function AutomationPage() {
           </TabsList>
 
           {/* Rules Tab */}
-          <TabsContent value="rules" className="mt-6 space-y-6">
+          <TabsContent value="rules" className="mt-6 space-y-4">
             {rules?.length === 0 ? (
-              <Card className="border-dashed">
+              <Card className="glass border-dashed">
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Zap className="h-12 w-12 text-muted-foreground/50 mb-4" />
                   <h3 className="text-lg font-medium mb-2">Aucune automation</h3>
                   <p className="text-muted-foreground text-sm text-center mb-4">
-                    Ajoutez des règles pour automatiser vos workflows
+                    Créez des règles IF/THEN pour automatiser votre système
                   </p>
-                  <Button variant="outline" onClick={() => {}}>
+                  <Button variant="outline" onClick={() => setIsBuilderOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Voir les templates
+                    Créer une règle
                   </Button>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {rules?.map((rule) => {
                   const TriggerIcon = triggerIcons[rule.trigger_event] || Zap;
                   return (
                     <Card key={rule.id} className={cn(
-                      'transition-all duration-200',
+                      'glass-hover transition-all',
                       !rule.is_active && 'opacity-60'
                     )}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex items-start gap-4">
                             <div className={cn(
-                              'p-2 rounded-lg',
-                              rule.is_active ? 'bg-primary/10' : 'bg-muted'
+                              'p-2.5 rounded-xl',
+                              rule.is_active ? 'bg-primary/15' : 'bg-muted'
                             )}>
                               <TriggerIcon className={cn(
                                 'h-5 w-5',
@@ -165,17 +328,18 @@ export default function AutomationPage() {
                                 </p>
                               )}
                               <div className="flex items-center gap-2 mt-2">
-                                <Badge variant="outline" className="text-xs">
-                                  {rule.trigger_event}
+                                <Badge variant="outline" className="text-xs bg-primary/10">
+                                  IF {rule.trigger_event}
                                 </Badge>
-                                <span className="text-muted-foreground">→</span>
-                                <Badge variant="secondary" className="text-xs">
-                                  {rule.action_type}
+                                <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                <Badge variant="outline" className="text-xs bg-accent/10">
+                                  THEN {rule.action_type}
                                 </Badge>
                               </div>
                               {rule.trigger_count > 0 && (
-                                <p className="text-xs text-muted-foreground mt-2">
-                                  Déclenché {rule.trigger_count} fois
+                                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                                  <Play className="h-3 w-3" />
+                                  Exécuté {rule.trigger_count} fois
                                 </p>
                               )}
                             </div>
@@ -189,8 +353,9 @@ export default function AutomationPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDeleteRule(rule.id)}
+                              className="text-destructive hover:bg-destructive/10"
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
@@ -210,17 +375,17 @@ export default function AutomationPage() {
                 const isAdded = rules?.some(r => r.trigger_event === template.trigger_event);
                 
                 return (
-                  <Card key={template.id} className="hover-lift">
+                  <Card key={template.id} className="glass-hover hover-lift">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-primary/10">
+                          <div className="p-2 rounded-xl bg-primary/15">
                             <TriggerIcon className="h-5 w-5 text-primary" />
                           </div>
                           <CardTitle className="text-base">{template.name}</CardTitle>
                         </div>
                         {isAdded && (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="outline" className="text-xs bg-success/10 text-success border-0">
                             <CheckCircle2 className="h-3 w-3 mr-1" />
                             Ajouté
                           </Badge>
@@ -242,6 +407,7 @@ export default function AutomationPage() {
                           variant={isAdded ? 'outline' : 'default'}
                           onClick={() => handleAddTemplate(template)}
                           disabled={createRule.isPending}
+                          className={cn(!isAdded && 'gradient-primary')}
                         >
                           {createRule.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -264,7 +430,7 @@ export default function AutomationPage() {
 
           {/* History Tab */}
           <TabsContent value="history" className="mt-6">
-            <Card>
+            <Card className="glass">
               <CardHeader>
                 <CardTitle>Événements récents</CardTitle>
                 <CardDescription>
@@ -286,7 +452,7 @@ export default function AutomationPage() {
                     {events?.map((event) => (
                       <div 
                         key={event.id}
-                        className="flex items-center justify-between p-3 rounded-lg border"
+                        className="flex items-center justify-between p-3 rounded-xl border border-border/50 glass-hover"
                       >
                         <div className="flex items-center gap-3">
                           <div className={cn(
@@ -308,8 +474,10 @@ export default function AutomationPage() {
                             </p>
                           </div>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          {event.status}
+                        <Badge variant="outline" className={cn('text-xs', statusColors[event.status])}>
+                          {event.status === 'completed' ? 'Succès' : 
+                           event.status === 'failed' ? 'Échec' : 
+                           event.status === 'processing' ? 'En cours' : 'En attente'}
                         </Badge>
                       </div>
                     ))}

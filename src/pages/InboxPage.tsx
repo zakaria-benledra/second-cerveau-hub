@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,29 +29,64 @@ import {
   ArrowRight, 
   Archive, 
   Trash2,
-  Mail,
-  StickyNote,
   Zap,
-  Calendar,
-  Sparkles
+  Sparkles,
+  Target,
+  CheckSquare,
+  FolderOpen,
+  Brain,
+  TrendingUp,
+  Lightbulb
 } from 'lucide-react';
 import type { CreateInboxInput } from '@/lib/api/inbox';
 import { cn } from '@/lib/utils';
 
-const sourceIcons: Record<string, React.ReactNode> = {
-  email: <Mail className="h-4 w-4" />,
-  note: <StickyNote className="h-4 w-4" />,
-  capture: <Zap className="h-4 w-4" />,
-  agent: <Zap className="h-4 w-4" />,
-  calendar: <Calendar className="h-4 w-4" />,
+// AI Classification suggestions based on content analysis
+function classifyInboxItem(title: string, content?: string): {
+  suggestion: 'task' | 'habit' | 'project' | 'archive';
+  confidence: number;
+  reason: string;
+} {
+  const text = `${title} ${content || ''}`.toLowerCase();
+  
+  // Task patterns
+  if (text.match(/(faire|rappeler|envoyer|finir|terminer|appeler|répondre|préparer|acheter|réserver)/)) {
+    return { suggestion: 'task', confidence: 0.85, reason: 'Action concrète détectée' };
+  }
+  
+  // Habit patterns
+  if (text.match(/(chaque jour|quotidien|routine|habitude|tous les|matin|soir|régulièrement)/)) {
+    return { suggestion: 'habit', confidence: 0.9, reason: 'Récurrence suggérée' };
+  }
+  
+  // Project patterns
+  if (text.match(/(projet|lancer|créer|développer|planifier|stratégie|objectif long terme)/)) {
+    return { suggestion: 'project', confidence: 0.75, reason: 'Scope important détecté' };
+  }
+  
+  // Default to task with medium confidence
+  return { suggestion: 'task', confidence: 0.6, reason: 'Classification par défaut' };
+}
+
+const classificationIcons = {
+  task: CheckSquare,
+  habit: TrendingUp,
+  project: FolderOpen,
+  archive: Archive,
 };
 
-const sourceLabels: Record<string, string> = {
-  email: 'Email',
-  note: 'Note',
-  capture: 'Capture',
-  agent: 'Agent IA',
-  calendar: 'Calendrier',
+const classificationLabels = {
+  task: 'Tâche',
+  habit: 'Habitude',
+  project: 'Projet',
+  archive: 'Archiver',
+};
+
+const classificationColors = {
+  task: 'bg-primary/10 text-primary border-primary/20',
+  habit: 'bg-success/10 text-success border-success/20',
+  project: 'bg-accent/10 text-accent border-accent/20',
+  archive: 'bg-muted text-muted-foreground border-muted',
 };
 
 export default function InboxPage() {
@@ -70,7 +105,6 @@ export default function InboxPage() {
 
   const handleCreateItem = async () => {
     if (!newItem.title.trim()) return;
-    
     await createItem.mutateAsync(newItem);
     setNewItem({ title: '', content: '', source: 'capture' });
     setIsDialogOpen(false);
@@ -78,6 +112,14 @@ export default function InboxPage() {
 
   const newItems = items?.filter(i => i.status === 'new') || [];
   const processedItems = items?.filter(i => i.status === 'processed') || [];
+
+  // Classify items with AI suggestions
+  const classifiedItems = useMemo(() => {
+    return newItems.map(item => ({
+      ...item,
+      classification: classifyInboxItem(item.title, item.content || undefined),
+    }));
+  }, [newItems]);
 
   if (isLoading) {
     return (
@@ -91,49 +133,81 @@ export default function InboxPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Inbox</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-gradient">
+              Capture Cognitive
+            </h1>
             <p className="text-muted-foreground mt-1">
-              {newItems.length} élément{newItems.length > 1 ? 's' : ''} à traiter
+              {newItems.length} élément{newItems.length > 1 ? 's' : ''} à classifier
             </p>
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="gradient">
+              <Button className="gradient-primary text-primary-foreground shadow-lg">
                 <Plus className="h-4 w-4 mr-2" />
                 Capturer
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="glass-strong">
               <DialogHeader>
-                <DialogTitle>Capture rapide</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5 text-primary" />
+                  Capture rapide
+                </DialogTitle>
                 <DialogDescription>
-                  Capturez une idée, une tâche ou une note pour la traiter plus tard
+                  L'IA analysera et suggérera une classification
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Titre</Label>
+                  <Label htmlFor="title">Quoi ?</Label>
                   <Input
                     id="title"
                     value={newItem.title}
                     onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
                     placeholder="Ex: Rappeler le client demain"
+                    className="glass-hover"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="content">Détails (optionnel)</Label>
+                  <Label htmlFor="content">Contexte (optionnel)</Label>
                   <Textarea
                     id="content"
                     value={newItem.content || ''}
                     onChange={(e) => setNewItem({ ...newItem, content: e.target.value })}
-                    placeholder="Plus de contexte..."
+                    placeholder="Plus de détails..."
+                    className="glass-hover"
                   />
                 </div>
+                
+                {/* Preview AI suggestion */}
+                {newItem.title && (
+                  <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                      <Sparkles className="h-3 w-3" />
+                      Suggestion IA
+                    </div>
+                    {(() => {
+                      const cls = classifyInboxItem(newItem.title, newItem.content || undefined);
+                      const Icon = classificationIcons[cls.suggestion];
+                      return (
+                        <div className="flex items-center gap-2">
+                          <Badge className={classificationColors[cls.suggestion]}>
+                            <Icon className="h-3 w-3 mr-1" />
+                            {classificationLabels[cls.suggestion]}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {Math.round(cls.confidence * 100)}% • {cls.reason}
+                          </span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -142,6 +216,7 @@ export default function InboxPage() {
                 <Button 
                   onClick={handleCreateItem} 
                   disabled={createItem.isPending || !newItem.title.trim()}
+                  className="gradient-primary"
                 >
                   {createItem.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Capturer
@@ -152,103 +227,139 @@ export default function InboxPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="hover-lift">
+        <div className="grid grid-cols-3 gap-4">
+          <Card className="glass-hover hover-lift">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-warning/10">
+              <div className="p-2.5 rounded-xl bg-warning/15">
                 <Inbox className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{newItems.length}</p>
+                <p className="text-2xl font-bold tabular-nums">{newItems.length}</p>
                 <p className="text-xs text-muted-foreground">À traiter</p>
               </div>
             </CardContent>
           </Card>
-          <Card className="hover-lift">
+          <Card className="glass-hover hover-lift">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-success/10">
+              <div className="p-2.5 rounded-xl bg-primary/15">
+                <Sparkles className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold tabular-nums">
+                  {classifiedItems.filter(i => i.classification.confidence >= 0.8).length}
+                </p>
+                <p className="text-xs text-muted-foreground">Haute confiance</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="glass-hover hover-lift">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-success/15">
                 <Archive className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{processedItems.length}</p>
+                <p className="text-2xl font-bold tabular-nums">{processedItems.length}</p>
                 <p className="text-xs text-muted-foreground">Traités</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* New Items */}
-        <Card>
+        {/* Items with AI Classification */}
+        <Card className="glass-strong">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Inbox className="h-5 w-5 text-primary" />
-              À traiter
+              <Brain className="h-5 w-5 text-primary" />
+              À classifier
             </CardTitle>
             <CardDescription>
-              Éléments en attente de traitement
+              L'IA suggère une catégorie pour chaque élément
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {newItems.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-start gap-4 p-4 rounded-xl border hover:bg-muted/50 transition-colors group hover-lift"
-              >
-                <div className="p-2.5 rounded-lg bg-muted">
-                  {sourceIcons[item.source]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium">{item.title}</p>
-                  {item.content && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {item.content}
-                    </p>
-                  )}
-                  <div className="flex gap-2 mt-2">
-                    <Badge variant="muted" className="text-xs">
-                      {sourceLabels[item.source]}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {new Date(item.created_at).toLocaleDateString('fr-FR')}
-                    </Badge>
+            {classifiedItems.map((item) => {
+              const cls = item.classification;
+              const Icon = classificationIcons[cls.suggestion];
+              
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-start gap-4 p-4 rounded-xl border border-border/50 bg-card/50 hover:bg-card/80 transition-all group hover-lift"
+                >
+                  {/* AI Suggestion Badge */}
+                  <div className="flex flex-col items-center gap-1.5">
+                    <div className={cn(
+                      'p-2.5 rounded-xl border',
+                      classificationColors[cls.suggestion]
+                    )}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {Math.round(cls.confidence * 100)}%
+                    </span>
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">{item.title}</p>
+                    {item.content && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {item.content}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge className={cn('text-xs', classificationColors[cls.suggestion])}>
+                        <Lightbulb className="h-3 w-3 mr-1" />
+                        {cls.reason}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(item.created_at).toLocaleDateString('fr-FR')}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-1.5">
+                    <Button
+                      size="sm"
+                      className={cn(
+                        'text-xs gap-1.5',
+                        cls.suggestion === 'task' && 'gradient-primary text-primary-foreground'
+                      )}
+                      variant={cls.suggestion === 'task' ? 'default' : 'outline'}
+                      onClick={() => convertToTask.mutate(item.id)}
+                      disabled={convertToTask.isPending}
+                    >
+                      <CheckSquare className="h-3 w-3" />
+                      Tâche
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs gap-1.5"
+                      onClick={() => archiveItem.mutate(item.id)}
+                    >
+                      <Archive className="h-3 w-3" />
+                      Archiver
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs text-destructive"
+                      onClick={() => deleteItem.mutate(item.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={() => convertToTask.mutate(item.id)}
-                    disabled={convertToTask.isPending}
-                    title="Convertir en tâche"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={() => archiveItem.mutate(item.id)}
-                    title="Archiver"
-                  >
-                    <Archive className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => deleteItem.mutate(item.id)}
-                    title="Supprimer"
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             {newItems.length === 0 && (
               <div className="text-center py-12">
-                <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <h3 className="font-semibold text-lg mb-1">Inbox vide</h3>
+                <Sparkles className="h-12 w-12 mx-auto text-success/50 mb-4" />
+                <h3 className="font-semibold text-lg mb-1 text-success">Inbox vide</h3>
                 <p className="text-muted-foreground mb-4">
-                  Bravo ! Vous avez tout traité ✨
+                  Tout est classifié. Bravo ! ✨
                 </p>
                 <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
@@ -261,10 +372,10 @@ export default function InboxPage() {
 
         {/* Processed Items */}
         {processedItems.length > 0 && (
-          <Card className="bg-muted/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-muted-foreground text-base">
-                <Archive className="h-5 w-5" />
+          <Card className="glass-subtle bg-muted/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
+                <Archive className="h-4 w-4" />
                 Traités récemment
               </CardTitle>
             </CardHeader>
@@ -272,13 +383,13 @@ export default function InboxPage() {
               {processedItems.slice(0, 5).map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-background/50"
+                  className="flex items-center gap-3 p-2 rounded-lg bg-background/50"
                 >
-                  {sourceIcons[item.source]}
+                  <CheckSquare className="h-4 w-4 text-success" />
                   <span className="text-sm text-muted-foreground flex-1 truncate">
                     {item.title}
                   </span>
-                  <Badge variant="success" className="text-xs">
+                  <Badge variant="outline" className="text-xs bg-success/10 text-success border-0">
                     Converti
                   </Badge>
                 </div>
