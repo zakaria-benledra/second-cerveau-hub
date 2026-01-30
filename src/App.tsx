@@ -27,6 +27,8 @@ import ScoresPage from "./pages/ScoresPage";
 import AutomationPage from "./pages/AutomationPage";
 import AICoachPage from "./pages/AICoachPage";
 import QADashboardPage from "./pages/QADashboardPage";
+import HistoryPage from "./pages/HistoryPage";
+import IntelligenceHubPage from "./pages/IntelligenceHubPage";
 import NotFound from "./pages/NotFound";
 
 // BI Dashboards
@@ -71,6 +73,8 @@ const App = () => (
           <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
           <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
           <Route path="/scores" element={<ProtectedRoute><ScoresPage /></ProtectedRoute>} />
+          <Route path="/intelligence" element={<ProtectedRoute><IntelligenceHubPage /></ProtectedRoute>} />
+          <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
           <Route path="/automation" element={<ProtectedRoute><AutomationPage /></ProtectedRoute>} />
           <Route path="/agent" element={<ProtectedRoute><AgentPage /></ProtectedRoute>} />
           <Route path="/ai-coach" element={<ProtectedRoute><AICoachPage /></ProtectedRoute>} />

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAppStore } from '@/stores/useAppStore';
@@ -8,9 +9,20 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+// Routes where sidebar should auto-collapse
+const AUTO_COLLAPSE_ROUTES = ['/focus', '/ai-coach'];
+
 export function AppLayout({ children }: AppLayoutProps) {
   const { sidebarOpen, setSidebarOpen } = useAppStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+
+  // Auto-collapse sidebar on Focus/AI Coach modes
+  useEffect(() => {
+    if (AUTO_COLLAPSE_ROUTES.includes(location.pathname) && sidebarOpen) {
+      setSidebarOpen(false);
+    }
+  }, [location.pathname, sidebarOpen, setSidebarOpen]);
 
   return (
     <div className="min-h-screen bg-background gradient-mesh">
