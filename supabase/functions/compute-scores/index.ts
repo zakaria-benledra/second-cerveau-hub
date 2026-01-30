@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getRequiredWorkspaceId } from '../_shared/workspace.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,16 +18,6 @@ function isUUID(value: unknown): value is string {
 function isDate(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-async function getUserWorkspaceId(supabase: any, userId: string): Promise<string | null> {
-  const { data: membership } = await supabase
-    .from('memberships')
-    .select('workspace_id')
-    .eq('user_id', userId)
-    .limit(1)
-    .single();
-  return membership?.workspace_id || null;
 }
 
 /**
@@ -206,8 +197,8 @@ serve(async (req) => {
 
     const { user_id, date } = body;
 
-    // Get user's workspace_id for multi-tenant upsert
-    const workspaceId = await getUserWorkspaceId(supabase, user_id);
+    // ========== MULTI-TENANT: Get required workspace_id (never null) ==========
+    const workspaceId = await getRequiredWorkspaceId(supabase, user_id);
 
     // Compute all subscores
     const { score: habitsScore, consistency } = await computeHabitsScore(supabase, user_id, date);
@@ -238,12 +229,12 @@ serve(async (req) => {
     const momentumIndex = computeMomentum([...recentValues, globalScore]);
     const burnoutIndex = computeBurnoutIndex(tasksScore, habitsScore, recentValues);
 
-    // ========== MULTI-TENANT UPSERT ==========
+    // ========== MULTI-TENANT UPSERT (workspace_id required) ==========
     const { data: scoreData, error } = await supabase
       .from("scores_daily")
       .upsert({
         user_id,
-        workspace_id: workspaceId, // MULTI-TENANT
+        workspace_id: workspaceId, // MULTI-TENANT (never null)
         date,
         global_score: Math.round(globalScore * 100) / 100,
         habits_score: Math.round(habitsScore * 100) / 100,

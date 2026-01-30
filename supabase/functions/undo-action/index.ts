@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getRequiredWorkspaceId } from '../_shared/workspace.ts';
+import { generateIdempotencyKey, isEventProcessed } from '../_shared/idempotency.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,31 +16,13 @@ function isUUID(value: unknown): value is string {
   return uuidRegex.test(value);
 }
 
-function isDate(value: unknown): value is string {
-  if (typeof value !== 'string') return false;
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-function generateEventId(entity: string, entityId: string, eventType: string): string {
-  const bucket = Math.floor(Date.now() / 1000);
-  return `${entity}_${entityId}_${eventType}_${bucket}`;
-}
-
-async function getUserWorkspaceId(supabase: any, userId: string): Promise<string | null> {
-  const { data: membership } = await supabase
-    .from('memberships')
-    .select('workspace_id')
-    .eq('user_id', userId)
-    .limit(1)
-    .single();
-  return membership?.workspace_id || null;
-}
-
 /**
- * UNDO ACTION
+ * UNDO ACTION - State Reversion (not just logging)
  * 
  * Reverses AI-executed actions using the undo_stack.
  * Supports: KANBAN_MOVE, create, update, delete operations
+ * 
+ * GOVERNANCE: Every undo creates audit trail + system event
  */
 
 interface UndoRequest {
@@ -90,8 +74,8 @@ serve(async (req) => {
 
     const { user_id, action_id, undo_id }: UndoRequest = body;
 
-    // Get user's workspace_id
-    const workspaceId = await getUserWorkspaceId(supabase, user_id);
+    // ========== MULTI-TENANT: Get required workspace_id (never null) ==========
+    const workspaceId = await getRequiredWorkspaceId(supabase, user_id);
 
     // Find the undo record
     let query = supabase
@@ -120,15 +104,19 @@ serve(async (req) => {
 
     const undoRecord = undoRecords[0];
 
-    // ========== IDEMPOTENCY CHECK ==========
-    const eventId = generateEventId('undo', undoRecord.id, 'revert');
-    const { data: existingEvent } = await supabase
-      .from('task_events')
-      .select('id')
-      .eq('event_id', eventId)
-      .single();
+    // ========== HASH-BASED IDEMPOTENCY (not time-bucket) ==========
+    const eventId = await generateIdempotencyKey(
+      'undo',
+      undoRecord.id,
+      'revert',
+      user_id,
+      workspaceId,
+      { entity: undoRecord.entity, operation: undoRecord.operation }
+    );
 
-    if (existingEvent) {
+    // Check if already processed
+    const alreadyProcessed = await isEventProcessed(supabase, 'task_events', eventId);
+    if (alreadyProcessed) {
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -152,6 +140,8 @@ serve(async (req) => {
 
       case "update":
       case "KANBAN_MOVE":
+      case "complete":
+      case "uncomplete":
         if (undoRecord.previous_state) {
           const { id, created_at, user_id: _, workspace_id: __, ...restoreData } = undoRecord.previous_state;
           undoResult = await supabase
@@ -235,6 +225,7 @@ serve(async (req) => {
         undo_id: undoRecord.id,
         action_id: undoRecord.action_id,
         operation: undoRecord.operation,
+        event_id: eventId,
       },
       source: "api",
     });

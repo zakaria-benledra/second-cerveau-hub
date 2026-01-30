@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getRequiredWorkspaceId } from '../_shared/workspace.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,9 +8,10 @@ const corsHeaders = {
 };
 
 /**
- * NIGHTLY SCORING JOB
+ * NIGHTLY SCORING JOB - Multi-Tenant Compliant
  * 
  * Runs automatically via pg_cron to compute daily scores for all active users.
+ * All inserts include workspace_id (never null).
  * Also triggers automation rules based on score thresholds.
  */
 
@@ -20,7 +22,7 @@ interface ScoreResult {
   error?: string;
 }
 
-async function computeUserScore(supabase: any, userId: string, date: string): Promise<ScoreResult> {
+async function computeUserScore(supabase: any, userId: string, workspaceId: string, date: string): Promise<ScoreResult> {
   try {
     // Get active habits
     const { data: habits } = await supabase
@@ -160,11 +162,12 @@ async function computeUserScore(supabase: any, userId: string, date: string): Pr
       ((100 - avgRecent) * 0.3)
     ));
 
-    // Upsert score
+    // ========== MULTI-TENANT UPSERT (workspace_id required) ==========
     const { data: scoreData, error } = await supabase
       .from("scores_daily")
       .upsert({
         user_id: userId,
+        workspace_id: workspaceId, // MULTI-TENANT (never null)
         date,
         global_score: Math.round(globalScore * 100) / 100,
         habits_score: Math.round(habitsScore * 100) / 100,
@@ -181,11 +184,12 @@ async function computeUserScore(supabase: any, userId: string, date: string): Pr
 
     if (error) throw error;
 
-    // Update daily stats
+    // Update daily stats with workspace_id
     await supabase
       .from("daily_stats")
       .upsert({
         user_id: userId,
+        workspace_id: workspaceId, // MULTI-TENANT (never null)
         date,
         tasks_planned: tasks?.length || 0,
         tasks_completed: tasks?.filter((t: any) => t.status === "done").length || 0,
@@ -201,6 +205,7 @@ async function computeUserScore(supabase: any, userId: string, date: string): Pr
     if (burnoutIndex > 70) {
       await supabase.from("system_events").insert({
         user_id: userId,
+        workspace_id: workspaceId, // MULTI-TENANT
         event_type: "burnout.critical",
         entity: "scores_daily",
         source: "automation",
@@ -211,6 +216,7 @@ async function computeUserScore(supabase: any, userId: string, date: string): Pr
     if (financeScore < 30) {
       await supabase.from("system_events").insert({
         user_id: userId,
+        workspace_id: workspaceId, // MULTI-TENANT
         event_type: "budget.threshold_reached",
         entity: "scores_daily",
         source: "automation",
@@ -267,7 +273,17 @@ serve(async (req) => {
     const results: ScoreResult[] = [];
 
     for (const user of users) {
-      const result = await computeUserScore(supabase, user.id, date);
+      // ========== MULTI-TENANT: Get required workspace_id (never null) ==========
+      let workspaceId: string;
+      try {
+        workspaceId = await getRequiredWorkspaceId(supabase, user.id);
+      } catch (wsError) {
+        console.error(`Failed to get workspace for user ${user.id}:`, wsError);
+        results.push({ user_id: user.id, success: false, error: 'No workspace found' });
+        continue;
+      }
+
+      const result = await computeUserScore(supabase, user.id, workspaceId, date);
       results.push(result);
     }
 

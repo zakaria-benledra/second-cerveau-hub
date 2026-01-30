@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getRequiredWorkspaceId } from '../_shared/workspace.ts'
+import { generateIdempotencyKey, isEventProcessed } from '../_shared/idempotency.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,21 +22,6 @@ function isString(value: unknown, minLength = 0, maxLength = 10000): value is st
 function isDate(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-function generateEventId(entity: string, entityId: string, eventType: string): string {
-  const bucket = Math.floor(Date.now() / 1000);
-  return `${entity}_${entityId}_${eventType}_${bucket}`;
-}
-
-async function getUserWorkspaceId(supabase: any, userId: string): Promise<string | null> {
-  const { data: membership } = await supabase
-    .from('memberships')
-    .select('workspace_id')
-    .eq('user_id', userId)
-    .limit(1)
-    .single();
-  return membership?.workspace_id || null;
 }
 
 // ============= MAIN HANDLER =============
@@ -67,8 +54,8 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Get user's workspace_id for multi-tenant inserts
-    const workspaceId = await getUserWorkspaceId(supabase, user.id)
+    // ========== MULTI-TENANT: Get required workspace_id (never null) ==========
+    const workspaceId = await getRequiredWorkspaceId(supabase, user.id)
 
     const url = new URL(req.url)
     const habitId = url.searchParams.get('id')
@@ -144,10 +131,17 @@ Deno.serve(async (req) => {
       const body = await req.json()
       const date = isDate(body.date) ? body.date : new Date().toISOString().split('T')[0]
 
-      // ========== IDEMPOTENCY CHECK ==========
-      const eventId = generateEventId('habits', habitId, `log_${date}`)
+      // ========== HASH-BASED IDEMPOTENCY (not time-bucket) ==========
+      const eventId = await generateIdempotencyKey(
+        'habits',
+        habitId,
+        `log_${date}`,
+        user.id,
+        workspaceId,
+        { date }
+      )
       
-      // Check if log exists for this habit+date
+      // Check if log exists for this habit+date (idempotent toggle)
       const { data: existingLog } = await supabase
         .from('habit_logs')
         .select('id, completed')
@@ -224,9 +218,35 @@ Deno.serve(async (req) => {
         event_type: logData.completed ? 'habit.completed' : 'habit.unchecked',
         entity: 'habits',
         entity_id: habitId,
-        payload: { date, completed: logData.completed },
+        payload: { date, completed: logData.completed, event_id: eventId },
         source: 'api',
       })
+
+      // Write to undo_stack for reversibility
+      const undoEventId = await generateIdempotencyKey(
+        'undo',
+        habitId,
+        `habit_log_${date}`,
+        user.id,
+        workspaceId,
+        { completed: logData.completed }
+      )
+
+      // Check for duplicate undo entry
+      const undoExists = await isEventProcessed(supabase, 'undo_stack', undoEventId)
+      if (!undoExists) {
+        await supabase.from('undo_stack').insert({
+          user_id: user.id,
+          workspace_id: workspaceId, // MULTI-TENANT
+          event_id: undoEventId, // IDEMPOTENCY
+          entity: 'habit_logs',
+          entity_id: logData.id,
+          operation: logData.completed ? 'complete' : 'uncomplete',
+          previous_state: existingLog ? { completed: existingLog.completed } : null,
+          current_state: { completed: logData.completed },
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        })
+      }
 
       return new Response(JSON.stringify(logData), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
