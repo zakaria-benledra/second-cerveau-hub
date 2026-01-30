@@ -18,6 +18,9 @@ import FinancePage from "./pages/FinancePage";
 import JournalPage from "./pages/JournalPage";
 import AgentPage from "./pages/AgentPage";
 import SettingsPage from "./pages/SettingsPage";
+import CalendarPage from "./pages/CalendarPage";
+import RoutinesPage from "./pages/RoutinesPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -43,15 +46,18 @@ const App = () => (
           <Route path="/" element={<ProtectedRoute><TodayPage /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
           <Route path="/habits" element={<ProtectedRoute><HabitsPage /></ProtectedRoute>} />
+          <Route path="/routines" element={<ProtectedRoute><RoutinesPage /></ProtectedRoute>} />
           <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
           <Route path="/goals" element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
           <Route path="/focus" element={<ProtectedRoute><FocusPage /></ProtectedRoute>} />
+          <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
           <Route path="/learning" element={<ProtectedRoute><LearningPage /></ProtectedRoute>} />
-          <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
           <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
+          <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
           <Route path="/agent" element={<ProtectedRoute><AgentPage /></ProtectedRoute>} />
+          <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           
           {/* Catch-all */}
