@@ -20,19 +20,67 @@ function isValidStatus(status: unknown): status is KanbanStatus {
   return typeof status === 'string' && KANBAN_STATUS.includes(status as KanbanStatus);
 }
 
-function generateEventId(entity: string, entityId: string, eventType: string): string {
-  const bucket = Math.floor(Date.now() / 1000);
-  return `${entity}_${entityId}_${eventType}_${bucket}`;
+/**
+ * Generate idempotency key using payload hash (NOT time-bucket).
+ * Uses SHA-256 hash of payload + entity + operation.
+ */
+async function generateEventId(
+  entity: string, 
+  entityId: string, 
+  eventType: string,
+  payload: Record<string, unknown> = {}
+): Promise<string> {
+  const data = JSON.stringify({ entity, entityId, eventType, payload });
+  const encoder = new TextEncoder();
+  const dataBuffer = encoder.encode(data);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return `${entity}_${eventType}_${hashHex.slice(0, 24)}`;
 }
 
-async function getUserWorkspaceId(supabase: any, userId: string): Promise<string | null> {
+/**
+ * Get user's workspace ID - bootstraps one if none exists.
+ * NEVER returns null - fails hard if cannot resolve.
+ */
+async function getRequiredWorkspaceId(supabase: any, userId: string): Promise<string> {
+  // Check existing membership
   const { data: membership } = await supabase
     .from('memberships')
     .select('workspace_id')
     .eq('user_id', userId)
     .limit(1)
     .single();
-  return membership?.workspace_id || null;
+
+  if (membership?.workspace_id) {
+    return membership.workspace_id;
+  }
+
+  // Bootstrap personal workspace
+  console.log(`Bootstrapping workspace for user ${userId}`);
+  
+  const { data: workspace, error: createError } = await supabase
+    .from('workspaces')
+    .insert({
+      name: 'Mon espace personnel',
+      plan: 'free',
+      owner_id: userId
+    })
+    .select()
+    .single();
+
+  if (createError || !workspace) {
+    throw new Error(`Failed to bootstrap workspace: ${createError?.message || 'Unknown'}`);
+  }
+
+  // Add membership
+  await supabase.from('memberships').insert({
+    user_id: userId,
+    workspace_id: workspace.id,
+    role: 'owner'
+  });
+
+  return workspace.id;
 }
 
 // ============= MAIN HANDLER =============
@@ -66,7 +114,7 @@ Deno.serve(async (req) => {
     }
 
     // Get user's workspace_id for multi-tenant inserts
-    const workspaceId = await getUserWorkspaceId(supabase, user.id)
+    const workspaceId = await getRequiredWorkspaceId(supabase, user.id)
 
     const url = new URL(req.url)
     const action = url.searchParams.get('action')
@@ -121,8 +169,8 @@ Deno.serve(async (req) => {
         })
       }
 
-      // ========== IDEMPOTENCY CHECK ==========
-      const eventId = generateEventId('tasks', taskId, `move_${newStatus}`)
+      // ========== IDEMPOTENCY CHECK (hash-based, NOT time-bucket) ==========
+      const eventId = await generateEventId('tasks', taskId, `move_${newStatus}`, { from: body.previousTaskId, to: newStatus })
       
       // Check if this exact event already processed
       const { data: existingEvent } = await supabase
@@ -232,8 +280,8 @@ Deno.serve(async (req) => {
         }
       })
 
-      // Write to undo_stack with event_id for idempotency
-      const undoEventId = generateEventId('undo', taskId, `kanban_${newStatus}`)
+      // Write to undo_stack with hash-based event_id for idempotency
+      const undoEventId = await generateEventId('undo', taskId, `kanban_${newStatus}`, { from: oldTask.kanban_status })
       await supabase.from('undo_stack').insert({
         user_id: user.id,
         workspace_id: workspaceId, // MULTI-TENANT
