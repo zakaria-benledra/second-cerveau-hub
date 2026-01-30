@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check, X, Clock, Brain, AlertTriangle, TrendingUp, Zap } from 'lucide-react';
+import { Loader2, Check, X, Clock, Brain, AlertTriangle, TrendingUp, Zap, Sparkles } from 'lucide-react';
 import { useAICoachEngine } from '@/hooks/useAIBehavior';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const interventionIcons: Record<string, typeof Brain> = {
   motivation: TrendingUp,
@@ -36,6 +38,38 @@ export function AICoachCard() {
   } = useAICoachEngine();
 
   const [showDetails, setShowDetails] = useState(false);
+  const [applyingAction, setApplyingAction] = useState(false);
+  const [appliedResult, setAppliedResult] = useState<any>(null);
+
+  // Apply intervention with real backend action
+  const handleApply = async (interventionId: string) => {
+    setApplyingAction(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('apply-ai-intervention', {
+        body: { interventionId }
+      });
+
+      if (error) throw error;
+
+      setAppliedResult(data);
+      toast.success(data?.message || 'Action appliquée !');
+      
+      // Also mark as accepted in the hook
+      accept(interventionId);
+      
+      // Refresh after a delay
+      setTimeout(() => {
+        refetch();
+        setAppliedResult(null);
+      }, 3000);
+      
+    } catch (err) {
+      console.error('Apply error:', err);
+      toast.error('Erreur lors de l\'application');
+    } finally {
+      setApplyingAction(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -43,6 +77,37 @@ export function AICoachCard() {
         <CardContent className="p-6 flex items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
           <span className="ml-3 text-muted-foreground">Analyse comportementale...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show applied result
+  if (appliedResult) {
+    return (
+      <Card className="glass-strong border-success/30 bg-success/5">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-success/20 flex items-center justify-center">
+              <Check className="h-6 w-6 text-success" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-lg text-success">Action appliquée !</h3>
+              <p className="text-muted-foreground text-sm mt-1">
+                {appliedResult.message}
+              </p>
+              {appliedResult.actions?.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  {appliedResult.actions.map((action: any, idx: number) => (
+                    <div key={idx} className="text-xs text-muted-foreground flex items-center gap-2">
+                      <Sparkles className="h-3 w-3 text-success" />
+                      {action.action}: {action.count || action.task || 'OK'}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -114,22 +179,26 @@ export function AICoachCard() {
               {intervention.ai_message}
             </p>
 
-            {/* Action buttons */}
+            {/* Action buttons - REAL MUTATIONS */}
             <div className="flex items-center gap-2 mt-4">
               <Button
                 size="sm"
-                onClick={() => accept(intervention.id)}
-                disabled={isResponding}
+                onClick={() => handleApply(intervention.id)}
+                disabled={isResponding || applyingAction}
                 className="gap-2"
               >
-                {isResponding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                {applyingAction ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
                 Appliquer
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => ignore(intervention.id)}
-                disabled={isResponding}
+                disabled={isResponding || applyingAction}
                 className="gap-2"
               >
                 <Clock className="h-4 w-4" />
@@ -139,7 +208,7 @@ export function AICoachCard() {
                 size="sm"
                 variant="ghost"
                 onClick={() => reject(intervention.id)}
-                disabled={isResponding}
+                disabled={isResponding || applyingAction}
                 className="gap-2 text-muted-foreground"
               >
                 <X className="h-4 w-4" />

@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/stores/useAppStore';
 import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
+import { useUnreadCount } from '@/hooks/useNotifications';
+import { useAINotifications } from '@/hooks/useAIBehavior';
 import { cn } from '@/lib/utils';
 
 interface HeaderProps {
@@ -36,13 +38,18 @@ const routeLabels: Record<string, string> = {
   '/ai-coach': 'AI Coach',
   '/settings': 'Paramètres',
   '/notifications': 'Notifications',
+  '/product-intelligence': 'Product Intel',
 };
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { inboxItems } = useAppStore();
-  const unreadCount = inboxItems.filter((i) => i.status === 'new').length;
   const [isDark, setIsDark] = useState(true);
   const location = useLocation();
+  
+  // Unified notification count: legacy + AI notifications
+  const { data: legacyUnread = 0 } = useUnreadCount();
+  const { unreadCount: aiUnread = 0 } = useAINotifications();
+  const totalUnread = legacyUnread + aiUnread;
 
   useEffect(() => {
     // Check localStorage or default to dark
@@ -107,21 +114,22 @@ export function Header({ onMenuClick }: HeaderProps) {
         </div>
       </div>
 
-      {/* Right Section - No global Add button (removed per UX rules) */}
+      {/* Right Section */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-lg">
           {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
+        {/* Unified Notifications Bell - Links to Notifications page */}
         <Link to="/notifications">
           <Button variant="ghost" size="icon" className="relative rounded-lg">
             <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
+            {totalUnread > 0 && (
               <Badge
                 variant="destructive"
-                className="absolute -right-1 -top-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                className="absolute -right-1 -top-1 h-5 min-w-5 p-0 flex items-center justify-center text-xs"
               >
-                {unreadCount}
+                {totalUnread > 99 ? '99+' : totalUnread}
               </Badge>
             )}
           </Button>
