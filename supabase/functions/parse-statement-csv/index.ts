@@ -5,6 +5,60 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// ============= VALIDATION =============
+
+function isUUID(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
+
+async function getUserWorkspaceId(supabase: any, userId: string): Promise<string | null> {
+  const { data: membership } = await supabase
+    .from('memberships')
+    .select('workspace_id')
+    .eq('user_id', userId)
+    .limit(1)
+    .single();
+  return membership?.workspace_id || null;
+}
+
+// ============= CATEGORIZATION RULES =============
+
+interface CategoryRule {
+  keywords: string[];
+  category: string;
+  type: 'expense' | 'income';
+}
+
+const CATEGORY_RULES: CategoryRule[] = [
+  { keywords: ['salaire', 'salary', 'paie', 'virement employeur'], category: 'Salaire', type: 'income' },
+  { keywords: ['loyer', 'rent', 'bail'], category: 'Logement', type: 'expense' },
+  { keywords: ['edf', 'engie', 'électricité', 'gaz', 'energie'], category: 'Énergie', type: 'expense' },
+  { keywords: ['carrefour', 'auchan', 'leclerc', 'lidl', 'intermarche', 'supermarché', 'courses'], category: 'Alimentation', type: 'expense' },
+  { keywords: ['uber', 'taxi', 'sncf', 'ratp', 'train', 'transport'], category: 'Transport', type: 'expense' },
+  { keywords: ['amazon', 'fnac', 'darty', 'cdiscount'], category: 'Shopping', type: 'expense' },
+  { keywords: ['restaurant', 'mcdonalds', 'deliveroo', 'ubereats'], category: 'Restauration', type: 'expense' },
+  { keywords: ['netflix', 'spotify', 'disney', 'prime', 'abonnement'], category: 'Abonnements', type: 'expense' },
+  { keywords: ['assurance', 'mutuelle', 'insurance'], category: 'Assurance', type: 'expense' },
+  { keywords: ['médecin', 'pharmacie', 'santé', 'docteur'], category: 'Santé', type: 'expense' },
+  { keywords: ['épargne', 'livret', 'placement'], category: 'Épargne', type: 'income' },
+];
+
+function categorizeTransaction(description: string): { category: string | null; suggestedType: 'income' | 'expense' | null } {
+  const lowerDesc = description.toLowerCase();
+  
+  for (const rule of CATEGORY_RULES) {
+    if (rule.keywords.some(kw => lowerDesc.includes(kw))) {
+      return { category: rule.category, suggestedType: rule.type };
+    }
+  }
+  
+  return { category: null, suggestedType: null };
+}
+
+// ============= MAIN HANDLER =============
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -33,16 +87,24 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { documentId } = await req.json()
+    // Get user's workspace_id for multi-tenant inserts
+    const workspaceId = await getUserWorkspaceId(supabase, user.id)
 
-    if (!documentId) {
-      return new Response(JSON.stringify({ error: 'documentId required' }), {
+    const body = await req.json()
+    const { documentId } = body
+
+    // ========== STRONG VALIDATION ==========
+    if (!isUUID(documentId)) {
+      return new Response(JSON.stringify({ 
+        error: 'Validation failed',
+        details: 'documentId must be a valid UUID' 
+      }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    // Get document
+    // Get document (with user_id check for security)
     const { data: document, error: docError } = await supabase
       .from('documents')
       .select('*')
@@ -89,7 +151,6 @@ Deno.serve(async (req) => {
     // Parse header to detect columns
     const header = lines[0].split(/[,;]/).map(h => h.trim().toLowerCase())
     
-    // Common column mappings
     const dateColumns = ['date', 'transaction date', 'date comptable', 'date opération']
     const amountColumns = ['amount', 'montant', 'debit', 'credit', 'valeur']
     const descColumns = ['description', 'libellé', 'libelle', 'label', 'memo', 'référence']
@@ -117,9 +178,18 @@ Deno.serve(async (req) => {
       })
     }
 
+    // Get existing categories for auto-categorization
+    const { data: existingCategories } = await supabase
+      .from('finance_categories')
+      .select('id, name')
+      .eq('user_id', user.id)
+
+    const categoryMap = new Map(existingCategories?.map(c => [c.name.toLowerCase(), c.id]) || [])
+
     // Parse transactions
     const transactions = []
     const errors = []
+    const newCategories: string[] = []
 
     for (let i = 1; i < lines.length; i++) {
       try {
@@ -129,12 +199,12 @@ Deno.serve(async (req) => {
         const amountStr = values[amountIdx]?.replace(/[^\d.-]/g, '')
         const description = descIdx >= 0 ? values[descIdx] : `Transaction ${i}`
 
-        // Parse date (try multiple formats)
+        // Parse date
         let parsedDate
         const dateFormats = [
-          /^(\d{4})-(\d{2})-(\d{2})/, // YYYY-MM-DD
-          /^(\d{2})\/(\d{2})\/(\d{4})/, // DD/MM/YYYY
-          /^(\d{2})-(\d{2})-(\d{4})/, // DD-MM-YYYY
+          /^(\d{4})-(\d{2})-(\d{2})/,
+          /^(\d{2})\/(\d{2})\/(\d{4})/,
+          /^(\d{2})-(\d{2})-(\d{4})/,
         ]
         
         for (const format of dateFormats) {
@@ -155,15 +225,31 @@ Deno.serve(async (req) => {
         }
 
         const amount = parseFloat(amountStr)
+        
+        // ========== AUTO-CATEGORIZATION ==========
+        const { category: suggestedCategory, suggestedType } = categorizeTransaction(description)
+        let categoryId = null
+        
+        if (suggestedCategory) {
+          categoryId = categoryMap.get(suggestedCategory.toLowerCase()) || null
+          if (!categoryId && !newCategories.includes(suggestedCategory)) {
+            newCategories.push(suggestedCategory)
+          }
+        }
+
+        // Generate external_id for idempotency (UNIQUE constraint)
+        const externalId = `${documentId}_${i}_${parsedDate}_${amount}`
+
         transactions.push({
           user_id: user.id,
-          workspace_id: document.workspace_id,
+          workspace_id: workspaceId, // MULTI-TENANT
           date: parsedDate,
           amount: Math.abs(amount),
-          type: amount < 0 ? 'expense' : 'income',
+          type: suggestedType || (amount < 0 ? 'expense' : 'income'),
           description,
+          category_id: categoryId,
           document_id: documentId,
-          external_id: `${documentId}_${i}`,
+          external_id: externalId, // IDEMPOTENCY
           source: 'csv_import'
         })
       } catch (e) {
@@ -171,7 +257,32 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Upsert transactions
+    // Create new categories discovered during parsing
+    for (const catName of newCategories) {
+      const { data: newCat } = await supabase
+        .from('finance_categories')
+        .insert({
+          user_id: user.id,
+          workspace_id: workspaceId, // MULTI-TENANT
+          name: catName,
+          type: 'expense',
+        })
+        .select()
+        .single()
+      
+      if (newCat) {
+        categoryMap.set(catName.toLowerCase(), newCat.id)
+        // Update transactions with new category ID
+        transactions
+          .filter(t => {
+            const { category } = categorizeTransaction(t.description)
+            return category?.toLowerCase() === catName.toLowerCase()
+          })
+          .forEach(t => { t.category_id = newCat.id })
+      }
+    }
+
+    // Upsert transactions (idempotent - uses external_id)
     if (transactions.length > 0) {
       const { error: insertError } = await supabase
         .from('finance_transactions')
@@ -197,14 +308,19 @@ Deno.serve(async (req) => {
       action: 'PARSE',
       entity: 'documents',
       entity_id: documentId,
-      new_value: { transactions_imported: transactions.length, errors: errors.length }
+      new_value: { 
+        transactions_imported: transactions.length, 
+        errors: errors.length,
+        categories_created: newCategories.length
+      }
     })
 
     return new Response(JSON.stringify({
       success: true,
       transactions_imported: transactions.length,
+      categories_created: newCategories,
       errors: errors.length,
-      error_details: errors.slice(0, 10) // First 10 errors
+      error_details: errors.slice(0, 10)
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
