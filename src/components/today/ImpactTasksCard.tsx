@@ -50,7 +50,7 @@ export function ImpactTasksCard({ tasks, onComplete, isLoading }: ImpactTasksCar
   const totalToday = tasks.length;
 
   return (
-    <Card className="glass-hover">
+    <Card className="glass-hover group">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -59,9 +59,15 @@ export function ImpactTasksCard({ tasks, onComplete, isLoading }: ImpactTasksCar
             </div>
             <CardTitle className="text-base">Tâches à Impact</CardTitle>
           </div>
-          <Badge variant="outline" className="text-muted-foreground">
-            {completedToday}/{totalToday}
-          </Badge>
+          <Link 
+            to="/history?metric=tasks&range=7"
+            className="flex items-center gap-1 group-hover:text-primary transition-colors"
+          >
+            <Badge variant="outline" className="text-muted-foreground">
+              {completedToday}/{totalToday}
+            </Badge>
+            <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </Link>
         </div>
       </CardHeader>
       

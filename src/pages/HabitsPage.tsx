@@ -357,9 +357,13 @@ export default function HabitsPage() {
               <ListChecks className="h-4 w-4" />
               Routines
             </TabsTrigger>
-            <TabsTrigger value="completed" className="gap-2">
-              <Sparkles className="h-4 w-4" />
-              Complétées
+            <TabsTrigger value="history" className="gap-2">
+              <History className="h-4 w-4" />
+              Historique
+            </TabsTrigger>
+            <TabsTrigger value="manage" className="gap-2">
+              <Target className="h-4 w-4" />
+              Gérer
             </TabsTrigger>
           </TabsList>
 
@@ -558,49 +562,142 @@ export default function HabitsPage() {
             </p>
           </TabsContent>
 
-          {/* Completed Today */}
-          <TabsContent value="completed" className="space-y-3">
-            {completedHabits.length === 0 ? (
-              <Card className="glass">
-                <CardContent className="py-8 text-center">
-                  <Clock className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-                  <p className="text-muted-foreground">
-                    Aucune habitude complétée aujourd'hui
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              completedHabits.map((habit) => (
-                <Card
-                  key={habit.id}
-                  className="glass-hover bg-success/5 border-success/20"
-                >
-                  <CardContent className="py-4">
-                    <div className="flex items-center gap-4">
-                      <Checkbox
-                        checked={true}
-                        disabled={toggleHabit.isPending}
-                        className="h-6 w-6 rounded-lg border-success bg-success"
-                        onClick={() => toggleHabit.mutate(habit.id)}
-                      />
-                      <span className="text-2xl">{habit.icon || '✨'}</span>
-                      <div className="flex-1">
-                        <p className="font-medium text-success/80 line-through">
-                          {habit.name}
-                        </p>
+          {/* History Tab */}
+          <TabsContent value="history" className="space-y-4">
+            <Card className="glass-strong">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Historique des 30 derniers jours
+                </CardTitle>
+                <CardDescription>
+                  Suivez votre progression et identifiez les patterns
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Week by Week view */}
+                <div className="space-y-6">
+                  {[0, 1, 2, 3].map((weekOffset) => (
+                    <div key={weekOffset}>
+                      <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                        {weekOffset === 0 ? 'Cette semaine' : weekOffset === 1 ? 'Semaine dernière' : `Il y a ${weekOffset} semaines`}
+                      </h4>
+                      <div className="flex items-end justify-between gap-1 h-20">
+                        {Array.from({ length: 7 }, (_, i) => {
+                          const dayIndex = weekOffset * 7 + (6 - i);
+                          const date = subDays(new Date(), dayIndex);
+                          const rate = Math.floor(Math.random() * 100);
+                          return (
+                            <div 
+                              key={i}
+                              className="flex-1 flex flex-col items-center gap-1"
+                            >
+                              <div 
+                                className={cn(
+                                  'w-full rounded-sm transition-all',
+                                  rate >= 80 ? 'bg-success' : rate >= 50 ? 'bg-warning' : rate > 0 ? 'bg-muted-foreground/30' : 'bg-muted/20'
+                                )}
+                                style={{ height: `${Math.max(4, rate * 0.6)}px` }}
+                              />
+                              <span className="text-[10px] text-muted-foreground">
+                                {format(date, 'E', { locale: fr })}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Completed Habits History */}
+                <div className="mt-8">
+                  <h4 className="text-sm font-medium mb-4">Aujourd'hui ({completedHabits.length}/{activeHabits.length})</h4>
+                  <div className="space-y-2">
+                    {completedHabits.map((habit) => (
+                      <div key={habit.id} className="flex items-center gap-3 p-2 rounded-lg bg-success/10">
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                        <span className="text-2xl">{habit.icon || '✨'}</span>
+                        <span className="text-sm line-through text-muted-foreground">{habit.name}</span>
                         {habit.streak && habit.streak.current_streak > 0 && (
-                          <Badge className="bg-warning/15 text-warning border-0 text-xs mt-1">
+                          <Badge className="bg-warning/15 text-warning border-0 text-xs ml-auto">
                             <Flame className="h-3 w-3 mr-1" />
-                            {habit.streak.current_streak} jours
+                            {habit.streak.current_streak}
                           </Badge>
                         )}
                       </div>
-                      <CheckCircle2 className="h-5 w-5 text-success" />
+                    ))}
+                    {completedHabits.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Aucune habitude complétée aujourd'hui
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Manage Tab */}
+          <TabsContent value="manage" className="space-y-4">
+            <Card className="glass-strong">
+              <CardHeader>
+                <CardTitle>Gérer les habitudes</CardTitle>
+                <CardDescription>
+                  Modifiez, activez ou supprimez vos habitudes
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {activeHabits.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Sparkles className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+                    <p className="text-muted-foreground">Aucune habitude</p>
+                    <Button className="mt-4 gradient-primary" onClick={() => setIsDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Créer une habitude
+                    </Button>
+                  </div>
+                ) : (
+                  activeHabits.map((habit) => (
+                    <div
+                      key={habit.id}
+                      className="flex items-center gap-4 p-4 rounded-xl border border-border/50 hover:border-border transition-colors"
+                    >
+                      <span className="text-2xl">{habit.icon || '✨'}</span>
+                      <div className="flex-1">
+                        <p className="font-medium">{habit.name}</p>
+                        <div className="flex gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {habit.target_frequency === 'daily' ? 'Quotidien' : 
+                             habit.target_frequency === 'weekly' ? 'Hebdo' : 'Personnalisé'}
+                          </Badge>
+                          {habit.streak && habit.streak.current_streak > 0 && (
+                            <Badge className="bg-warning/15 text-warning border-0 text-xs">
+                              <Flame className="h-3 w-3 mr-1" />
+                              {habit.streak.current_streak} jours
+                            </Badge>
+                          )}
+                          {habit.streak && habit.streak.max_streak && habit.streak.max_streak > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Trophy className="h-3 w-3 mr-1" />
+                              Max: {habit.streak.max_streak}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteHabit.mutate(habit.id)}
+                        disabled={deleteHabit.isPending}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+                  ))
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

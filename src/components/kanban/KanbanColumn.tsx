@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { KanbanStatus, KanbanTask } from '@/hooks/useKanban';
 import { KanbanTaskCard } from './KanbanTaskCard';
@@ -41,6 +41,11 @@ export function KanbanColumn({
   const displayTasks = id === 'done' ? tasks.slice(0, 3) : tasks;
   const hiddenCount = id === 'done' ? Math.max(0, tasks.length - 3) : 0;
 
+  // Stacked cards visual: show max 5 cards, rest as count badge
+  const maxVisibleCards = id === 'done' ? 3 : 5;
+  const visibleTasks = displayTasks.slice(0, maxVisibleCards);
+  const stackedCount = displayTasks.length - maxVisibleCards;
+
   return (
     <div
       className={cn(
@@ -57,7 +62,10 @@ export function KanbanColumn({
       {/* Column Header */}
       <div className="p-4 border-b border-border/30">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-sm tracking-wide">{title}</h3>
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-muted-foreground" />
+            <h3 className="font-semibold text-sm tracking-wide">{title}</h3>
+          </div>
           <Badge 
             variant="secondary" 
             className={cn(
@@ -72,22 +80,42 @@ export function KanbanColumn({
       </div>
       
       {/* Stacked Cards Container */}
-      <div className="p-3 space-y-3 flex-1 overflow-y-auto min-h-[200px] max-h-[calc(100vh-280px)]">
-        {displayTasks.map((task, index) => (
-          <KanbanTaskCard
-            key={task.id}
-            task={task}
-            isDragging={draggedTaskId === task.id}
-            isTopInDoing={id === 'doing' && index === 0}
-            projectName={task.project_id ? projectsMap[task.project_id] : undefined}
-            goalTitle={(task as any).goal_id ? goalsMap[(task as any).goal_id] : undefined}
-            onDragStart={(e) => onTaskDragStart(e, task)}
-            onDragEnd={onTaskDragEnd}
-          />
-        ))}
+      <div className="relative p-3 flex-1 overflow-hidden min-h-[200px] max-h-[calc(100vh-280px)]">
+        {/* Stacked cards with visual pile effect */}
+        <div className="relative">
+          {visibleTasks.map((task, index) => (
+            <div 
+              key={task.id} 
+              className="mb-3 last:mb-0"
+              style={{
+                // Create subtle stacking effect
+                zIndex: visibleTasks.length - index,
+              }}
+            >
+              <KanbanTaskCard
+                task={task}
+                isDragging={draggedTaskId === task.id}
+                isTopInDoing={id === 'doing' && index === 0}
+                projectName={task.project_id ? projectsMap[task.project_id] : undefined}
+                goalTitle={(task as any).goal_id ? goalsMap[(task as any).goal_id] : undefined}
+                onDragStart={(e) => onTaskDragStart(e, task)}
+                onDragEnd={onTaskDragEnd}
+              />
+            </div>
+          ))}
+        </div>
+        
+        {/* Hidden count badge for stacked cards */}
+        {stackedCount > 0 && (
+          <div className="text-center py-3">
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              +{stackedCount} autres tâches
+            </Badge>
+          </div>
+        )}
         
         {/* Hidden count for done column */}
-        {hiddenCount > 0 && (
+        {hiddenCount > 0 && stackedCount <= 0 && (
           <div className="text-center py-2">
             <Badge variant="outline" className="text-xs text-muted-foreground">
               +{hiddenCount} tâches dans l'historique

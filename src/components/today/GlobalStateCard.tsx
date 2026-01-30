@@ -5,13 +5,14 @@ import {
   Activity, 
   Brain, 
   Wallet, 
-  Flame,
   TrendingUp,
   TrendingDown,
   Minus,
-  Info
+  Info,
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 
 interface GlobalStateCardProps {
   disciplineScore: number;
@@ -63,6 +64,7 @@ export function GlobalStateCard({
       bg: energyConfig.bg,
       tooltip: 'Niveau d\'énergie basé sur l\'heure et vos habitudes',
       score: energyConfig.value,
+      historyPath: '/history?metric=energy&range=7',
     },
     {
       icon: Wallet,
@@ -72,6 +74,7 @@ export function GlobalStateCard({
       bg: financialStress > 60 ? 'bg-destructive/10' : financialStress > 30 ? 'bg-warning/10' : 'bg-success/10',
       tooltip: 'Indice de stress financier (budget vs dépenses)',
       score: 100 - financialStress,
+      historyPath: '/history?metric=finance&range=30',
     },
     {
       icon: Brain,
@@ -81,6 +84,7 @@ export function GlobalStateCard({
       bg: cognitiveLoad > 80 ? 'bg-destructive/10' : cognitiveLoad > 50 ? 'bg-warning/10' : 'bg-success/10',
       tooltip: 'Charge de travail estimée pour aujourd\'hui',
       score: 100 - cognitiveLoad,
+      historyPath: '/history?metric=load&range=7',
     },
   ];
 
@@ -88,34 +92,36 @@ export function GlobalStateCard({
     <Card className="glass-strong border-primary/20 overflow-hidden">
       <CardContent className="p-6">
         <div className="flex flex-col lg:flex-row items-center gap-6">
-          {/* Main Score */}
-          <div className="flex flex-col items-center">
+          {/* Main Score - Clickable */}
+          <Link to="/history?metric=discipline&range=30" className="flex flex-col items-center group">
             <ScoreRing
               value={disciplineScore}
               size="xl"
               label="Discipline"
               onClick={onScoreClick}
             />
-            <div className="flex items-center gap-1 mt-2">
+            <div className="flex items-center gap-1 mt-2 group-hover:text-primary transition-colors">
               {getMomentumIcon(momentum)}
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors">
                 {momentum === 'up' ? 'En progression' : momentum === 'down' ? 'En baisse' : 'Stable'}
               </span>
+              <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-          </div>
+          </Link>
 
           {/* Divider */}
           <div className="hidden lg:block w-px h-32 bg-gradient-to-b from-transparent via-border to-transparent" />
           <div className="lg:hidden w-32 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
 
-          {/* State Indicators */}
+          {/* State Indicators - All Clickable */}
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
             {stateIndicators.map((indicator) => (
               <Tooltip key={indicator.label}>
                 <TooltipTrigger asChild>
-                  <div 
+                  <Link 
+                    to={indicator.historyPath}
                     className={cn(
-                      'glass-hover rounded-xl p-4 cursor-pointer group',
+                      'glass-hover rounded-xl p-4 cursor-pointer group block',
                       'hover:shadow-lg transition-all duration-300'
                     )}
                   >
@@ -123,7 +129,10 @@ export function GlobalStateCard({
                       <div className={cn('p-2 rounded-lg', indicator.bg)}>
                         <indicator.icon className={cn('h-4 w-4', indicator.color)} />
                       </div>
-                      <Info className="h-3 w-3 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+                      <div className="flex items-center gap-1">
+                        <Info className="h-3 w-3 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+                        <ChevronRight className="h-3 w-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-all" />
+                      </div>
                     </div>
                     <p className={cn('text-xl font-bold', indicator.color)}>
                       {indicator.value}
@@ -141,10 +150,11 @@ export function GlobalStateCard({
                         style={{ width: `${indicator.score}%` }}
                       />
                     </div>
-                  </div>
+                  </Link>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[200px]">
                   <p className="text-xs">{indicator.tooltip}</p>
+                  <p className="text-xs text-primary mt-1">Cliquez pour voir l'historique</p>
                 </TooltipContent>
               </Tooltip>
             ))}

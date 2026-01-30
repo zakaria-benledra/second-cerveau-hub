@@ -27,7 +27,7 @@ export function CriticalHabitsCard({ habits, onToggle, isToggling }: CriticalHab
 
   return (
     <Card className={cn(
-      'glass-hover transition-all duration-300',
+      'glass-hover transition-all duration-300 group',
       allCompleted && 'border-success/30 bg-success/5'
     )}>
       <CardHeader className="pb-3">
@@ -45,14 +45,20 @@ export function CriticalHabitsCard({ habits, onToggle, isToggling }: CriticalHab
             </div>
             <CardTitle className="text-base">Habitudes Critiques</CardTitle>
           </div>
-          <Badge 
-            variant={allCompleted ? 'default' : 'outline'}
-            className={cn(
-              allCompleted && 'bg-success text-success-foreground'
-            )}
+          <Link 
+            to="/history?metric=habits&range=7"
+            className="flex items-center gap-1 group-hover:text-primary transition-colors"
           >
-            {completedCount}/{criticalHabits.length}
-          </Badge>
+            <Badge 
+              variant={allCompleted ? 'default' : 'outline'}
+              className={cn(
+                allCompleted && 'bg-success text-success-foreground'
+              )}
+            >
+              {completedCount}/{criticalHabits.length}
+            </Badge>
+            <ChevronRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          </Link>
         </div>
       </CardHeader>
       
