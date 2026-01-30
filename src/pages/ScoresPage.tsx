@@ -75,10 +75,10 @@ export default function ScoresPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
               <Sparkles className="h-8 w-8 text-primary" />
-              Scores & Performance
+              Momentum & Discipline
             </h1>
             <p className="text-muted-foreground mt-1">
-              Votre tableau de bord de performance personnelle
+              Mesurez votre transformation comportementale
             </p>
           </div>
           <Button 

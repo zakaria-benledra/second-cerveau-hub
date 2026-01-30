@@ -140,7 +140,7 @@ export default function TodayPage() {
                 {formattedDate}
               </h1>
               <p className="text-muted-foreground mt-1">
-                Centre de commande
+                Qui je deviens aujourd'hui
               </p>
             </div>
             

@@ -134,14 +134,14 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Tableau de Bord</h1>
             <p className="text-muted-foreground mt-1">
-              Vos indicateurs de performance — Cliquez pour voir les détails
+              Indicateurs de transformation — Cliquez pour explorer
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <BarChart3 className="h-4 w-4" />
-            <span>BI Mode</span>
+            <span>Mode Intelligence</span>
           </div>
         </div>
 
