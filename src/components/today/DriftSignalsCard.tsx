@@ -15,9 +15,10 @@ import { Link } from 'react-router-dom';
 interface DriftSignal {
   id: string;
   type: 'warning' | 'danger' | 'info';
-  category: 'habit' | 'task' | 'finance' | 'energy' | 'overload';
+  category: 'habit' | 'task' | 'finance' | 'energy' | 'overload' | 'streak';
   title: string;
   description: string;
+  source?: 'computed' | 'ai';
   action?: {
     label: string;
     path: string;
@@ -34,6 +35,7 @@ const categoryIcons = {
   finance: Wallet,
   energy: Activity,
   overload: AlertTriangle,
+  streak: Activity,
 };
 
 const typeStyles = {
