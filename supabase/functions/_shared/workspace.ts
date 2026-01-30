@@ -41,10 +41,14 @@ export async function getRequiredWorkspaceId(
   // Bootstrap personal workspace atomically
   console.log(`[WORKSPACE] Bootstrapping workspace for user ${userId}`);
   
+  // Generate unique slug from userId
+  const slug = `personal-${userId.slice(0, 8)}-${Date.now().toString(36)}`;
+  
   const { data: workspace, error: createError } = await supabase
     .from('workspaces')
     .insert({
       name: 'Mon espace personnel',
+      slug: slug,
       plan: 'free',
       owner_id: userId
     })
