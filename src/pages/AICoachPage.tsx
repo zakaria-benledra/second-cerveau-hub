@@ -373,36 +373,40 @@ export default function AICoachPage() {
           description: "Veuillez vous connecter pour créer des tâches.",
           variant: "destructive",
         });
+        setIsCreatingTasks(false);
         return;
       }
 
-      // Create Kanban tasks from the plan actions
+      // Create Kanban tasks from the plan actions - one by one since API expects single task
       const tomorrow = addDays(new Date(), 1).toISOString().split('T')[0];
+      let createdCount = 0;
       
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-tasks`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            tasks: tomorrowActions.map((action, index) => ({
+      for (let i = 0; i < tomorrowActions.length; i++) {
+        const action = tomorrowActions[i];
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-tasks`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
               title: action,
               description: `Tâche générée par l'AI Coach - Plan du ${format(new Date(), 'd MMMM', { locale: fr })}`,
-              priority: index === 0 ? 'high' : 'medium',
+              priority: i === 0 ? 'high' : 'medium',
               due_date: tomorrow,
-              status: 'todo',
-              kanban_status: 'todo',
-              source: 'ai',
-            })),
-          }),
-        }
-      );
+            }),
+          }
+        );
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de la création des tâches');
+        if (response.ok) {
+          createdCount++;
+        }
+      }
+
+      if (createdCount === 0) {
+        throw new Error('Aucune tâche créée');
       }
 
       setPlanAccepted(true);
@@ -414,7 +418,7 @@ export default function AICoachPage() {
 
       toast({
         title: "Plan accepté !",
-        description: `${tomorrowActions.length} tâches créées dans votre Kanban pour demain.`,
+        description: `${createdCount} tâche${createdCount > 1 ? 's' : ''} créée${createdCount > 1 ? 's' : ''} dans votre Kanban pour demain.`,
       });
     } catch (error) {
       console.error('Error creating tasks:', error);
