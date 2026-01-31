@@ -9,11 +9,11 @@ import type { InterventionType, UserAction } from '@/ai';
 
 interface Intervention {
   id: string;
-  intervention_type: InterventionType;
+  intervention_type: string;
   ai_message: string;
-  user_action: UserAction;
+  user_action: string | null;
   created_at: string;
-  responded_at?: string;
+  responded_at?: string | null;
 }
 
 interface InterventionHistoryCardProps {
@@ -30,14 +30,14 @@ const typeIcons: Record<string, typeof Brain> = {
   restructure: Brain
 };
 
-const actionIcons: Record<UserAction, typeof Check> = {
+const actionIcons: Record<string, typeof Check> = {
   accepted: Check,
   ignored: Clock,
   rejected: X,
   pending: Clock
 };
 
-const actionColors: Record<UserAction, string> = {
+const actionColors: Record<string, string> = {
   accepted: 'text-success',
   ignored: 'text-muted-foreground',
   rejected: 'text-destructive',
@@ -82,7 +82,8 @@ export function InterventionHistoryCard({
             <div className="space-y-3">
               {interventions.map((intervention) => {
                 const TypeIcon = typeIcons[intervention.intervention_type] || Brain;
-                const ActionIcon = actionIcons[intervention.user_action] || Clock;
+                const userAction = intervention.user_action || 'pending';
+                const ActionIcon = actionIcons[userAction] || Clock;
                 
                 return (
                   <div
@@ -108,9 +109,9 @@ export function InterventionHistoryCard({
                         {intervention.ai_message}
                       </p>
                     </div>
-                    <div className={cn("flex items-center gap-1 text-xs", actionColors[intervention.user_action])}>
+                    <div className={cn("flex items-center gap-1 text-xs", actionColors[userAction] || 'text-muted-foreground')}>
                       <ActionIcon className="h-3.5 w-3.5" />
-                      <span className="capitalize">{intervention.user_action}</span>
+                      <span className="capitalize">{userAction}</span>
                     </div>
                   </div>
                 );

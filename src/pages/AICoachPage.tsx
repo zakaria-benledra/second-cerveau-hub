@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAICoach } from '@/hooks/useAICoach';
+import { useAICoachEngine } from '@/hooks/useAIBehavior';
 import { useTodayScore } from '@/hooks/useScores';
 import { useHabitsWithLogs } from '@/hooks/useHabits';
 import { useTodayTasks } from '@/hooks/useTasks';
+import { InterventionHistoryCard } from '@/components/ai';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -423,6 +425,7 @@ function generateTomorrowPlan(ctx: PlanContext): PlanAction[] {
 
 export default function AICoachPage() {
   const { refetchBriefing, proposals, approveProposal, isApproving, rejectProposal, isRejecting } = useAICoach();
+  const { interventionHistory, historyLoading } = useAICoachEngine();
   const { data: score } = useTodayScore();
   const { data: habits } = useHabitsWithLogs();
   const { data: tasks } = useTodayTasks();
@@ -970,6 +973,12 @@ export default function AICoachPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Intervention History */}
+        <InterventionHistoryCard
+          interventions={interventionHistory}
+          isLoading={historyLoading}
+        />
       </div>
     </AppLayout>
   );
