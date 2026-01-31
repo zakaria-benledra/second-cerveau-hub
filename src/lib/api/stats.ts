@@ -95,20 +95,42 @@ export async function fetchMonthStats(): Promise<DailyStats[]> {
 }
 
 // Calculate and upsert today's stats (called by edge function or manually)
+// Uses Kanban statuses and includes archived tasks for accurate metrics
 export async function calculateTodayStats(): Promise<DailyStats> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Get today's tasks
+  // Get today's tasks from Kanban (using kanban_status, includes archived)
+  // Tasks planned = tasks with due_date or start_date today (all kanban statuses)
   const { data: tasks } = await supabase
     .from('tasks')
     .select('*')
     .or(`due_date.eq.${today},start_date.eq.${today}`);
 
+  // Count tasks by kanban_status (done column) - includes archived tasks
   const tasksPlanned = tasks?.length || 0;
-  const tasksCompleted = tasks?.filter(t => t.status === 'done').length || 0;
+  // A task is completed if kanban_status is 'done' (Kanban board) or status is 'done'
+  const tasksCompleted = tasks?.filter(t => 
+    t.kanban_status === 'done' || t.status === 'done'
+  ).length || 0;
+
+  // Also count archived tasks completed today for historical accuracy
+  const { data: archivedTasks } = await supabase
+    .from('tasks')
+    .select('*')
+    .not('archived_at', 'is', null)
+    .eq('status', 'done')
+    .or(`due_date.eq.${today},start_date.eq.${today},completed_at.gte.${today}T00:00:00`);
+  
+  // Add archived completed tasks to the count (avoiding duplicates)
+  const archivedIds = new Set(archivedTasks?.map(t => t.id) || []);
+  const existingIds = new Set(tasks?.map(t => t.id) || []);
+  const additionalArchivedCompleted = archivedTasks?.filter(t => !existingIds.has(t.id)).length || 0;
+  
+  const totalCompleted = tasksCompleted + additionalArchivedCompleted;
+  const totalPlanned = tasksPlanned + additionalArchivedCompleted;
 
   // Get today's habits
   const { data: habits } = await supabase
@@ -142,22 +164,25 @@ export async function calculateTodayStats(): Promise<DailyStats> {
 
   const dailyCapacity = preferences?.daily_capacity_min || 480;
 
-  // Calculate overload index
-  const totalEstimate = tasks?.reduce((sum, t) => sum + (t.estimate_min || 30), 0) || 0;
+  // Calculate overload index (use all tasks including active kanban items)
+  const allActiveTasks = tasks?.filter(t => 
+    t.kanban_status !== 'done' && t.status !== 'done' && !t.archived_at
+  ) || [];
+  const totalEstimate = allActiveTasks.reduce((sum, t) => sum + (t.estimate_min || 30), 0);
   const overloadIndex = Math.min(2, totalEstimate / dailyCapacity);
 
   // Calculate clarity score (tasks with estimate + due_date)
   const clearTasks = tasks?.filter(t => t.estimate_min && t.due_date).length || 0;
-  const clarityScore = tasksPlanned > 0 ? clearTasks / tasksPlanned : 0;
+  const clarityScore = totalPlanned > 0 ? clearTasks / totalPlanned : 0;
 
-  // Upsert daily stats
+  // Upsert daily stats with Kanban-aware metrics
   const { data, error } = await supabase
     .from('daily_stats')
     .upsert({
       user_id: user.id,
       date: today,
-      tasks_planned: tasksPlanned,
-      tasks_completed: tasksCompleted,
+      tasks_planned: totalPlanned,
+      tasks_completed: totalCompleted,
       habits_completed: habitsCompleted,
       habits_total: habitsTotal,
       focus_minutes: focusMinutes,
