@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Activity, Brain } from "lucide-react";
+import { Trophy, Activity, Brain, Target } from "lucide-react";
 import { WinsTracker } from "@/components/behavior/WinsTracker";
+import { ChallengesSystem } from "@/components/behavior/ChallengesSystem";
 import { useSearchParams } from "react-router-dom";
 
 export default function BehaviorHubPage() {
@@ -32,6 +32,10 @@ export default function BehaviorHubPage() {
               <Trophy className="h-4 w-4" />
               Victoires
             </TabsTrigger>
+            <TabsTrigger value="challenges" className="gap-2">
+              <Target className="h-4 w-4" />
+              Défis
+            </TabsTrigger>
             <TabsTrigger value="signals" className="gap-2">
               <Activity className="h-4 w-4" />
               Signaux
@@ -40,6 +44,10 @@ export default function BehaviorHubPage() {
 
           <TabsContent value="wins">
             <WinsTracker />
+          </TabsContent>
+
+          <TabsContent value="challenges">
+            <ChallengesSystem />
           </TabsContent>
 
           <TabsContent value="signals">
