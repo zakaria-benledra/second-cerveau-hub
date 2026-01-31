@@ -75,7 +75,7 @@ export function PricingSection() {
       subtitle: 'Pour les équipes',
       price: '49€',
       period: '/utilisateur/mois',
-      description: 'Déployez Second Brain pour votre équipe ou organisation.',
+      description: 'Déployez Minded pour votre équipe ou organisation.',
       features: [
         'Tout de Transformer +',
         'Dashboard équipe',

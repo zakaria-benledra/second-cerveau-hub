@@ -137,7 +137,7 @@ export function HeroSection() {
             variants={itemVariants}
             className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed"
           >
-            Second Brain n'est pas une app de productivité.
+            Minded n'est pas une app de productivité.
             <br className="hidden sm:block" />
             C'est un système d'intelligence comportementale qui transforme tes actions en{' '}
             <span className="text-foreground font-medium">trajectoire de vie mesurable</span>.

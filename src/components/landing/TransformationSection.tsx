@@ -75,7 +75,7 @@ export function TransformationSection() {
               Avant / Après
               <br />
               <span className="text-gradient-primary">
-                Second Brain
+                Minded
               </span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -95,7 +95,7 @@ export function TransformationSection() {
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Avant</h3>
-                    <p className="text-sm text-muted-foreground">Sans Second Brain</p>
+                    <p className="text-sm text-muted-foreground">Sans Minded</p>
                   </div>
                 </div>
                 <ul className="space-y-4">
@@ -118,7 +118,7 @@ export function TransformationSection() {
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Après</h3>
-                    <p className="text-sm text-muted-foreground">Avec Second Brain</p>
+                    <p className="text-sm text-muted-foreground">Avec Minded</p>
                   </div>
                 </div>
                 <ul className="space-y-4">

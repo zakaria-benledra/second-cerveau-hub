@@ -87,7 +87,7 @@ export function AIShowcaseSection() {
               pas qui conseille
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Voici des exemples réels d'interventions que Second Brain 
+              Voici des exemples réels d'interventions que Minded 
               peut déclencher pour te garder sur la bonne trajectoire.
             </p>
           </motion.div>
