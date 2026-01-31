@@ -36,6 +36,7 @@ import AIInterventionsPage from "./pages/AIInterventionsPage";
 import IdentityDashboard from "./pages/IdentityDashboard";
 import BehaviorHubPage from "./pages/BehaviorHubPage";
 import NotFound from "./pages/NotFound";
+import LandingPage from "./pages/LandingPage";
 import PricingPage from "./pages/PricingPage";
 
 // BI Dashboards
@@ -64,10 +65,13 @@ const App = () => (
       <BrowserRouter>
         <OnboardingProvider>
           <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/pricing" element={<PricingPage />} />
             
-            <Route path="/" element={<ProtectedRoute><IdentityDashboard /></ProtectedRoute>} />
+            {/* Protected routes */}
+            <Route path="/dashboard" element={<ProtectedRoute><IdentityDashboard /></ProtectedRoute>} />
             <Route path="/today" element={<ProtectedRoute><TodayPage /></ProtectedRoute>} />
             <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><KanbanPage /></ProtectedRoute>} />
