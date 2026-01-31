@@ -1,8 +1,9 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Activity, Brain, Target } from "lucide-react";
+import { Trophy, Activity, Brain, Target, Heart } from "lucide-react";
 import { WinsTracker } from "@/components/behavior/WinsTracker";
 import { ChallengesSystem } from "@/components/behavior/ChallengesSystem";
+import { GratitudeJournal } from "@/components/behavior/GratitudeJournal";
 import { useSearchParams } from "react-router-dom";
 
 export default function BehaviorHubPage() {
@@ -27,7 +28,7 @@ export default function BehaviorHubPage() {
         </div>
 
         <Tabs value={currentTab} onValueChange={handleTabChange}>
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="wins" className="gap-2">
               <Trophy className="h-4 w-4" />
               Victoires
@@ -35,6 +36,10 @@ export default function BehaviorHubPage() {
             <TabsTrigger value="challenges" className="gap-2">
               <Target className="h-4 w-4" />
               Défis
+            </TabsTrigger>
+            <TabsTrigger value="gratitude" className="gap-2">
+              <Heart className="h-4 w-4" />
+              Gratitude
             </TabsTrigger>
             <TabsTrigger value="signals" className="gap-2">
               <Activity className="h-4 w-4" />
@@ -48,6 +53,10 @@ export default function BehaviorHubPage() {
 
           <TabsContent value="challenges">
             <ChallengesSystem />
+          </TabsContent>
+
+          <TabsContent value="gratitude">
+            <GratitudeJournal />
           </TabsContent>
 
           <TabsContent value="signals">
