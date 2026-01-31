@@ -12,7 +12,6 @@ import {
   fetchAIProposals,
   fetchAgentActions,
 } from '@/lib/api/ai-coach';
-import type { AIRisk, AIAction } from '@/ai';
 import { toast } from 'sonner';
 
 // Rate limiting constants

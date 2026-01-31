@@ -19,9 +19,7 @@ import { FinanceImportWizard } from '@/components/finance/FinanceImportWizard';
 import { FinanceVisualDashboard } from '@/components/finance/FinanceVisualDashboard';
 import { FinanceExportModal } from '@/components/finance/FinanceExportModal';
 import { FinanceDisciplineTab } from '@/components/finance/FinanceDisciplineTab';
-import { FinanceDisciplineCard } from '@/components/finance/FinanceDisciplineCard';
 import { ScoreRing } from '@/components/today/ScoreRing';
-import { useTodayScore } from '@/hooks/useScores';
 import { cn } from '@/lib/utils';
 import { 
   DollarSign, 
@@ -69,7 +67,6 @@ export default function FinancePage() {
   const { data: documents = [] } = useDocuments('bank_statement');
   const { data: goals = [] } = useGoals();
   const { data: savingsGoals = [] } = useSavingsGoals();
-  const { data: todayScore } = useTodayScore();
   const createTransaction = useCreateTransaction();
   const deleteTransaction = useDeleteTransaction();
   const createCategory = useCreateCategory();
@@ -185,20 +182,6 @@ export default function FinancePage() {
             <h1 className="text-3xl font-bold tracking-tight text-gradient">Finances</h1>
             <p className="text-muted-foreground">{format(new Date(), 'MMMM yyyy', { locale: fr })}</p>
           </div>
-        </div>
-
-        {/* Financial Discipline Card - Behavioral Score */}
-        {todayScore && (
-          <FinanceDisciplineCard
-            score={todayScore.financial_discipline_score || 0}
-            budgetAdherence={todayScore.budget_adherence || 0}
-            impulsiveSpending={todayScore.impulsive_spending || 0}
-            savingsRate={todayScore.savings_rate || 0}
-          />
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4">
           <div className="flex gap-2">
             <Button variant="outline" className="gap-2" onClick={() => setIsExportOpen(true)}>
               <Download className="h-4 w-4" />
