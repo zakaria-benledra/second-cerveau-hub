@@ -1758,47 +1758,6 @@ export type Database = {
           },
         ]
       }
-      gratitude_entries: {
-        Row: {
-          created_at: string
-          date: string
-          id: string
-          items: string[]
-          source: string | null
-          updated_at: string
-          user_id: string
-          workspace_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          date?: string
-          id?: string
-          items: string[]
-          source?: string | null
-          updated_at?: string
-          user_id: string
-          workspace_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          date?: string
-          id?: string
-          items?: string[]
-          source?: string | null
-          updated_at?: string
-          user_id?: string
-          workspace_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "gratitude_entries_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       habit_behavior_links: {
         Row: {
           behavior_type: string
