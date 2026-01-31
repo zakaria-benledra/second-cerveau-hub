@@ -1,13 +1,23 @@
-import { Menu, Bell, Search, Sun, Moon, ChevronRight, Home, ArrowLeft } from 'lucide-react';
+import { Menu, Bell, Search, Sun, Moon, ChevronRight, Home, ArrowLeft, User, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAppStore } from '@/stores/useAppStore';
 import { useState, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useUnreadCount } from '@/hooks/useNotifications';
 import { useAINotifications } from '@/hooks/useAIBehavior';
+import { useAuth, signOut } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -46,6 +56,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const [isDark, setIsDark] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   // Unified notification count: legacy + AI notifications
   const { data: legacyUnread = 0 } = useUnreadCount();
@@ -54,6 +65,22 @@ export function Header({ onMenuClick }: HeaderProps) {
   
   // Show back button only if not on home page
   const showBackButton = location.pathname !== '/';
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Déconnexion réussie');
+      navigate('/auth');
+    } catch (error) {
+      toast.error('Erreur lors de la déconnexion');
+    }
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!user?.email) return 'U';
+    return user.email.charAt(0).toUpperCase();
+  };
 
   useEffect(() => {
     // Check localStorage or default to dark
@@ -151,11 +178,46 @@ export function Header({ onMenuClick }: HeaderProps) {
           </Button>
         </Link>
 
-        <Button variant="ghost" size="icon" className="rounded-lg">
-          <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center font-semibold text-sm text-primary-foreground">
-            U
-          </div>
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="rounded-lg">
+              <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center font-semibold text-sm text-primary-foreground">
+                {getUserInitials()}
+              </div>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">Mon compte</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user?.email || 'Utilisateur'}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/settings" className="flex items-center cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profil</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/settings" className="flex items-center cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Paramètres</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={handleSignOut}
+              className="text-destructive focus:text-destructive cursor-pointer"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Déconnexion</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
