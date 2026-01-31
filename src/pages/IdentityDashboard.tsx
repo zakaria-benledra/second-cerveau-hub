@@ -4,7 +4,7 @@ import { useCurrentIdentity } from '@/hooks/useCurrentIdentity';
 import { useScoreHistory } from '@/hooks/useScores';
 import { useTodayTasks } from '@/hooks/useTasks';
 import { IdentityComparison } from '@/components/identity/IdentityComparison';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,83 +21,63 @@ import {
   Zap,
   ArrowRight,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Activity,
+  BarChart3,
+  Brain,
+  Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts';
+import { format, subDays } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-// Mini sparkline component
-function MiniSparkline({ data, className }: { data: number[]; className?: string }) {
-  // Need at least 2 points for a valid sparkline
-  if (!data || data.length < 2) return null;
-  
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  
-  const points = data.map((value, index) => {
-    const x = (index / (data.length - 1)) * 100;
-    const y = 100 - ((value - min) / range) * 80 - 10;
-    return `${x},${y}`;
-  }).join(' ');
-
-  return (
-    <svg 
-      viewBox="0 0 100 40" 
-      className={cn("w-full h-10", className)}
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id="sparklineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="1" />
-        </linearGradient>
-      </defs>
-      <polyline
-        fill="none"
-        stroke="url(#sparklineGradient)"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        points={points}
-      />
-      {/* End dot */}
-      <circle
-        cx={100}
-        cy={100 - ((data[data.length - 1] - min) / range) * 80 - 10}
-        r="3"
-        fill="hsl(var(--primary))"
-      />
-    </svg>
-  );
-}
-
-// Metric card component
+// Premium Metric Card
 function MetricCard({ 
   icon: Icon, 
   label, 
   value, 
   suffix = '%',
-  color 
+  color,
+  gradient
 }: { 
   icon: React.ElementType; 
   label: string; 
   value: number;
   suffix?: string;
   color: string;
+  gradient: string;
 }) {
   return (
-    <div className="flex flex-col items-center p-4 rounded-2xl bg-background/50 border border-border/50">
-      <div className={cn("p-2 rounded-xl mb-2", color)}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <span className="text-2xl font-bold">{value}{suffix}</span>
-      <span className="text-xs text-muted-foreground">{label}</span>
-    </div>
+    <Card className={cn(
+      "relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-default",
+      gradient
+    )}>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className={cn("p-2.5 rounded-xl", color)}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <div className="text-2xl font-bold">{value}{suffix}</div>
+            <div className="text-xs text-muted-foreground">{label}</div>
+          </div>
+        </div>
+        <Progress value={value} className="mt-3 h-1.5" />
+      </CardContent>
+    </Card>
   );
 }
 
-// Shaping behavior card
+// Shaping behavior card - Premium style
 function ShapingBehaviorCard({ 
   behavior,
   delay
@@ -113,20 +93,19 @@ function ShapingBehaviorCard({
 }) {
   return (
     <AnimatedContainer delay={delay}>
-      <Card className="glass-subtle hover:glass transition-all duration-300">
+      <Card className="hover:border-primary/50 transition-all duration-300">
         <CardContent className="p-5">
           <div className="flex items-start gap-4">
-            <div className="text-3xl">{behavior.icon}</div>
+            <div className="text-3xl p-2 bg-muted/50 rounded-xl">{behavior.icon}</div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-sm">{behavior.title}</h4>
-              <p className="text-xs text-muted-foreground mt-0.5">{behavior.description}</p>
-              <div className="mt-3 space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Progression</span>
-                  <span className="font-medium">{behavior.completion}%</span>
-                </div>
-                <Progress value={behavior.completion} className="h-2" />
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="font-semibold text-sm">{behavior.title}</h4>
+                <Badge variant="outline" className="text-xs">
+                  {behavior.completion}%
+                </Badge>
               </div>
+              <p className="text-xs text-muted-foreground">{behavior.description}</p>
+              <Progress value={behavior.completion} className="mt-3 h-2" />
             </div>
           </div>
         </CardContent>
@@ -161,21 +140,22 @@ export default function IdentityDashboard() {
     return { direction: 'stable', change };
   }, [scoreHistory]);
 
-  // Get sparkline data
-  const sparklineData = useMemo(() => {
+  // Chart data for 7-day trend
+  const chartData = useMemo(() => {
     if (!scoreHistory) return [];
-    return scoreHistory.slice(-7).map(s => s.global_score || 0);
+    return scoreHistory.slice(-7).map(s => ({
+      date: format(new Date(s.date), 'EEE', { locale: fr }),
+      score: s.global_score || 0,
+    }));
   }, [scoreHistory]);
 
   // Get transformative action
   const transformativeAction = useMemo(() => {
     if (!todayTasks || todayTasks.length === 0) return null;
     
-    // Prioritize high-impact incomplete tasks
     const incomplete = todayTasks.filter(t => t.status !== 'done');
     if (incomplete.length === 0) return null;
     
-    // Sort by priority
     const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
     const sorted = [...incomplete].sort((a, b) => 
       (priorityOrder[a.priority as keyof typeof priorityOrder] || 3) - 
@@ -185,14 +165,19 @@ export default function IdentityDashboard() {
     return sorted[0];
   }, [todayTasks]);
 
+  const getTrendIcon = () => {
+    if (trajectory.direction === 'up') return <TrendingUp className="h-5 w-5 text-success" />;
+    if (trajectory.direction === 'down') return <TrendingDown className="h-5 w-5 text-destructive" />;
+    return <Minus className="h-5 w-5 text-muted-foreground" />;
+  };
+
   if (identityLoading) {
     return (
       <AppLayout>
-        <div className="max-w-3xl mx-auto space-y-8 py-4">
-          <div className="text-center space-y-4">
-            <Skeleton className="h-20 w-20 rounded-full mx-auto" />
-            <Skeleton className="h-10 w-64 mx-auto" />
-            <Skeleton className="h-6 w-48 mx-auto" />
+        <div className="max-w-4xl mx-auto space-y-6 py-4">
+          <Skeleton className="h-32 w-full" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-24" />)}
           </div>
         </div>
       </AppLayout>
@@ -201,134 +186,221 @@ export default function IdentityDashboard() {
 
   return (
     <AppLayout>
-      <div className="max-w-3xl mx-auto space-y-8 py-4">
-        {/* Hero Section */}
+      <div className="max-w-4xl mx-auto space-y-6 py-4">
+        
+        {/* HEADER PREMIUM */}
         <AnimatedContainer delay={0}>
-          <div className="text-center">
-            {/* Avatar/Persona Icon */}
-            <div className="relative inline-block mb-6">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center shadow-xl shadow-primary/20">
-                <User className="h-12 w-12 text-primary-foreground" />
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 via-accent/10 to-primary/20 animate-pulse">
+                  <User className="h-8 w-8 text-primary" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-background border border-primary">
+                  <Sparkles className="h-3 w-3 text-primary" />
+                </div>
               </div>
-              <div className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-background border-2 border-primary">
-                <Sparkles className="h-4 w-4 text-primary" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl md:text-3xl font-bold">
+                    Qui Je Deviens
+                  </h1>
+                  <Badge variant="secondary" className="hidden md:flex items-center gap-1">
+                    <Eye className="h-3 w-3" />
+                    Identity
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Ton tableau de bord d'évolution personnelle
+                </p>
               </div>
             </div>
-
-            {/* Current Persona */}
-            <h1 className="text-4xl font-bold text-gradient mb-2">
-              {identity?.currentPersona || 'Explorer'}
-            </h1>
-            <p className="text-lg text-muted-foreground mb-8">
-              {identity?.tagline || 'Tu explores tes capacités'}
-            </p>
-
-            {/* 4 Metrics Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <MetricCard
-                icon={Flame}
-                label="Discipline"
-                value={identity?.disciplineLevel || 0}
-                color="bg-destructive/15 text-destructive"
-              />
-              <MetricCard
-                icon={Target}
-                label="Cohérence"
-                value={identity?.consistencyLevel || 0}
-                color="bg-primary/15 text-primary"
-              />
-              <MetricCard
-                icon={Shield}
-                label="Stabilité"
-                value={identity?.stabilityLevel || 0}
-                color="bg-success/15 text-success"
-              />
-              <MetricCard
-                icon={Zap}
-                label="Croissance"
-                value={Math.round((identity?.growthRate || 0) * 100)}
-                suffix=""
-                color="bg-warning/15 text-warning"
-              />
-            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard')}
+              className="hidden md:flex gap-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Dashboard BI
+            </Button>
           </div>
         </AnimatedContainer>
 
-        {/* Trajectory Micro-view */}
-        <AnimatedContainer delay={100}>
-          <Card className="glass overflow-hidden">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Trajectoire 7 jours</span>
+        {/* HERO SECTION - Current Persona */}
+        <AnimatedContainer delay={50}>
+          <Card className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+            <CardContent className="relative p-6">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                {/* Avatar */}
+                <div className="relative shrink-0">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center shadow-2xl shadow-primary/30">
+                    <User className="h-12 w-12 text-primary-foreground" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 p-2 rounded-full bg-background border-2 border-primary shadow-lg">
+                    {getTrendIcon()}
+                  </div>
+                </div>
+
+                {/* Persona Info */}
+                <div className="flex-1 text-center md:text-left">
                   <Badge 
                     variant="outline" 
                     className={cn(
-                      "text-xs",
-                      trajectory.direction === 'up' && "border-success/50 text-success",
-                      trajectory.direction === 'down' && "border-destructive/50 text-destructive",
+                      "mb-2",
+                      trajectory.direction === 'up' && "border-success/50 bg-success/10 text-success",
+                      trajectory.direction === 'down' && "border-destructive/50 bg-destructive/10 text-destructive",
                       trajectory.direction === 'stable' && "border-muted-foreground/50"
                     )}
                   >
-                    {trajectory.direction === 'up' && (
-                      <>
-                        <TrendingUp className="h-3 w-3 mr-1" />
-                        En progression
-                      </>
-                    )}
-                    {trajectory.direction === 'down' && (
-                      <>
-                        <TrendingDown className="h-3 w-3 mr-1" />
-                        En baisse
-                      </>
-                    )}
-                    {trajectory.direction === 'stable' && (
-                      <>
-                        <Minus className="h-3 w-3 mr-1" />
-                        Stable
-                      </>
-                    )}
+                    {trajectory.direction === 'up' && "En progression"}
+                    {trajectory.direction === 'down' && "En transition"}
+                    {trajectory.direction === 'stable' && "Stable"}
                   </Badge>
+                  <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+                    {identity?.currentPersona || 'Explorer'}
+                  </h2>
+                  <p className="text-muted-foreground mt-1">
+                    {identity?.tagline || 'Tu explores tes capacités'}
+                  </p>
                 </div>
-                <span className="text-2xl">
-                  {trajectory.direction === 'up' ? '🔺' : trajectory.direction === 'down' ? '🔻' : '➖'}
-                </span>
+
+                {/* Discipline Score */}
+                <div className="text-center p-4 rounded-2xl bg-background/50 border border-border/50">
+                  <div className="text-4xl font-bold text-primary">
+                    {identity?.disciplineLevel || 0}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Score Global</div>
+                </div>
               </div>
-              
-              <MiniSparkline data={sparklineData} />
-              
-              <p className="text-xs text-muted-foreground mt-3 text-center">
-                {trajectory.direction === 'up' && 'Tes efforts portent leurs fruits. Continue ainsi !'}
-                {trajectory.direction === 'down' && 'Un moment de transition. Reviens aux fondamentaux.'}
-                {trajectory.direction === 'stable' && 'Maintiens le cap. La cohérence est ta force.'}
-              </p>
             </CardContent>
           </Card>
         </AnimatedContainer>
 
-        {/* Ce qui te façonne aujourd'hui */}
-        <div className="space-y-4">
-          <AnimatedContainer delay={150}>
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">🔨</span>
-              Ce qui te façonne aujourd'hui
-            </h2>
-          </AnimatedContainer>
-          
-          <div className="grid gap-4">
-            {identity?.shapingBehaviors?.map((behavior, index) => (
-              <ShapingBehaviorCard 
-                key={behavior.id} 
-                behavior={behavior}
-                delay={200 + index * 50}
-              />
-            ))}
+        {/* 4 METRICS GRID */}
+        <AnimatedContainer delay={100}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <MetricCard
+              icon={Flame}
+              label="Discipline"
+              value={identity?.disciplineLevel || 0}
+              color="bg-destructive/15 text-destructive"
+              gradient="border-destructive/20"
+            />
+            <MetricCard
+              icon={Target}
+              label="Cohérence"
+              value={identity?.consistencyLevel || 0}
+              color="bg-primary/15 text-primary"
+              gradient="border-primary/20"
+            />
+            <MetricCard
+              icon={Shield}
+              label="Stabilité"
+              value={identity?.stabilityLevel || 0}
+              color="bg-success/15 text-success"
+              gradient="border-success/20"
+            />
+            <MetricCard
+              icon={Zap}
+              label="Croissance"
+              value={Math.round((identity?.growthRate || 0) * 100)}
+              suffix="%"
+              color="bg-warning/15 text-warning"
+              gradient="border-warning/20"
+            />
           </div>
-        </div>
+        </AnimatedContainer>
 
-        {/* Action Transformatrice du Jour */}
+        {/* TRAJECTORY CHART */}
+        {chartData.length >= 2 && (
+          <AnimatedContainer delay={150}>
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Activity className="h-4 w-4 text-primary" />
+                      Trajectoire 7 jours
+                    </CardTitle>
+                    <CardDescription>Évolution de ton score global</CardDescription>
+                  </div>
+                  <Badge variant="secondary">7 jours</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[180px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="identityGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis 
+                        domain={[0, 100]} 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={30}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="score"
+                        stroke="hsl(var(--primary))"
+                        fill="url(#identityGradient)"
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  {trajectory.direction === 'up' && '🔺 Tes efforts portent leurs fruits. Continue ainsi !'}
+                  {trajectory.direction === 'down' && '🔻 Un moment de transition. Reviens aux fondamentaux.'}
+                  {trajectory.direction === 'stable' && '➖ Maintiens le cap. La cohérence est ta force.'}
+                </p>
+              </CardContent>
+            </Card>
+          </AnimatedContainer>
+        )}
+
+        {/* CE QUI TE FAÇONNE */}
+        <AnimatedContainer delay={200}>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold">Ce qui te façonne aujourd'hui</h2>
+              <Badge variant="outline" className="text-xs">Live</Badge>
+            </div>
+            
+            <div className="grid gap-4">
+              {identity?.shapingBehaviors?.map((behavior, index) => (
+                <ShapingBehaviorCard 
+                  key={behavior.id} 
+                  behavior={behavior}
+                  delay={250 + index * 50}
+                />
+              ))}
+            </div>
+          </div>
+        </AnimatedContainer>
+
+        {/* ACTION TRANSFORMATRICE */}
         <AnimatedContainer delay={300}>
-          <Card className="glass-strong border-primary/30 overflow-hidden">
+          <Card className="relative overflow-hidden border-primary/30">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
             <CardHeader className="relative pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -337,9 +409,9 @@ export default function IdentityDashboard() {
                 </div>
                 Action Transformatrice du Jour
               </CardTitle>
-              <p className="text-xs text-muted-foreground">
+              <CardDescription>
                 Ce qui aura le plus d'impact sur qui tu deviens
-              </p>
+              </CardDescription>
             </CardHeader>
             <CardContent className="relative">
               {transformativeAction ? (
@@ -357,7 +429,7 @@ export default function IdentityDashboard() {
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" className="text-xs">
+                          <Badge variant="outline" className="text-xs capitalize">
                             {transformativeAction.priority}
                           </Badge>
                           {transformativeAction.estimate_min && (
@@ -371,7 +443,7 @@ export default function IdentityDashboard() {
                   </div>
                   
                   <Button 
-                    className="w-full gradient-primary"
+                    className="w-full"
                     onClick={() => navigate('/tasks')}
                   >
                     <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -394,40 +466,89 @@ export default function IdentityDashboard() {
           </Card>
         </AnimatedContainer>
 
-        {/* Identity Comparison - Évolution 30 jours */}
-        <div className="space-y-4">
-          <AnimatedContainer delay={350}>
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <span className="text-xl">🔄</span>
-              Ton évolution sur 30 jours
-            </h2>
-          </AnimatedContainer>
-          
-          <IdentityComparison daysAgo={30} />
-        </div>
-
-        {/* Quick Links */}
-        <AnimatedContainer delay={400}>
-          <div className="flex justify-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate('/today')}
-              className="text-muted-foreground"
-            >
-              Vue classique
-              <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate('/ai-coach')}
-              className="text-muted-foreground"
-            >
-              Revue IA
-              <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
+        {/* IDENTITY COMPARISON - 30 DAYS */}
+        <AnimatedContainer delay={350}>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                🔄 Ton évolution sur 30 jours
+              </h2>
+              <Badge variant="secondary">Comparaison</Badge>
+            </div>
+            
+            <IdentityComparison daysAgo={30} />
           </div>
+        </AnimatedContainer>
+
+        {/* QUICK ACTIONS */}
+        <AnimatedContainer delay={400}>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" />
+                Actions Rapides
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="justify-start h-auto py-3"
+                  onClick={() => navigate('/dashboard')}
+                >
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-primary" />
+                      <span className="font-medium">Dashboard</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Vue BI</span>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="justify-start h-auto py-3"
+                  onClick={() => navigate('/ai-coach')}
+                >
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-4 w-4 text-accent" />
+                      <span className="font-medium">AI Coach</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Revue IA</span>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="justify-start h-auto py-3"
+                  onClick={() => navigate('/behavior-hub')}
+                >
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-success" />
+                      <span className="font-medium">Habitudes</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Comportement</span>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="justify-start h-auto py-3"
+                  onClick={() => navigate('/today')}
+                >
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-warning" />
+                      <span className="font-medium">Aujourd'hui</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">Vue classique</span>
+                  </div>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </AnimatedContainer>
       </div>
     </AppLayout>
