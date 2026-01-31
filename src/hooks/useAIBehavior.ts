@@ -25,8 +25,9 @@ export function useAICoachEngine() {
       if (error) throw error;
       return data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,      // 5 minutes - KEEP THIS
+    refetchOnWindowFocus: false,   // Don't refetch on tab switch
+    refetchOnReconnect: false,     // Don't refetch on reconnect
   });
 
   // Respond to intervention (accept, ignore, reject)
