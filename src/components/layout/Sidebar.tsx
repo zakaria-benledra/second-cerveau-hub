@@ -39,11 +39,11 @@ const navGroups = [
     ],
   },
   {
-    label: 'Discipline',
+    label: 'Engagement',
     icon: Zap,
     items: [
       { icon: Heart, label: 'Behavior Hub', path: '/behavior-hub' },
-      { icon: ListChecks, label: 'Engagements', path: '/tasks' },
+      { icon: ListChecks, label: 'Kanban', path: '/kanban' },
     ],
   },
   {
