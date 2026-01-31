@@ -13,9 +13,7 @@ import {
   ListChecks,
   Heart,
   Zap,
-  Award,
   TestTube2,
-  Repeat,
   Shield,
   Activity,
 } from 'lucide-react';
@@ -44,9 +42,8 @@ const navGroups = [
     label: 'Discipline',
     icon: Zap,
     items: [
-      { icon: Repeat, label: 'Habitudes', path: '/habits' },
+      { icon: Heart, label: 'Behavior Hub', path: '/behavior-hub' },
       { icon: ListChecks, label: 'Engagements', path: '/tasks' },
-      { icon: Award, label: 'Victoires', path: '/behavior-hub?tab=wins' },
     ],
   },
   {
