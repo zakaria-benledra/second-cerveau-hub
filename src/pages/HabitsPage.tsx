@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { HABIT_EMOJI_OPTIONS } from '@/constants';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,7 +44,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const emojiOptions = ['✨', '🧘', '📚', '💪', '🏃', '💧', '🍎', '😴', '✍️', '🎯', '🧠', '🌱', '🎨', '🎵', '💡'];
+
 
 export default function HabitsPage() {
   const { data: habits, isLoading: habitsLoading } = useHabitsWithLogs();
@@ -137,7 +138,7 @@ export default function HabitsPage() {
                 <div className="space-y-2">
                   <Label>Icône</Label>
                   <div className="flex flex-wrap gap-2">
-                    {emojiOptions.map((emoji) => (
+                    {HABIT_EMOJI_OPTIONS.map((emoji) => (
                       <Button
                         key={emoji}
                         variant={newHabit.icon === emoji ? 'default' : 'outline'}
