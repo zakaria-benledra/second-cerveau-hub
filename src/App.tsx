@@ -12,7 +12,7 @@ import TasksPage from "./pages/TasksPage";
 import KanbanPage from "./pages/KanbanPage";
 import HabitsPage from "./pages/HabitsPage";
 import InboxPage from "./pages/InboxPage";
-import DashboardPage from "./pages/DashboardPage";
+// import DashboardPage from "./pages/DashboardPage"; // Removed - duplicate route
 import ProjectsPage from "./pages/ProjectsPage";
 import GoalsPage from "./pages/GoalsPage";
 import FocusPage from "./pages/FocusPage";
@@ -78,7 +78,7 @@ const App = () => (
             <Route path="/habits" element={<ProtectedRoute><HabitsPage /></ProtectedRoute>} />
             <Route path="/routines" element={<ProtectedRoute><RoutinesPage /></ProtectedRoute>} />
             <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            
             <Route path="/projects" element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
             <Route path="/goals" element={<ProtectedRoute><GoalsPage /></ProtectedRoute>} />
             <Route path="/focus" element={<ProtectedRoute><FocusPage /></ProtectedRoute>} />
