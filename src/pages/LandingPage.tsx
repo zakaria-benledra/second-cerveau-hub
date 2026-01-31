@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Header } from '@/components/landing/Header';
 import { 
   Brain, 
   Target, 
@@ -59,34 +60,10 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
-              <Brain className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-xl">Second Brain</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link to="/pricing">
-              <Button variant="ghost">Tarifs</Button>
-            </Link>
-            <Link to="/auth">
-              <Button variant="ghost">Connexion</Button>
-            </Link>
-            <Link to="/auth">
-              <Button className="gradient-primary">
-                Commencer
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
+      <section id="hero" className="pt-32 pb-20 px-4">
         <div className="container mx-auto text-center max-w-4xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6">
             <Sparkles className="h-4 w-4" />
@@ -108,7 +85,7 @@ export default function LandingPage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/auth">
+            <Link to="/auth?mode=signup">
               <Button size="xl" className="gradient-primary w-full sm:w-auto">
                 Démarrer ma transformation
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -123,8 +100,52 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-20 px-4">
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Comment ça marche ?
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Un processus simple en 3 étapes pour transformer ta vie.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-primary-foreground">
+                1
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Observation</h3>
+              <p className="text-muted-foreground">
+                Pendant 7 jours, le système t'observe sans juger pour établir ta baseline.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-primary-foreground">
+                2
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Analyse</h3>
+              <p className="text-muted-foreground">
+                L'IA identifie tes patterns, forces et zones de dérive potentielle.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 text-2xl font-bold text-primary-foreground">
+                3
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Transformation</h3>
+              <p className="text-muted-foreground">
+                Reçois des interventions personnalisées pour devenir qui tu veux être.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Grid */}
-      <section className="py-20 px-4 bg-muted/30">
+      <section id="features" className="py-20 px-4 bg-muted/30">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -151,8 +172,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-20 px-4">
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 px-4">
         <div className="container mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -184,7 +205,7 @@ export default function LandingPage() {
                   Pendant la première semaine, le système t'observe sans juger. 
                   Il établit ta baseline pour ensuite mesurer ta vraie progression.
                 </p>
-                <Link to="/auth">
+                <Link to="/auth?mode=signup">
                   <Button className="gradient-primary">
                     Commencer l'observation
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -196,8 +217,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 px-4 bg-muted/30">
+      {/* Testimonials Section */}
+      <section id="testimonials" className="py-20 px-4 bg-muted/30">
         <div className="container mx-auto text-center max-w-3xl">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
             Prêt à devenir qui tu veux être ?
@@ -205,7 +226,7 @@ export default function LandingPage() {
           <p className="text-lg text-muted-foreground mb-8">
             Rejoins les personnes qui ont choisi de transformer leur vie avec un système intelligent.
           </p>
-          <Link to="/auth">
+          <Link to="/auth?mode=signup">
             <Button size="xl" className="gradient-primary">
               Démarrer gratuitement
               <ArrowRight className="ml-2 h-5 w-5" />
