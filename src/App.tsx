@@ -36,6 +36,7 @@ import AIInterventionsPage from "./pages/AIInterventionsPage";
 import IdentityDashboard from "./pages/IdentityDashboard";
 import BehaviorHubPage from "./pages/BehaviorHubPage";
 import NotFound from "./pages/NotFound";
+import PricingPage from "./pages/PricingPage";
 
 // BI Dashboards
 import {
@@ -64,6 +65,7 @@ const App = () => (
         <OnboardingProvider>
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
             
             <Route path="/" element={<ProtectedRoute><IdentityDashboard /></ProtectedRoute>} />
             <Route path="/today" element={<ProtectedRoute><TodayPage /></ProtectedRoute>} />
