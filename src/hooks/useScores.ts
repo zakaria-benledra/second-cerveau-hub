@@ -9,10 +9,16 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 export function useTodayScore() {
-  return useQuery({
+  const query = useQuery({
     queryKey: ['scores', 'today'],
     queryFn: fetchTodayScore,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
+
+  return {
+    ...query,
+    lastUpdated: query.dataUpdatedAt ? new Date(query.dataUpdatedAt) : undefined,
+  };
 }
 
 export function useScoreHistory(days: number = 30) {
