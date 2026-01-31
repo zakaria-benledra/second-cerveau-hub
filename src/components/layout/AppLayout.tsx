@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAppStore } from '@/stores/useAppStore';
+import { useRealtimeInterventions } from '@/hooks/useRealtimeInterventions';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
@@ -9,6 +10,9 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
+  // Enable real-time AI interventions listening
+  useRealtimeInterventions();
+  
   const { sidebarOpen, setSidebarOpen } = useAppStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
