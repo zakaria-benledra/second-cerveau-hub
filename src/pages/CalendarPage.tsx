@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useSearchParams } from 'react-router-dom';
+
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useCalendarEvents, useCreateCalendarEvent, useDeleteCalendarEvent } from '@/hooks/useCalendar';
-import { useGoogleConnectionStatus, useConnectGoogle, useDisconnectGoogle, useSyncGoogleCalendar } from '@/hooks/useGoogleCalendar';
+
 import { useHabitsWithLogs } from '@/hooks/useHabits';
 import { useTasks } from '@/hooks/useTasks';
 import { useToast } from '@/hooks/use-toast';
@@ -21,13 +21,10 @@ import {
   Calendar, 
   ChevronLeft, 
   ChevronRight, 
-  Plus, 
-  Clock, 
-  MapPin, 
-  Trash2, 
-  RefreshCw, 
-  Link2, 
-  Unlink, 
+  Plus,
+  Clock,
+  MapPin,
+  Trash2,
   Loader2,
   Zap,
   AlertTriangle,
@@ -61,7 +58,6 @@ const energyIcons = {
 };
 
 export default function CalendarPage() {
-  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
@@ -76,26 +72,9 @@ export default function CalendarPage() {
     all_day: false,
   });
 
-  // Google Calendar integration
-  const { data: googleStatus, isLoading: isLoadingGoogle } = useGoogleConnectionStatus();
-  const connectGoogle = useConnectGoogle();
-  const disconnectGoogle = useDisconnectGoogle();
-  const syncGoogle = useSyncGoogleCalendar();
-
   // Behavioral data for overlay
   const { data: habits = [] } = useHabitsWithLogs();
   const { data: tasks = [] } = useTasks();
-
-  // Show toast on successful connection
-  useEffect(() => {
-    if (searchParams.get('connected') === 'google') {
-      toast({
-        title: 'Google Calendar connecté !',
-        description: 'Vos événements seront synchronisés automatiquement.',
-      });
-      window.history.replaceState({}, '', '/calendar');
-    }
-  }, [searchParams, toast]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -204,7 +183,7 @@ export default function CalendarPage() {
               Calendrier Comportemental
             </h1>
             <p className="text-muted-foreground mt-1">
-              Google Calendar + Overlay d'énergie et discipline
+              Overlay d'énergie et discipline
             </p>
           </div>
 
@@ -219,53 +198,6 @@ export default function CalendarPage() {
               <Brain className="h-4 w-4" />
               {showOverlay ? 'Overlay ON' : 'Overlay OFF'}
             </Button>
-
-            {/* Google Calendar Integration */}
-            {isLoadingGoogle ? (
-              <Button variant="outline" disabled>
-                <Loader2 className="w-4 h-4 animate-spin" />
-              </Button>
-            ) : googleStatus?.configured === false ? (
-              <Badge variant="secondary" className="gap-1 text-muted-foreground">
-                <AlertTriangle className="w-3 h-3" />
-                Google Sync non configuré
-              </Badge>
-            ) : googleStatus?.connected ? (
-              <>
-                <Badge variant="secondary" className="gap-1 bg-success/15 text-success border-0">
-                  <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                  Google connecté
-                </Badge>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => syncGoogle.mutate()}
-                  disabled={syncGoogle.isPending}
-                  title="Synchroniser"
-                >
-                  <RefreshCw className={cn("w-4 h-4", syncGoogle.isPending && "animate-spin")} />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => disconnectGoogle.mutate()}
-                  disabled={disconnectGoogle.isPending}
-                  title="Déconnecter"
-                >
-                  <Unlink className="w-4 h-4" />
-                </Button>
-              </>
-            ) : (
-              <Button 
-                variant="outline" 
-                onClick={() => connectGoogle.mutate()}
-                disabled={connectGoogle.isPending}
-                className="gap-2"
-              >
-                <Link2 className="w-4 h-4" />
-                Connecter Google
-              </Button>
-            )}
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
