@@ -2,9 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  Sparkles, 
-  Rocket, 
-  Crown, 
   Check, 
   ArrowRight,
   TrendingUp,
@@ -12,7 +9,8 @@ import {
   Quote,
   Zap,
   Shield,
-  Brain
+  Brain,
+  Rocket
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -24,88 +22,8 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
+import { PRICING_PLANS } from '@/content';
 
-const plans = [
-  {
-    id: 'free',
-    name: 'Explorer',
-    tagline: 'Découvre ton potentiel caché',
-    price: 0,
-    period: 'Gratuit pour toujours',
-    description: 'Commence à observer qui tu es vraiment et pose les bases de ta transformation.',
-    icon: Sparkles,
-    color: 'text-info',
-    bgColor: 'bg-info/10',
-    borderColor: 'border-info/20',
-    benefits: [
-      'Mesure ta discipline de base',
-      'Observe tes patterns comportementaux',
-      'Identifie tes points de dérive',
-      'Reçois tes premiers insights IA',
-    ],
-    stats: {
-      label: 'Conscience de soi',
-      value: '+45%',
-      period: 'en 2 semaines',
-    },
-    cta: 'Commencer Gratuitement',
-    popular: false,
-  },
-  {
-    id: 'pro',
-    name: 'Transformer',
-    tagline: 'Deviens qui tu veux être',
-    price: 19,
-    period: '/mois',
-    description: 'Passe à l\'action avec un système qui te guide vers ta meilleure version.',
-    icon: Rocket,
-    color: 'text-primary',
-    bgColor: 'bg-primary/10',
-    borderColor: 'border-primary/50',
-    benefits: [
-      'Coach IA personnalisé illimité',
-      'Interventions proactives intelligentes',
-      'Automatisations comportementales',
-      'Dashboard exécutif complet',
-      'Historique de transformation',
-      'Exports et analyses avancées',
-    ],
-    stats: {
-      label: 'Discipline moyenne',
-      value: '+67%',
-      period: 'en 3 mois',
-    },
-    cta: 'Commencer Ma Transformation',
-    popular: true,
-  },
-  {
-    id: 'enterprise',
-    name: 'Maîtriser',
-    tagline: 'Excellence et leadership',
-    price: 49,
-    period: '/mois',
-    description: 'Pour ceux qui visent l\'excellence absolue et veulent inspirer les autres.',
-    icon: Crown,
-    color: 'text-warning',
-    bgColor: 'bg-warning/10',
-    borderColor: 'border-warning/30',
-    benefits: [
-      'Tout de Transformer, plus:',
-      'Workspaces d\'équipe',
-      'API d\'intégration',
-      'Support prioritaire dédié',
-      'Rapports de performance équipe',
-      'Sessions de coaching stratégique',
-    ],
-    stats: {
-      label: 'Performance globale',
-      value: '+89%',
-      period: 'en 6 mois',
-    },
-    cta: 'Contacter l\'Équipe',
-    popular: false,
-  },
-];
 
 const testimonials = [
   {
@@ -216,7 +134,7 @@ export default function PricingPage() {
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-            {plans.map((plan, index) => (
+            {PRICING_PLANS.map((plan, index) => (
               <motion.div
                 key={plan.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -288,12 +206,12 @@ export default function PricingPage() {
                       </div>
                     </div>
                     
-                    {/* Benefits */}
+                    {/* Features */}
                     <ul className="space-y-3 mb-8 flex-1">
-                      {plan.benefits.map((benefit, i) => (
+                      {plan.features.map((feature, i) => (
                         <li key={i} className="flex items-start gap-2">
                           <Check className={cn("h-4 w-4 mt-0.5 shrink-0", plan.color)} />
-                          <span className="text-sm">{benefit}</span>
+                          <span className="text-sm">{feature}</span>
                         </li>
                       ))}
                     </ul>
