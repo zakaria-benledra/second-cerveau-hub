@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { KanbanTask } from '@/hooks/useKanban';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface KanbanTaskCardProps {
@@ -81,6 +81,11 @@ export function KanbanTaskCard({
   const energy = energyConfig[task.energy_level || 'medium'];
   const impactScore = calculateImpactScore(task);
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.kanban_status !== 'done';
+  
+  // Task aging calculation
+  const age = differenceInDays(new Date(), new Date(task.created_at));
+  const isAging = age > 7 && task.kanban_status !== 'done';
+  const isStale = age > 14 && task.kanban_status !== 'done';
 
   // ISSUE #11 FIX: Better visual feedback for dragging
   const handleDragStart = (e: React.DragEvent) => {
@@ -203,7 +208,23 @@ export function KanbanTaskCard({
           )}
         </div>
 
-        {/* View Timeline Indicator */}
+        {/* Task Aging Indicator */}
+        {isAging && (
+          <div className={cn(
+            "flex items-center gap-1.5 text-xs px-2 py-1.5 rounded-lg mt-3 ml-6",
+            isStale 
+              ? "bg-destructive/10 text-destructive border border-destructive/20" 
+              : "bg-warning/10 text-warning border border-warning/20"
+          )}>
+            <Clock className="h-3 w-3" />
+            <span>Créée il y a {age} jours</span>
+            {isStale && (
+              <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4">
+                Stagnante
+              </Badge>
+            )}
+          </div>
+        )}
         <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <History className="h-3 w-3" />
