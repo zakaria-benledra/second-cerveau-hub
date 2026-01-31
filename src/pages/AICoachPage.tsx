@@ -168,6 +168,9 @@ interface PlanAction {
   category: 'habits' | 'tasks' | 'mindset' | 'growth' | 'recovery';
 }
 
+// TODO: PHASE 3 - Remplacer par appel LLM via ai-coach generate_proposal
+// Le plan devrait être généré par l'IA, pas hardcodé
+// Endpoint: ai-coach action="generate_proposal" type="tomorrow_plan"
 function generateTomorrowPlan(ctx: PlanContext): PlanAction[] {
   const { insights, score, habits, tasks, version } = ctx;
   const drifts = insights.filter(i => i.type === 'drift');
