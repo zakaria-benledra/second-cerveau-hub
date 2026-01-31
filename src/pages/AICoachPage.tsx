@@ -159,20 +159,48 @@ interface PlanContext {
   version: number; // For variation on "Ajuster"
 }
 
-function generateTomorrowPlan(ctx: PlanContext): string[] {
+interface PlanAction {
+  action: string;
+  reason: string;
+  impact: string;
+  effort: 'faible' | 'moyen' | 'élevé';
+  category: 'habits' | 'tasks' | 'mindset' | 'growth' | 'recovery';
+}
+
+function generateTomorrowPlan(ctx: PlanContext): PlanAction[] {
   const { insights, score, habits, tasks, version } = ctx;
   const drifts = insights.filter(i => i.type === 'drift');
   const strengths = insights.filter(i => i.type === 'strength');
   
   // All possible action categories with variants
-  const actionPool: { category: string; variants: string[]; condition: () => boolean; priority: number }[] = [
-    // HABITS
+  const actionPool: { 
+    category: PlanAction['category']; 
+    variants: Omit<PlanAction, 'category'>[]; 
+    condition: () => boolean; 
+    priority: number;
+  }[] = [
+    // HABITS - STRUGGLING
     {
-      category: 'habits_struggling',
+      category: 'habits',
       variants: [
-        'Commencer la journée par vos 2 habitudes les plus importantes',
-        'Bloquer 15 min dès le réveil pour vos habitudes critiques',
-        'Réduire temporairement à 3 habitudes max pour reprendre le rythme',
+        {
+          action: 'Commencer par vos 2 habitudes les plus importantes',
+          reason: 'Votre taux de complétion est bas - focus sur l\'essentiel',
+          impact: '+15% de constance attendue',
+          effort: 'faible',
+        },
+        {
+          action: 'Bloquer 15 min dès le réveil pour vos habitudes critiques',
+          reason: 'Le matin est votre meilleur moment pour ancrer les routines',
+          impact: '+20% de probabilité de complétion',
+          effort: 'moyen',
+        },
+        {
+          action: 'Réduire temporairement à 3 habitudes max',
+          reason: 'Trop d\'habitudes créent de la surcharge cognitive',
+          impact: 'Qualité > Quantité, meilleure constance',
+          effort: 'faible',
+        },
       ],
       condition: () => {
         const active = habits?.filter(h => h.is_active) || [];
@@ -181,12 +209,22 @@ function generateTomorrowPlan(ctx: PlanContext): string[] {
       },
       priority: 1,
     },
+    // HABITS - STRONG
     {
-      category: 'habits_strong',
+      category: 'habits',
       variants: [
-        'Maintenir vos habitudes actuelles et célébrer la constance',
-        'Ajouter une micro-habitude de 5 min à votre routine',
-        'Tester une habitude "challenge" pour progresser',
+        {
+          action: 'Maintenir vos habitudes et célébrer la constance',
+          reason: 'Votre discipline est solide, ne changez rien',
+          impact: 'Consolidation des acquis',
+          effort: 'faible',
+        },
+        {
+          action: 'Ajouter une micro-habitude de 5 min à votre routine',
+          reason: 'Vous avez la capacité d\'absorber plus',
+          impact: '+1 habitude = +3 points de score potentiel',
+          effort: 'moyen',
+        },
       ],
       condition: () => {
         const active = habits?.filter(h => h.is_active) || [];
@@ -195,13 +233,28 @@ function generateTomorrowPlan(ctx: PlanContext): string[] {
       },
       priority: 3,
     },
-    // TASKS
+    // TASKS - OVERDUE
     {
-      category: 'tasks_overdue',
+      category: 'tasks',
       variants: [
-        'Traiter les tâches en retard en priorité absolue ce matin',
-        'Bloquer 1h pour liquider le backlog de tâches',
-        'Déléguer ou supprimer les tâches non essentielles en retard',
+        {
+          action: 'Traiter les tâches en retard en priorité absolue',
+          reason: `${tasks?.filter(t => t.status === 'todo' && t.due_date && new Date(t.due_date) < new Date()).length || 0} tâche(s) dépassée(s) affectent votre score`,
+          impact: 'Récupérer jusqu\'à 10 points de productivité',
+          effort: 'élevé',
+        },
+        {
+          action: 'Bloquer 1h ce matin pour liquider le backlog',
+          reason: 'Concentration intensive = efficacité maximale',
+          impact: 'Libération mentale + boost de motivation',
+          effort: 'moyen',
+        },
+        {
+          action: 'Supprimer ou reporter les tâches non essentielles',
+          reason: 'Certaines tâches ne méritent plus votre attention',
+          impact: 'Réduction de la charge cognitive',
+          effort: 'faible',
+        },
       ],
       condition: () => {
         const overdue = tasks?.filter(t => t.status === 'todo' && t.due_date && new Date(t.due_date) < new Date()) || [];
@@ -209,12 +262,22 @@ function generateTomorrowPlan(ctx: PlanContext): string[] {
       },
       priority: 1,
     },
+    // TASKS - OVERLOADED
     {
-      category: 'tasks_overloaded',
+      category: 'tasks',
       variants: [
-        'Limiter à 3 tâches prioritaires maximum demain',
-        'Reporter les tâches basse priorité à la semaine prochaine',
-        'Utiliser la règle du "1 chose importante" pour demain',
+        {
+          action: 'Limiter à 3 tâches prioritaires maximum',
+          reason: `${tasks?.filter(t => t.status === 'todo').length || 0} tâches en attente = surcharge probable`,
+          impact: 'Focus accru, moins de dispersion',
+          effort: 'faible',
+        },
+        {
+          action: 'Reporter les tâches basse priorité à la semaine prochaine',
+          reason: 'Libérer de l\'espace mental pour l\'essentiel',
+          impact: 'Réduction du stress de 20-30%',
+          effort: 'faible',
+        },
       ],
       condition: () => {
         const todo = tasks?.filter(t => t.status === 'todo') || [];
@@ -222,69 +285,84 @@ function generateTomorrowPlan(ctx: PlanContext): string[] {
       },
       priority: 2,
     },
-    // JOURNAL & REFLECTION
+    // MINDSET - RECOVERY
     {
-      category: 'journal_reflection',
+      category: 'recovery',
       variants: [
-        'Écrire 3 lignes dans votre journal ce soir (gratitude ou leçons)',
-        'Prendre 5 min pour noter ce qui a bien/mal fonctionné aujourd\'hui',
-        'Faire une mini-rétrospective écrite avant de dormir',
-      ],
-      condition: () => (score?.global_score || 0) < 60 || drifts.length > 0,
-      priority: 2,
-    },
-    // CHALLENGES & GROWTH
-    {
-      category: 'challenge_start',
-      variants: [
-        'Lancer un défi de 7 jours sur une habitude difficile',
-        'Se donner un objectif mesurable pour la semaine',
-        'Créer un mini-défi personnel (ex: 0 écran après 21h)',
-      ],
-      condition: () => strengths.length >= 2 && (score?.global_score || 0) >= 50,
-      priority: 3,
-    },
-    // MOMENTUM & ENERGY
-    {
-      category: 'momentum_recovery',
-      variants: [
-        'Réduire la charge cognitive : simplifier la journée',
-        'Prioriser le repos pour reconstruire l\'énergie',
-        'Faire une seule chose importante, pas plus',
+        {
+          action: 'Réduire la charge : faire moins mais mieux',
+          reason: 'Votre momentum est en baisse, besoin de récupération',
+          impact: 'Prévention du burnout, énergie préservée',
+          effort: 'faible',
+        },
+        {
+          action: 'Prioriser le repos et le sommeil ce soir',
+          reason: 'L\'épuisement nuit à toutes les performances',
+          impact: 'Meilleure clarté mentale demain',
+          effort: 'faible',
+        },
       ],
       condition: () => (score?.momentum_index || 0) < -0.05 || (score?.burnout_index || 0) > 60,
       priority: 1,
     },
+    // GROWTH - MOMENTUM BOOST
     {
-      category: 'momentum_boost',
+      category: 'growth',
       variants: [
-        'Capitaliser sur le momentum : ajouter un objectif ambitieux',
-        'Profiter de la dynamique pour attaquer un projet reporté',
-        'Transformer cette énergie en progrès visible',
+        {
+          action: 'Profiter du momentum pour un objectif ambitieux',
+          reason: 'Votre énergie est haute, capitalisez dessus',
+          impact: 'Accélération des progrès',
+          effort: 'élevé',
+        },
+        {
+          action: 'Attaquer un projet reporté depuis longtemps',
+          reason: 'Le bon moment pour débloquer ce qui stagne',
+          impact: 'Satisfaction + libération mentale',
+          effort: 'élevé',
+        },
       ],
       condition: () => (score?.momentum_index || 0) > 0.05 && (score?.global_score || 0) >= 60,
       priority: 3,
     },
-    // FINANCE (if score available)
+    // MINDSET - REFLECTION
     {
-      category: 'finance_alert',
+      category: 'mindset',
       variants: [
-        'Revoir vos dépenses de la semaine et identifier les excès',
-        'Planifier un "jour sans dépense" demain',
-        'Mettre à jour votre budget et ajuster vos objectifs',
+        {
+          action: 'Écrire 3 lignes de gratitude ou leçons ce soir',
+          reason: 'La réflexion renforce l\'apprentissage',
+          impact: '+5% de clarté mentale sur 7 jours',
+          effort: 'faible',
+        },
+        {
+          action: 'Faire une mini-rétrospective de 5 min',
+          reason: 'Identifier ce qui fonctionne et ce qui bloque',
+          impact: 'Meilleure prise de décision',
+          effort: 'faible',
+        },
       ],
-      condition: () => (score?.finance_score || 100) < 50,
+      condition: () => (score?.global_score || 0) < 60 || drifts.length > 0,
       priority: 2,
     },
     // DEFAULT GROWTH
     {
-      category: 'growth_default',
+      category: 'growth',
       variants: [
-        'Identifier une compétence à développer cette semaine',
-        'Lire ou apprendre quelque chose de nouveau (15 min)',
-        'Planifier une action qui vous rapproche de vos objectifs',
+        {
+          action: 'Définir 1 priorité claire pour demain',
+          reason: 'La clarté précède l\'action efficace',
+          impact: 'Focus amélioré dès le réveil',
+          effort: 'faible',
+        },
+        {
+          action: 'Célébrer une petite victoire d\'aujourd\'hui',
+          reason: 'Reconnaître les progrès motive à continuer',
+          impact: 'Boost de motivation',
+          effort: 'faible',
+        },
       ],
-      condition: () => true, // Always available as fallback
+      condition: () => true,
       priority: 4,
     },
   ];
@@ -295,29 +373,44 @@ function generateTomorrowPlan(ctx: PlanContext): string[] {
     .sort((a, b) => a.priority - b.priority);
 
   // Select top 3 unique categories, with variant based on version
-  const selected: string[] = [];
+  const selected: PlanAction[] = [];
   const usedCategories = new Set<string>();
 
   for (const action of applicable) {
-    if (usedCategories.has(action.category)) continue;
     if (selected.length >= 3) break;
+    // Allow multiple from same category if priority is high (1)
+    if (usedCategories.has(action.category) && action.priority > 1) continue;
 
     // Pick variant based on version for observable change
     const variantIndex = version % action.variants.length;
-    selected.push(action.variants[variantIndex]);
+    selected.push({
+      ...action.variants[variantIndex],
+      category: action.category,
+    });
     usedCategories.add(action.category);
   }
 
   // Ensure we always have 3 actions
   if (selected.length < 3) {
-    const fallbacks = [
-      'Prendre soin de vous : sommeil, alimentation, mouvement',
-      'Définir 1 priorité claire pour demain',
-      'Célébrer une petite victoire d\'aujourd\'hui',
+    const fallbacks: PlanAction[] = [
+      {
+        action: 'Prendre soin de vous : sommeil, alimentation, mouvement',
+        reason: 'Les fondamentaux supportent tout le reste',
+        impact: 'Énergie et clarté améliorées',
+        effort: 'faible',
+        category: 'recovery',
+      },
+      {
+        action: 'Définir 1 priorité claire pour demain',
+        reason: 'La clarté précède l\'action',
+        impact: 'Meilleur focus',
+        effort: 'faible',
+        category: 'mindset',
+      },
     ];
     for (const fb of fallbacks) {
       if (selected.length >= 3) break;
-      if (!selected.includes(fb)) selected.push(fb);
+      if (!selected.find(s => s.action === fb.action)) selected.push(fb);
     }
   }
 
@@ -382,7 +475,7 @@ export default function AICoachPage() {
       let createdCount = 0;
       
       for (let i = 0; i < tomorrowActions.length; i++) {
-        const action = tomorrowActions[i];
+        const planAction = tomorrowActions[i];
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-tasks`,
           {
@@ -392,8 +485,8 @@ export default function AICoachPage() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              title: action,
-              description: `Tâche générée par l'AI Coach - Plan du ${format(new Date(), 'd MMMM', { locale: fr })}`,
+              title: planAction.action,
+              description: `${planAction.reason}\n\nImpact attendu: ${planAction.impact}\n\nTâche générée par l'AI Coach - Plan du ${format(new Date(), 'd MMMM', { locale: fr })}`,
               priority: i === 0 ? 'high' : 'medium',
               due_date: tomorrow,
             }),
@@ -611,27 +704,81 @@ export default function AICoachPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              {tomorrowActions.map((action, i) => (
+            <div className="space-y-3">
+              {tomorrowActions.map((planAction, i) => (
                 <div 
                   key={i} 
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-xl transition-all",
-                    planAccepted ? "bg-success/10 border border-success/20" : "bg-background/50"
+                    "p-4 rounded-xl transition-all",
+                    planAccepted ? "bg-success/10 border border-success/20" : "bg-background/50 hover:bg-background/80"
                   )}
                 >
-                  <div className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
-                    planAccepted 
-                      ? "bg-success text-success-foreground" 
-                      : "bg-primary/15 text-primary"
-                  )}>
-                    {planAccepted ? <Check className="h-3 w-3" /> : i + 1}
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 mt-0.5",
+                      planAccepted 
+                        ? "bg-success text-success-foreground" 
+                        : "bg-primary/15 text-primary"
+                    )}>
+                      {planAccepted ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <p className="font-medium text-sm">{planAction.action}</p>
+                      
+                      {/* Reason - Why this action */}
+                      <p className="text-xs text-muted-foreground">
+                        <span className="text-primary font-medium">Pourquoi : </span>
+                        {planAction.reason}
+                      </p>
+                      
+                      {/* Impact & Effort badges */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="text-[10px] bg-accent/10 text-accent border-accent/20">
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          {planAction.impact}
+                        </Badge>
+                        <Badge 
+                          variant="outline" 
+                          className={cn(
+                            "text-[10px]",
+                            planAction.effort === 'faible' && 'bg-success/10 text-success border-success/20',
+                            planAction.effort === 'moyen' && 'bg-warning/10 text-warning border-warning/20',
+                            planAction.effort === 'élevé' && 'bg-destructive/10 text-destructive border-destructive/20'
+                          )}
+                        >
+                          <Clock className="h-3 w-3 mr-1" />
+                          Effort {planAction.effort}
+                        </Badge>
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-sm flex-1">{action}</span>
                 </div>
               ))}
             </div>
+
+            {/* Projected Impact Summary */}
+            {!planAccepted && (
+              <div className="p-3 rounded-xl bg-accent/5 border border-accent/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="h-4 w-4 text-accent" />
+                  <span className="text-sm font-medium">Impact projeté si vous suivez ce plan</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div>
+                    <div className="text-lg font-bold text-success">+5-15%</div>
+                    <div className="text-[10px] text-muted-foreground">Score global</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-primary">↑</div>
+                    <div className="text-[10px] text-muted-foreground">Momentum</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-accent">✓</div>
+                    <div className="text-[10px] text-muted-foreground">Constance</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             {!planAccepted ? (
