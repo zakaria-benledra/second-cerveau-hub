@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { WIN_CATEGORY_FILTERS } from '@/constants';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,15 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const CATEGORIES: { value: WinCategory | null; label: string }[] = [
-  { value: null, label: "Toutes" },
-  { value: "habit", label: "Habitudes" },
-  { value: "task", label: "Tâches" },
-  { value: "goal", label: "Objectifs" },
-  { value: "finance", label: "Finance" },
-  { value: "health", label: "Santé" },
-  { value: "other", label: "Autre" },
-];
 
 export function WinsTracker() {
   const [categoryFilter, setCategoryFilter] = useState<WinCategory | null>(null);
@@ -121,11 +113,11 @@ export function WinsTracker() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">
               <Filter className="h-4 w-4" />
-              {CATEGORIES.find((c) => c.value === categoryFilter)?.label || "Toutes"}
+              {WIN_CATEGORY_FILTERS.find((c) => c.value === categoryFilter)?.label || "Toutes"}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            {CATEGORIES.map((cat) => (
+            {WIN_CATEGORY_FILTERS.map((cat) => (
               <DropdownMenuItem
                 key={cat.value ?? "all"}
                 onClick={() => setCategoryFilter(cat.value)}
@@ -143,7 +135,7 @@ export function WinsTracker() {
             className="cursor-pointer"
             onClick={() => setCategoryFilter(null)}
           >
-            {CATEGORIES.find((c) => c.value === categoryFilter)?.label}
+            {WIN_CATEGORY_FILTERS.find((c) => c.value === categoryFilter)?.label}
             <span className="ml-1">×</span>
           </Badge>
         )}
