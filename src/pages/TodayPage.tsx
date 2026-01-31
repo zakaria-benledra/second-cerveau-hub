@@ -206,12 +206,20 @@ export default function TodayPage() {
 
         {/* SECTION: Behavioral Metrics - IA ENGINE VISIBLE */}
         <AnimatedContainer delay={60} animation="fade-up">
-          <BehavioralMetricsBar 
-            coherence={todayScore?.habits_score ?? 0}
-            momentum={todayScore?.global_score ? (todayScore.global_score / 2) + 25 : 50}
-            friction={cognitiveLoad}
-            burnout={financialStress}
-          />
+          <div className="space-y-3">
+            <AIEngineStatus 
+              isActive={!!todayScore}
+              isLoading={!todayScore}
+              lastUpdate={todayScore?.date}
+              signalsCount={driftSignals.length}
+            />
+            <BehavioralMetricsBar 
+              coherence={todayScore?.habits_score ?? 0}
+              momentum={todayScore?.global_score ? (todayScore.global_score / 2) + 25 : 50}
+              friction={cognitiveLoad}
+              burnout={financialStress}
+            />
+          </div>
         </AnimatedContainer>
 
         {/* Weather Card - Contextual Signal */}
