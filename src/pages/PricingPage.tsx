@@ -151,7 +151,7 @@ const faqs = [
   },
   {
     question: 'C\'est quoi la différence avec une app de productivité ?',
-    answer: 'Les apps de productivité te demandent de faire plus. Second Cerveau te demande de devenir plus. On ne mesure pas tes to-dos, on mesure ta discipline, ta cohérence, ta stabilité. On ne te donne pas des rappels, on te donne des interventions intelligentes quand tu dérives.',
+    answer: 'Les apps de productivité te demandent de faire plus. Minded te demande de devenir plus. On ne mesure pas tes to-dos, on mesure ta discipline, ta cohérence, ta stabilité. On ne te donne pas des rappels, on te donne des interventions intelligentes quand tu dérives.',
   },
   {
     question: 'L\'IA va-t-elle prendre des décisions à ma place ?',

@@ -187,7 +187,7 @@ export function AICoachCard() {
               <Brain className="h-6 w-6 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-lg">Second Cerveau</h3>
+              <h3 className="font-semibold text-lg">Minded</h3>
               <p className="text-muted-foreground text-sm mt-1">
                 {currentSignals.length === 0 
                   ? "Tout va bien ! Continue sur cette lancée."
@@ -233,7 +233,7 @@ export function AICoachCard() {
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-bold text-lg">Message du Second Cerveau</h3>
+              <h3 className="font-bold text-lg">Message de Minded</h3>
               <Badge variant="secondary" className="capitalize text-xs">
                 {intervention.intervention_type}
               </Badge>
