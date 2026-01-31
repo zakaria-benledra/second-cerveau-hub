@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface GoogleConnectionStatus {
   connected: boolean;
+  configured: boolean;
   account: {
     email: string;
     connectedAt: string;
@@ -27,8 +28,17 @@ export function useGoogleConnectionStatus() {
         }
       );
       
+      // Handle "not configured" gracefully
+      if (response.status === 400) {
+        const data = await response.json();
+        if (data.configured === false) {
+          return { connected: false, configured: false, account: null };
+        }
+      }
+      
       if (!response.ok) throw new Error('Failed to get status');
-      return response.json();
+      const data = await response.json();
+      return { ...data, configured: true };
     },
   });
 }
@@ -52,6 +62,10 @@ export function useConnectGoogle() {
       
       if (!response.ok) {
         const error = await response.json();
+        // Special handling for not configured
+        if (error.configured === false) {
+          throw new Error('NOT_CONFIGURED');
+        }
         throw new Error(error.message || 'Failed to start connection');
       }
       
@@ -63,6 +77,9 @@ export function useConnectGoogle() {
       }
     },
     onError: (error: Error) => {
+      // Don't show toast for NOT_CONFIGURED - UI will handle this
+      if (error.message === 'NOT_CONFIGURED') return;
+      
       toast({
         title: 'Erreur de connexion',
         description: error.message,

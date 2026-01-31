@@ -225,6 +225,11 @@ export default function CalendarPage() {
               <Button variant="outline" disabled>
                 <Loader2 className="w-4 h-4 animate-spin" />
               </Button>
+            ) : googleStatus?.configured === false ? (
+              <Badge variant="secondary" className="gap-1 text-muted-foreground">
+                <AlertTriangle className="w-3 h-3" />
+                Google Sync non configuré
+              </Badge>
             ) : googleStatus?.connected ? (
               <>
                 <Badge variant="secondary" className="gap-1 bg-success/15 text-success border-0">
