@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/landing/Header';
 import { HeroSection } from '@/components/landing/HeroSection';
+import { ProblemSection } from '@/components/landing/ProblemSection';
 import { 
   Brain, 
   Target, 
@@ -62,6 +63,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background">
       <Header />
       <HeroSection />
+      <ProblemSection />
 
       {/* How It Works Section */}
       <section id="how-it-works" className="py-20 px-4">
