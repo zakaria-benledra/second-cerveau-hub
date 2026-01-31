@@ -3853,6 +3853,65 @@ export type Database = {
           },
         ]
       }
+      user_preferences: {
+        Row: {
+          created_at: string
+          goal_discipline: number | null
+          goal_financial_stability: number | null
+          goal_mental_balance: number | null
+          id: string
+          notifications_enabled: boolean | null
+          onboarding_completed: boolean | null
+          onboarding_completed_at: string | null
+          sound_enabled: boolean | null
+          source: string | null
+          theme: string | null
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          goal_discipline?: number | null
+          goal_financial_stability?: number | null
+          goal_mental_balance?: number | null
+          id?: string
+          notifications_enabled?: boolean | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
+          sound_enabled?: boolean | null
+          source?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          goal_discipline?: number | null
+          goal_financial_stability?: number | null
+          goal_mental_balance?: number | null
+          id?: string
+          notifications_enabled?: boolean | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
+          sound_enabled?: boolean | null
+          source?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
