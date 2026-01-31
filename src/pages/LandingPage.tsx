@@ -2,12 +2,12 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/landing/Header';
+import { HeroSection } from '@/components/landing/HeroSection';
 import { 
   Brain, 
   Target, 
   TrendingUp, 
   Shield, 
-  Sparkles,
   CheckCircle2,
   ArrowRight,
   Zap,
@@ -61,44 +61,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-
-      {/* Hero Section */}
-      <section id="hero" className="pt-32 pb-20 px-4">
-        <div className="container mx-auto text-center max-w-4xl">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6">
-            <Sparkles className="h-4 w-4" />
-            <span className="text-sm font-medium">Propulsé par l'Intelligence Artificielle</span>
-          </div>
-          
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            Ceci n'est pas une app de{' '}
-            <span className="text-muted-foreground line-through">productivité</span>
-            <br />
-            <span className="gradient-primary bg-clip-text text-transparent">
-              C'est ton système de transformation
-            </span>
-          </h1>
-          
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Un Second Brain qui t'observe, apprend de toi, et te guide vers la personne que tu veux devenir. 
-            Discipline, finances, habitudes — tout est connecté.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/auth?mode=signup">
-              <Button size="xl" className="gradient-primary w-full sm:w-auto">
-                Démarrer ma transformation
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link to="/pricing">
-              <Button size="xl" variant="outline" className="w-full sm:w-auto">
-                Voir les tarifs
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <HeroSection />
 
       {/* How It Works Section */}
       <section id="how-it-works" className="py-20 px-4">
