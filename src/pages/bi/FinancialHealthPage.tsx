@@ -11,6 +11,7 @@
 
 import { useFinanceStatsBI, useScoresDailyBI } from '@/hooks/useBIStats';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, Wallet, TrendingUp, TrendingDown, AlertTriangle, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -27,6 +28,7 @@ import {
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { BIBreadcrumb } from '@/components/bi/BIBreadcrumb';
 
 export default function FinancialHealthPage() {
   const { financeScores, avgFinanceScore, financeTrend, isLoading } = useFinanceStatsBI(6);
@@ -71,15 +73,19 @@ export default function FinancialHealthPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <BIBreadcrumb currentPage="Santé Financière" />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Wallet className="h-8 w-8 text-primary" />
             Santé Financière
+            <Badge variant="secondary">BI</Badge>
           </h1>
           <p className="text-muted-foreground mt-1">
-            Analyse de votre score financier (BI Mode)
+            Analyse de votre score financier
           </p>
         </div>
         <Link 

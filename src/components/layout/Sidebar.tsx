@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home,
@@ -6,6 +7,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Brain,
   Timer,
   TrendingUp,
@@ -22,6 +24,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Badge } from '@/components/ui/badge';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -33,6 +37,7 @@ const navGroups = [
   {
     label: 'Ma Transformation',
     icon: Target,
+    collapsible: false,
     items: [
       { icon: BarChart3, label: "Vue d'Ensemble", path: '/bi/executive' },
       { icon: Home, label: 'Qui Je Deviens', path: '/' },
@@ -42,6 +47,7 @@ const navGroups = [
   {
     label: 'Engagement',
     icon: Zap,
+    collapsible: false,
     items: [
       { icon: Heart, label: 'Behavior Hub', path: '/behavior-hub' },
       { icon: ListChecks, label: 'Kanban', path: '/kanban' },
@@ -52,6 +58,8 @@ const navGroups = [
   {
     label: 'Insights',
     icon: BarChart3,
+    collapsible: true,
+    badge: 'BI',
     items: [
       { icon: Activity, label: 'Tendances Comportement', path: '/bi/behavior-trends' },
       { icon: Wallet, label: 'Santé Financière', path: '/bi/financial-health' },
@@ -62,6 +70,7 @@ const navGroups = [
   {
     label: 'Stabilité',
     icon: Shield,
+    collapsible: false,
     items: [
       { icon: Wallet, label: 'Finances', path: '/finance' },
       { icon: Heart, label: 'Journal', path: '/journal' },
@@ -71,6 +80,7 @@ const navGroups = [
   {
     label: 'Système',
     icon: Settings,
+    collapsible: true,
     items: [
       { icon: Brain, label: 'Interventions IA', path: '/ai-interventions' },
       { icon: Zap, label: 'Automations', path: '/automation' },
@@ -85,6 +95,19 @@ const bottomItems: { icon: typeof Home; label: string; path: string }[] = [];
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    Insights: true,
+    Système: false,
+  });
+
+  const toggleGroup = (label: string) => {
+    setOpenGroups(prev => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  // Check if any item in a group is active
+  const isGroupActive = (items: { path: string }[]) => {
+    return items.some(item => location.pathname === item.path);
+  };
 
   const NavItem = ({ icon: Icon, label, path }: { icon: typeof Home; label: string; path: string }) => {
     const isActive = location.pathname === path || 
@@ -123,14 +146,36 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     return content;
   };
 
-  const GroupLabel = ({ icon: Icon, label }: { icon: typeof Home; label: string }) => {
+  const GroupLabel = ({ 
+    icon: Icon, 
+    label, 
+    collapsible, 
+    isOpen, 
+    onToggle: onGroupToggle,
+    badge,
+    hasActiveItem,
+  }: { 
+    icon: typeof Home; 
+    label: string; 
+    collapsible?: boolean;
+    isOpen?: boolean;
+    onToggle?: () => void;
+    badge?: string;
+    hasActiveItem?: boolean;
+  }) => {
     if (collapsed) {
       return (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             <div className="flex justify-center py-2 px-2">
-              <div className="h-6 w-6 rounded-md bg-sidebar-accent/50 flex items-center justify-center">
-                <Icon className="h-3.5 w-3.5 text-sidebar-foreground/50" />
+              <div className={cn(
+                "h-6 w-6 rounded-md flex items-center justify-center",
+                hasActiveItem ? "bg-sidebar-primary/20" : "bg-sidebar-accent/50"
+              )}>
+                <Icon className={cn(
+                  "h-3.5 w-3.5",
+                  hasActiveItem ? "text-sidebar-primary" : "text-sidebar-foreground/50"
+                )} />
               </div>
             </div>
           </TooltipTrigger>
@@ -140,13 +185,53 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </Tooltip>
       );
     }
+
+    if (collapsible) {
+      return (
+        <button
+          onClick={onGroupToggle}
+          className="flex items-center gap-2 px-3 py-2 mt-4 first:mt-0 w-full hover:bg-sidebar-accent/30 rounded-lg transition-colors"
+        >
+          <Icon className={cn(
+            "h-3.5 w-3.5",
+            hasActiveItem ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+          )} />
+          <span className={cn(
+            "text-xs font-semibold uppercase tracking-wider flex-1 text-left",
+            hasActiveItem ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+          )}>
+            {label}
+          </span>
+          {badge && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+              {badge}
+            </Badge>
+          )}
+          <ChevronDown className={cn(
+            "h-3.5 w-3.5 text-sidebar-foreground/40 transition-transform",
+            isOpen && "rotate-180"
+          )} />
+        </button>
+      );
+    }
     
     return (
       <div className="flex items-center gap-2 px-3 py-2 mt-4 first:mt-0">
-        <Icon className="h-3.5 w-3.5 text-sidebar-foreground/40" />
-        <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+        <Icon className={cn(
+          "h-3.5 w-3.5",
+          hasActiveItem ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+        )} />
+        <span className={cn(
+          "text-xs font-semibold uppercase tracking-wider",
+          hasActiveItem ? "text-sidebar-primary" : "text-sidebar-foreground/40"
+        )}>
           {label}
         </span>
+        {badge && (
+          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+            {badge}
+          </Badge>
+        )}
       </div>
     );
   };
@@ -173,16 +258,58 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 py-4 px-2 overflow-y-auto scrollbar-thin">
-        {navGroups.map((group, groupIndex) => (
-          <div key={group.label} className={cn(groupIndex > 0 && !collapsed && 'mt-2')}>
-            <GroupLabel icon={group.icon} label={group.label} />
-            <div className="space-y-0.5">
-              {group.items.map((item) => (
-                <NavItem key={item.path} {...item} />
-              ))}
+        {navGroups.map((group, groupIndex) => {
+          const hasActiveItem = isGroupActive(group.items);
+          const isOpen = openGroups[group.label] ?? true;
+
+          if (group.collapsible && !collapsed) {
+            return (
+              <Collapsible
+                key={group.label}
+                open={isOpen || hasActiveItem}
+                onOpenChange={() => toggleGroup(group.label)}
+                className={cn(groupIndex > 0 && 'mt-2')}
+              >
+                <CollapsibleTrigger asChild>
+                  <div>
+                    <GroupLabel 
+                      icon={group.icon} 
+                      label={group.label} 
+                      collapsible 
+                      isOpen={isOpen || hasActiveItem}
+                      onToggle={() => toggleGroup(group.label)}
+                      badge={group.badge}
+                      hasActiveItem={hasActiveItem}
+                    />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => (
+                      <NavItem key={item.path} {...item} />
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          }
+
+          return (
+            <div key={group.label} className={cn(groupIndex > 0 && !collapsed && 'mt-2')}>
+              <GroupLabel 
+                icon={group.icon} 
+                label={group.label} 
+                badge={group.badge}
+                hasActiveItem={hasActiveItem}
+              />
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <NavItem key={item.path} {...item} />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Bottom Section */}
