@@ -85,7 +85,7 @@ export function FinalCTASection() {
           >
             Prêt à devenir
             <br />
-            <span className="gradient-primary bg-clip-text text-transparent">
+            <span className="text-gradient-primary">
               qui tu veux être ?
             </span>
           </motion.h2>

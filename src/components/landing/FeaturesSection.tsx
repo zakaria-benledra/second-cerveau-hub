@@ -117,7 +117,7 @@ export function FeaturesSection() {
             <h2 className="text-3xl md:text-5xl font-bold mt-4 mb-6">
               Tout ce dont tu as besoin
               <br />
-              <span className="gradient-primary bg-clip-text text-transparent">
+              <span className="text-gradient-primary">
                 dans un seul système
               </span>
             </h2>

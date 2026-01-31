@@ -77,7 +77,7 @@ export function TestimonialsSection() {
             <h2 className="text-3xl md:text-5xl font-bold mt-4 mb-6">
               Ils ont transformé
               <br />
-              <span className="gradient-primary bg-clip-text text-transparent">
+              <span className="text-gradient-primary">
                 leur trajectoire
               </span>
             </h2>

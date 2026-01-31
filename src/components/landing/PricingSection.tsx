@@ -109,7 +109,7 @@ export function PricingSection() {
             <h2 className="text-3xl md:text-5xl font-bold mt-4 mb-6">
               Investis dans ta
               <br />
-              <span className="gradient-primary bg-clip-text text-transparent">
+              <span className="text-gradient-primary">
                 transformation
               </span>
             </h2>

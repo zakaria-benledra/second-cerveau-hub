@@ -82,7 +82,7 @@ export function AIShowcaseSection() {
               IA en Action
             </span>
             <h2 className="text-3xl md:text-5xl font-bold mt-4 mb-6">
-              Une IA qui <span className="gradient-primary bg-clip-text text-transparent">agit</span>,
+              Une IA qui <span className="text-gradient-primary">agit</span>,
               <br />
               pas qui conseille
             </h2>
