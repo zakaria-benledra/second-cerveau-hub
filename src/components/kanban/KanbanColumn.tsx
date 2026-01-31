@@ -84,14 +84,8 @@ export function KanbanColumn({
   const isOverWipLimit = wipLimit !== null && tasks.length > wipLimit;
   const isAtWipLimit = wipLimit !== null && tasks.length === wipLimit;
   
-  // For done column, only show last 3 completed (rest accessible via history)
-  const displayTasks = id === 'done' ? tasks.slice(0, 3) : tasks;
-  const hiddenCount = id === 'done' ? Math.max(0, tasks.length - 3) : 0;
-
-  // Stacked cards visual: show max 5 cards, rest as count badge
-  const maxVisibleCards = id === 'done' ? 3 : 5;
-  const visibleTasks = displayTasks.slice(0, maxVisibleCards);
-  const stackedCount = displayTasks.length - maxVisibleCards;
+  // Show all tasks - scrollable
+  const displayTasks = tasks;
 
   // Count stale/critical tasks
   const criticalCount = tasks.filter(t => getAgingStatus(getTaskAgeInColumn(t), id).level === 'critical').length;
@@ -171,11 +165,11 @@ export function KanbanColumn({
         )}
       </div>
       
-      {/* Stacked Cards Container */}
-      <div className="relative p-3 flex-1 overflow-y-auto min-h-[200px] max-h-[calc(100vh-280px)] scrollbar-thin">
-        {/* Stacked cards with visual pile effect */}
+      {/* Scrollable Cards Container */}
+      <div className="relative p-3 flex-1 overflow-y-auto min-h-[200px] max-h-[calc(100vh-280px)]">
+        {/* All cards - scrollable */}
         <div className="relative space-y-3">
-          {visibleTasks.map((task, index) => {
+          {displayTasks.map((task, index) => {
             const age = getTaskAgeInColumn(task);
             const agingStatus = getAgingStatus(age, id);
             const priorityGlow = getPriorityGlow(task.priority);
@@ -191,10 +185,6 @@ export function KanbanColumn({
                   agingStatus.level === 'critical' && 'ring-2 ring-destructive/40',
                   agingStatus.level === 'stale' && 'ring-1 ring-warning/30'
                 )}
-                style={{
-                  // Create subtle stacking effect
-                  zIndex: visibleTasks.length - index,
-                }}
               >
                 {/* Age indicator badge */}
                 {agingStatus.level !== 'fresh' && id !== 'done' && (
@@ -222,24 +212,6 @@ export function KanbanColumn({
             );
           })}
         </div>
-        
-        {/* Hidden count badge for stacked cards */}
-        {stackedCount > 0 && (
-          <div className="text-center py-3">
-            <Badge variant="outline" className="text-xs text-muted-foreground">
-              +{stackedCount} autres tâches
-            </Badge>
-          </div>
-        )}
-        
-        {/* Hidden count for done column */}
-        {hiddenCount > 0 && stackedCount <= 0 && (
-          <div className="text-center py-2">
-            <Badge variant="outline" className="text-xs text-muted-foreground">
-              +{hiddenCount} tâches dans l'historique
-            </Badge>
-          </div>
-        )}
         
         {/* Empty State */}
         {tasks.length === 0 && (
