@@ -11,16 +11,16 @@ export interface DailyBriefing {
   tasks: {
     total: number;
     urgent: number;
-    list: any[];
+    list: Array<{ id: string; title?: string; [key: string]: unknown }>;
   };
   habits: {
     total: number;
     pending: number;
-    list: any[];
+    list: Array<{ id: string; name?: string; [key: string]: unknown }>;
   };
   events: {
     total: number;
-    list: any[];
+    list: Array<{ id: string; title?: string; [key: string]: unknown }>;
   };
   risks: Array<AIRisk | { type: string; level: string; message: string }>;
   recommendations: Array<AIAction | { action: string; message: string; confidence: number }>;
@@ -43,7 +43,7 @@ export interface AIProposal {
   type: string;
   title: string;
   description: string | null;
-  proposed_actions: any[];
+  proposed_actions: unknown[];
   reasoning: string | null;
   confidence_score: number | null;
   priority: string | null;
@@ -63,7 +63,7 @@ export interface WeeklyReview {
     average_habits: number;
     average_tasks: number;
     trend: string;
-    daily_scores: any[];
+    daily_scores: Array<{ date: string; score: number; [key: string]: unknown }>;
   };
   achievements: {
     tasks_completed: number;
