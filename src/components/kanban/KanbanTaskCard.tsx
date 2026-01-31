@@ -1,29 +1,21 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import { 
   GripVertical, 
   Clock, 
   Target,
-  TrendingUp,
   Battery,
   Calendar,
   History,
   ChevronRight,
-  Zap,
-  Flag
+  ListChecks
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { KanbanTask } from '@/hooks/useKanban';
 import { format, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { TaskActionsSheet } from './TaskActionsSheet';
+import { useTaskChecklist } from '@/hooks/useTaskChecklist';
 
 interface KanbanTaskCardProps {
   task: KanbanTask;
@@ -75,12 +67,17 @@ export function KanbanTaskCard({
   onDragStart,
   onDragEnd,
 }: KanbanTaskCardProps) {
-  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
-  const [isLocalDragging, setIsLocalDragging] = useState(false); // ISSUE #11 FIX: Local drag state
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isLocalDragging, setIsLocalDragging] = useState(false);
   const priority = priorityConfig[task.priority] || priorityConfig.medium;
   const energy = energyConfig[task.energy_level || 'medium'];
   const impactScore = calculateImpactScore(task);
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.kanban_status !== 'done';
+  
+  // Fetch checklist for progress indicator
+  const { data: checklistItems = [] } = useTaskChecklist(task.id);
+  const checklistTotal = checklistItems.length;
+  const checklistCompleted = checklistItems.filter(item => item.completed).length;
   
   // Task aging calculation
   const age = differenceInDays(new Date(), new Date(task.created_at));
@@ -117,7 +114,7 @@ export function KanbanTaskCard({
         draggable
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        onClick={() => setIsTimelineOpen(true)}
+        onClick={() => setIsSheetOpen(true)}
         className={cn(
           'group relative cursor-grab active:cursor-grabbing',
           'rounded-2xl border border-border/50 p-4',
@@ -233,116 +230,34 @@ export function KanbanTaskCard({
         </div>
       </div>
 
-      {/* Timeline Sheet */}
-      <Sheet open={isTimelineOpen} onOpenChange={setIsTimelineOpen}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <Flag className={cn('h-5 w-5', priority.text)} />
-              {task.title}
-            </SheetTitle>
-            <SheetDescription>
-              Historique complet et détails de la tâche
-            </SheetDescription>
-          </SheetHeader>
+      {/* Checklist indicator on card */}
+      {checklistTotal > 0 && (
+        <div className="absolute top-2 left-2 z-10">
+          <Badge 
+            variant="outline" 
+            className={cn(
+              'text-[10px] px-1.5 py-0.5',
+              checklistCompleted === checklistTotal && 'bg-success/20 text-success border-success/30'
+            )}
+          >
+            <ListChecks className="h-3 w-3 mr-1" />
+            {checklistCompleted}/{checklistTotal}
+          </Badge>
+        </div>
+      )}
 
-          <div className="mt-6 space-y-6">
-            {/* Impact Summary */}
-            <div className="glass-strong rounded-2xl p-4">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                Score d'Impact
-              </h3>
-              <div className="flex items-center gap-4">
-                <div className={cn(
-                  'flex items-center justify-center w-16 h-16 rounded-2xl text-2xl font-bold',
-                  impactScore >= 80 ? 'bg-gradient-to-br from-destructive to-warning text-destructive-foreground' :
-                  impactScore >= 60 ? 'bg-gradient-to-br from-warning to-amber-400 text-warning-foreground' :
-                  impactScore >= 40 ? 'bg-gradient-to-br from-primary to-accent text-primary-foreground' :
-                  'bg-muted text-muted-foreground'
-                )}>
-                  {impactScore}
-                </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Badge className={cn('text-xs', priority.bg, priority.text)}>
-                      {priority.label}
-                    </Badge>
-                    {energy && (
-                      <Badge variant="outline" className="text-xs">
-                        {energy.icon} Énergie {energy.label}
-                      </Badge>
-                    )}
-                  </div>
-                  {(goalTitle || projectName) && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Target className="h-3 w-3 text-accent" />
-                      Lié à: {goalTitle || projectName}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Task Details */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Détails</h3>
-              {task.description && (
-                <p className="text-sm text-muted-foreground">{task.description}</p>
-              )}
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                {task.due_date && (
-                  <div className="glass-hover rounded-xl p-3">
-                    <span className="text-xs text-muted-foreground block">Échéance</span>
-                    <span className={cn('font-medium', isOverdue && 'text-destructive')}>
-                      {format(new Date(task.due_date), 'PPP', { locale: fr })}
-                    </span>
-                  </div>
-                )}
-                {task.estimate_min && (
-                  <div className="glass-hover rounded-xl p-3">
-                    <span className="text-xs text-muted-foreground block">Estimation</span>
-                    <span className="font-medium">{task.estimate_min} minutes</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Timeline */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <History className="h-4 w-4" />
-                Historique
-              </h3>
-              <div className="relative pl-4 border-l-2 border-border space-y-4">
-                {/* Created */}
-                <div className="relative">
-                  <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-primary border-2 border-background" />
-                  <div className="text-sm">
-                    <span className="font-medium">Créée</span>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(task.created_at), 'PPP à HH:mm', { locale: fr })}
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Current Status */}
-                <div className="relative">
-                  <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-accent border-2 border-background" />
-                  <div className="text-sm">
-                    <span className="font-medium">Statut actuel</span>
-                    <p className="text-xs text-muted-foreground capitalize">
-                      {task.kanban_status === 'backlog' ? 'Backlog' :
-                       task.kanban_status === 'todo' ? 'À faire' :
-                       task.kanban_status === 'doing' ? 'En cours' : 'Terminée'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Task Actions Sheet */}
+      <TaskActionsSheet
+        task={task}
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+        impactScore={impactScore}
+        priorityConfig={priority}
+        energyConfig={energy}
+        projectName={projectName}
+        goalTitle={goalTitle}
+        isOverdue={!!isOverdue}
+      />
     </>
   );
 }
