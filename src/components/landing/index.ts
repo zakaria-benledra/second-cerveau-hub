@@ -1,0 +1,12 @@
+export { Header } from './Header';
+export { HeroSection } from './HeroSection';
+export { ProblemSection } from './ProblemSection';
+export { SolutionSection } from './SolutionSection';
+export { HowItWorksSection } from './HowItWorksSection';
+export { FeaturesSection } from './FeaturesSection';
+export { AIShowcaseSection } from './AIShowcaseSection';
+export { TransformationSection } from './TransformationSection';
+export { PricingSection } from './PricingSection';
+export { TestimonialsSection } from './TestimonialsSection';
+export { FinalCTASection } from './FinalCTASection';
+export { FooterSection } from './FooterSection';
