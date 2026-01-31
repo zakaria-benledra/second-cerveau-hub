@@ -12,6 +12,7 @@ interface KanbanColumnProps {
   glowColor: string;
   isDropTarget: boolean;
   draggedTaskId?: string;
+  highlightedTaskId?: string;
   projectsMap: Record<string, string>;
   goalsMap: Record<string, string>;
   onDragOver: (e: React.DragEvent) => void;
@@ -71,6 +72,7 @@ export function KanbanColumn({
   glowColor,
   isDropTarget,
   draggedTaskId,
+  highlightedTaskId,
   projectsMap,
   goalsMap,
   onDragOver,
@@ -202,6 +204,7 @@ export function KanbanColumn({
                 <KanbanTaskCard
                   task={task}
                   isDragging={draggedTaskId === task.id}
+                  isHighlighted={highlightedTaskId === task.id}
                   isTopInDoing={id === 'doing' && index === 0}
                   projectName={task.project_id ? projectsMap[task.project_id] : undefined}
                   goalTitle={(task as any).goal_id ? goalsMap[(task as any).goal_id] : undefined}
