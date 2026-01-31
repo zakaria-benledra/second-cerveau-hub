@@ -69,9 +69,7 @@ const navGroups = [
   },
 ];
 
-const bottomItems = [
-  { icon: TestTube2, label: 'QA Dashboard', path: '/qa' },
-];
+const bottomItems: { icon: typeof Home; label: string; path: string }[] = [];
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
