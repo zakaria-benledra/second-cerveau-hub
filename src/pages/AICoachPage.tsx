@@ -178,6 +178,8 @@ export default function AICoachPage() {
   const { play } = useSound();
 
   const [planAccepted, setPlanAccepted] = useState(false);
+  const [planVersion, setPlanVersion] = useState(0);
+  const [isAdjustingPlan, setIsAdjustingPlan] = useState(false);
   const [showSimulation, setShowSimulation] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
 
@@ -191,8 +193,48 @@ export default function AICoachPage() {
   }, [score, habits, tasks]);
 
   const tomorrowActions = useMemo(() => {
-    return generateTomorrowPlan(behaviorInsights);
-  }, [behaviorInsights]);
+    // Base actions from analysis
+    const base = generateTomorrowPlan(behaviorInsights);
+    if (base.length === 0) return base;
+
+    // Deterministic variations: rotate + swap phrasing to make "Ajuster" observable
+    const rotateBy = planVersion % base.length;
+    const rotated = [...base.slice(rotateBy), ...base.slice(0, rotateBy)];
+
+    const variants: Record<string, string[]> = {
+      'Maintenir vos habitudes positives': [
+        'Maintenir vos habitudes positives',
+        'Protéger vos habitudes déjà en place',
+        'Conserver votre rythme actuel',
+      ],
+      'Identifier une nouvelle habitude à adopter': [
+        'Identifier une nouvelle habitude à adopter',
+        'Tester une micro-habitude simple',
+        'Ajouter une habitude “facile” (5 min)',
+      ],
+      'Terminer les tâches en retard dès le matin': [
+        'Terminer les tâches en retard dès le matin',
+        'Traiter les retards en premier',
+        'Bloquer 30 min pour rattraper les retards',
+      ],
+      'Commencer la journée par vos habitudes critiques': [
+        'Commencer la journée par vos habitudes critiques',
+        'Lancer la journée avec 1 habitude clé',
+        'Prioriser vos habitudes avant le reste',
+      ],
+      'Réduire votre charge cognitive pour regagner du momentum': [
+        'Réduire votre charge cognitive pour regagner du momentum',
+        'Alléger votre journée pour relancer le momentum',
+        'Simplifier votre plan pour remonter',
+      ],
+    };
+
+    return rotated.map((a) => {
+      const opts = variants[a];
+      if (!opts) return a;
+      return opts[planVersion % opts.length];
+    });
+  }, [behaviorInsights, planVersion]);
 
   const strengths = behaviorInsights.filter(i => i.type === 'strength');
   const drifts = behaviorInsights.filter(i => i.type === 'drift' || i.type === 'weakness');
@@ -200,6 +242,21 @@ export default function AICoachPage() {
   const handleAcceptPlan = () => {
     setPlanAccepted(true);
     play('goal_progress');
+  };
+
+  const handleAdjustPlan = async () => {
+    setIsAdjustingPlan(true);
+    setPlanAccepted(false);
+    play('ai_insight');
+
+    // Optional: ask backend for a refreshed briefing (throttled in hook)
+    await refetchBriefing();
+
+    // Force a new local plan variant (observable UI change)
+    setPlanVersion((v) => v + 1);
+
+    // Small delay to make adjustment feel intentional
+    setTimeout(() => setIsAdjustingPlan(false), 500);
   };
 
   // Simulation scenario generation
@@ -401,9 +458,14 @@ export default function AICoachPage() {
                 <Button 
                   variant="outline"
                   className="flex-1"
-                  onClick={() => refetchBriefing()}
+                  onClick={handleAdjustPlan}
+                  disabled={isAdjustingPlan}
                 >
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                  {isAdjustingPlan ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
                   Ajuster
                 </Button>
               </div>
