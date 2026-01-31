@@ -126,8 +126,24 @@ export function KanbanTaskCard({
           isTopInDoing && 'ring-1 ring-warning/50 bg-warning/5'
         )}
       >
+        {/* Checklist indicator on card - inside draggable container */}
+        {checklistTotal > 0 && (
+          <div className="absolute top-2 left-2 z-10 pointer-events-none">
+            <Badge 
+              variant="outline" 
+              className={cn(
+                'text-[10px] px-1.5 py-0.5',
+                checklistCompleted === checklistTotal && 'bg-success/20 text-success border-success/30'
+              )}
+            >
+              <ListChecks className="h-3 w-3 mr-1" />
+              {checklistCompleted}/{checklistTotal}
+            </Badge>
+          </div>
+        )}
+
         {/* Impact Score Badge - Top Right */}
-        <div className="absolute -top-2 -right-2 z-10">
+        <div className="absolute -top-2 -right-2 z-10 pointer-events-none">
           <div className={cn(
             'flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold',
             'shadow-lg transition-transform group-hover:scale-110',
@@ -229,22 +245,6 @@ export function KanbanTaskCard({
           </div>
         </div>
       </div>
-
-      {/* Checklist indicator on card */}
-      {checklistTotal > 0 && (
-        <div className="absolute top-2 left-2 z-10">
-          <Badge 
-            variant="outline" 
-            className={cn(
-              'text-[10px] px-1.5 py-0.5',
-              checklistCompleted === checklistTotal && 'bg-success/20 text-success border-success/30'
-            )}
-          >
-            <ListChecks className="h-3 w-3 mr-1" />
-            {checklistCompleted}/{checklistTotal}
-          </Badge>
-        </div>
-      )}
 
       {/* Task Actions Sheet */}
       <TaskActionsSheet
