@@ -10,10 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTodayJournalEntry, useSaveJournalEntry, useNotes, useCreateNote, useDeleteNote, useJournalEntries } from '@/hooks/useJournal';
 import { useJournalAI, journalDomains, moodToScore } from '@/hooks/useJournalAI';
 import { GlobalTimeFilter, useTimeRangeDates, type TimeRange } from '@/components/filters/GlobalTimeFilter';
+import { JournalInsightsTab } from '@/components/journal/JournalInsightsTab';
+import { JournalEvolutionTab } from '@/components/journal/JournalEvolutionTab';
 import { 
   BookHeart, Sparkles, Smile, Meh, Frown, Battery, BatteryMedium, BatteryLow, 
   Plus, Trash2, FileText, Brain, Lightbulb, Clock, Filter, Search, 
-  LayoutTemplate, RefreshCw, MessageSquare 
+  LayoutTemplate, RefreshCw, MessageSquare, Activity, Heart
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -166,10 +168,18 @@ export default function JournalPage() {
         </div>
 
         <Tabs defaultValue="today" className="space-y-4">
-          <TabsList className="glass">
+          <TabsList className="glass flex-wrap">
             <TabsTrigger value="today" className="flex items-center gap-2">
               <BookHeart className="h-4 w-4" />
               Aujourd'hui
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="flex items-center gap-2">
+              <Heart className="h-4 w-4" />
+              Insights IA
+            </TabsTrigger>
+            <TabsTrigger value="evolution" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Évolution
             </TabsTrigger>
             <TabsTrigger value="timeline" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
@@ -180,6 +190,16 @@ export default function JournalPage() {
               Notes
             </TabsTrigger>
           </TabsList>
+
+          {/* Insights Tab */}
+          <TabsContent value="insights">
+            <JournalInsightsTab />
+          </TabsContent>
+
+          {/* Evolution Tab */}
+          <TabsContent value="evolution">
+            <JournalEvolutionTab />
+          </TabsContent>
 
           <TabsContent value="today" className="space-y-6">
             {/* Mood, Energy & Domain */}
