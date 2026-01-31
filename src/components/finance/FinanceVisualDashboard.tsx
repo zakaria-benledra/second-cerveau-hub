@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useMemo } from 'react';
+import { CHART_COLORS } from '@/constants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useFinanceSnapshots, useDailySpendingTrend, useMonthlyBreakdown } from '@/hooks/useFinanceV2';
@@ -24,16 +25,6 @@ import { Link } from 'react-router-dom';
 import { format, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const COLORS = [
-  'hsl(var(--primary))',
-  'hsl(var(--accent))',
-  'hsl(262 83% 58%)',
-  'hsl(142 76% 36%)',
-  'hsl(38 92% 50%)',
-  'hsl(0 84% 60%)',
-  'hsl(199 89% 48%)',
-  'hsl(330 81% 60%)',
-];
 
 function FinanceVisualDashboardInner() {
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -67,7 +58,7 @@ function FinanceVisualDashboardInner() {
     return breakdown?.categories.slice(0, 8).map((c, i) => ({
       name: c.name,
       value: c.amount,
-      color: COLORS[i % COLORS.length],
+      color: CHART_COLORS[i % CHART_COLORS.length],
       percentage: breakdown.totalExpenses > 0 
         ? Math.round((c.amount / breakdown.totalExpenses) * 100) 
         : 0,
