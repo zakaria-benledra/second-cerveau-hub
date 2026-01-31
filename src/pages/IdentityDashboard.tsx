@@ -61,17 +61,17 @@ function MetricCard({
       "relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-default",
       gradient
     )}>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div className={cn("p-2.5 rounded-xl", color)}>
-            <Icon className="h-5 w-5" />
+      <CardContent className="p-3 md:p-4">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className={cn("p-2 md:p-2.5 rounded-xl shrink-0", color)}>
+            <Icon className="h-4 w-4 md:h-5 md:w-5" />
           </div>
-          <div className="flex-1">
-            <div className="text-2xl font-bold">{value}{suffix}</div>
-            <div className="text-xs text-muted-foreground">{label}</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-xl md:text-2xl font-bold">{value}{suffix}</div>
+            <div className="text-[10px] md:text-xs text-muted-foreground truncate">{label}</div>
           </div>
         </div>
-        <Progress value={value} className="mt-3 h-1.5" />
+        <Progress value={value} className="mt-2 md:mt-3 h-1 md:h-1.5" />
       </CardContent>
     </Card>
   );
@@ -186,58 +186,20 @@ export default function IdentityDashboard() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-6 py-4">
+      <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 px-1 py-2 md:py-4">
         
-        {/* HEADER PREMIUM */}
-        <AnimatedContainer delay={0}>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="p-3 rounded-2xl bg-gradient-to-br from-primary/20 via-accent/10 to-primary/20 animate-pulse">
-                  <User className="h-8 w-8 text-primary" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-background border border-primary">
-                  <Sparkles className="h-3 w-3 text-primary" />
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl md:text-3xl font-bold">
-                    Qui Je Deviens
-                  </h1>
-                  <Badge variant="secondary" className="hidden md:flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    Identity
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Ton tableau de bord d'évolution personnelle
-                </p>
-              </div>
-            </div>
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/dashboard')}
-              className="hidden md:flex gap-2"
-            >
-              <BarChart3 className="h-4 w-4" />
-              Dashboard BI
-            </Button>
-          </div>
-        </AnimatedContainer>
-
         {/* HERO SECTION - Current Persona */}
-        <AnimatedContainer delay={50}>
+        <AnimatedContainer delay={0}>
           <Card className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-            <CardContent className="relative p-6">
-              <div className="flex flex-col md:flex-row items-center gap-6">
+            <CardContent className="relative p-4 md:p-6">
+              <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6">
                 {/* Avatar */}
                 <div className="relative shrink-0">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center shadow-2xl shadow-primary/30">
-                    <User className="h-12 w-12 text-primary-foreground" />
+                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center shadow-2xl shadow-primary/30">
+                    <User className="h-10 w-10 md:h-12 md:w-12 text-primary-foreground" />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 p-2 rounded-full bg-background border-2 border-primary shadow-lg">
+                  <div className="absolute -bottom-1 -right-1 p-1.5 md:p-2 rounded-full bg-background border-2 border-primary shadow-lg">
                     {getTrendIcon()}
                   </div>
                 </div>
@@ -247,7 +209,7 @@ export default function IdentityDashboard() {
                   <Badge 
                     variant="outline" 
                     className={cn(
-                      "mb-2",
+                      "mb-2 text-xs",
                       trajectory.direction === 'up' && "border-success/50 bg-success/10 text-success",
                       trajectory.direction === 'down' && "border-destructive/50 bg-destructive/10 text-destructive",
                       trajectory.direction === 'stable' && "border-muted-foreground/50"
@@ -257,17 +219,17 @@ export default function IdentityDashboard() {
                     {trajectory.direction === 'down' && "En transition"}
                     {trajectory.direction === 'stable' && "Stable"}
                   </Badge>
-                  <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+                  <h2 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
                     {identity?.currentPersona || 'Explorer'}
                   </h2>
-                  <p className="text-muted-foreground mt-1">
+                  <p className="text-sm md:text-base text-muted-foreground mt-1">
                     {identity?.tagline || 'Tu explores tes capacités'}
                   </p>
                 </div>
 
                 {/* Discipline Score */}
-                <div className="text-center p-4 rounded-2xl bg-background/50 border border-border/50">
-                  <div className="text-4xl font-bold text-primary">
+                <div className="text-center p-3 md:p-4 rounded-2xl bg-background/50 border border-border/50 w-full md:w-auto">
+                  <div className="text-3xl md:text-4xl font-bold text-primary">
                     {identity?.disciplineLevel || 0}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">Score Global</div>
@@ -278,8 +240,8 @@ export default function IdentityDashboard() {
         </AnimatedContainer>
 
         {/* 4 METRICS GRID */}
-        <AnimatedContainer delay={100}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <AnimatedContainer delay={50}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
             <MetricCard
               icon={Flame}
               label="Discipline"
@@ -314,21 +276,21 @@ export default function IdentityDashboard() {
 
         {/* TRAJECTORY CHART */}
         {chartData.length >= 2 && (
-          <AnimatedContainer delay={150}>
+          <AnimatedContainer delay={100}>
             <Card>
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 px-4 md:px-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2 text-base">
+                    <CardTitle className="flex items-center gap-2 text-sm md:text-base">
                       <Activity className="h-4 w-4 text-primary" />
                       Trajectoire 7 jours
                     </CardTitle>
-                    <CardDescription>Évolution de ton score global</CardDescription>
+                    <CardDescription className="text-xs md:text-sm">Évolution de ton score</CardDescription>
                   </div>
-                  <Badge variant="secondary">7 jours</Badge>
+                  <Badge variant="secondary" className="text-xs">7j</Badge>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 md:px-6">
                 <div className="h-[180px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chartData}>
@@ -379,19 +341,19 @@ export default function IdentityDashboard() {
         )}
 
         {/* CE QUI TE FAÇONNE */}
-        <AnimatedContainer delay={200}>
-          <div className="space-y-4">
+        <AnimatedContainer delay={150}>
+          <div className="space-y-3 md:space-y-4">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Ce qui te façonne aujourd'hui</h2>
+              <h2 className="text-base md:text-lg font-semibold">Ce qui te façonne</h2>
               <Badge variant="outline" className="text-xs">Live</Badge>
             </div>
             
-            <div className="grid gap-4">
+            <div className="grid gap-3">
               {identity?.shapingBehaviors?.map((behavior, index) => (
                 <ShapingBehaviorCard 
                   key={behavior.id} 
                   behavior={behavior}
-                  delay={250 + index * 50}
+                  delay={200 + index * 50}
                 />
               ))}
             </div>
@@ -467,13 +429,13 @@ export default function IdentityDashboard() {
         </AnimatedContainer>
 
         {/* IDENTITY COMPARISON - 30 DAYS */}
-        <AnimatedContainer delay={350}>
-          <div className="space-y-4">
+        <AnimatedContainer delay={250}>
+          <div className="space-y-3 md:space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                🔄 Ton évolution sur 30 jours
+              <h2 className="text-base md:text-lg font-semibold flex items-center gap-2">
+                🔄 Évolution 30 jours
               </h2>
-              <Badge variant="secondary">Comparaison</Badge>
+              <Badge variant="secondary" className="text-xs">Comparaison</Badge>
             </div>
             
             <IdentityComparison daysAgo={30} />
@@ -481,69 +443,69 @@ export default function IdentityDashboard() {
         </AnimatedContainer>
 
         {/* QUICK ACTIONS */}
-        <AnimatedContainer delay={400}>
+        <AnimatedContainer delay={300}>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
+            <CardHeader className="pb-2 md:pb-3 px-4 md:px-6">
+              <CardTitle className="text-sm md:text-base flex items-center gap-2">
                 <Zap className="h-4 w-4 text-primary" />
                 Actions Rapides
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <CardContent className="px-4 md:px-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                 <Button 
                   variant="outline" 
-                  className="justify-start h-auto py-3"
+                  className="justify-start h-auto py-2 md:py-3 px-3"
                   onClick={() => navigate('/dashboard')}
                 >
-                  <div className="flex flex-col items-start gap-1">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4 text-primary" />
-                      <span className="font-medium">Dashboard</span>
+                  <div className="flex flex-col items-start gap-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <BarChart3 className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+                      <span className="font-medium text-xs md:text-sm">Dashboard</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Vue BI</span>
+                    <span className="text-[10px] md:text-xs text-muted-foreground">Vue BI</span>
                   </div>
                 </Button>
 
                 <Button 
                   variant="outline" 
-                  className="justify-start h-auto py-3"
+                  className="justify-start h-auto py-2 md:py-3 px-3"
                   onClick={() => navigate('/ai-coach')}
                 >
-                  <div className="flex flex-col items-start gap-1">
-                    <div className="flex items-center gap-2">
-                      <Brain className="h-4 w-4 text-accent" />
-                      <span className="font-medium">AI Coach</span>
+                  <div className="flex flex-col items-start gap-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <Brain className="h-3.5 w-3.5 md:h-4 md:w-4 text-accent" />
+                      <span className="font-medium text-xs md:text-sm">AI Coach</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Revue IA</span>
+                    <span className="text-[10px] md:text-xs text-muted-foreground">Revue IA</span>
                   </div>
                 </Button>
 
                 <Button 
                   variant="outline" 
-                  className="justify-start h-auto py-3"
+                  className="justify-start h-auto py-2 md:py-3 px-3"
                   onClick={() => navigate('/behavior-hub')}
                 >
-                  <div className="flex flex-col items-start gap-1">
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-success" />
-                      <span className="font-medium">Habitudes</span>
+                  <div className="flex flex-col items-start gap-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <Activity className="h-3.5 w-3.5 md:h-4 md:w-4 text-success" />
+                      <span className="font-medium text-xs md:text-sm">Habitudes</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Comportement</span>
+                    <span className="text-[10px] md:text-xs text-muted-foreground">Comportement</span>
                   </div>
                 </Button>
 
                 <Button 
                   variant="outline" 
-                  className="justify-start h-auto py-3"
+                  className="justify-start h-auto py-2 md:py-3 px-3"
                   onClick={() => navigate('/today')}
                 >
-                  <div className="flex flex-col items-start gap-1">
-                    <div className="flex items-center gap-2">
-                      <Target className="h-4 w-4 text-warning" />
-                      <span className="font-medium">Aujourd'hui</span>
+                  <div className="flex flex-col items-start gap-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <Target className="h-3.5 w-3.5 md:h-4 md:w-4 text-warning" />
+                      <span className="font-medium text-xs md:text-sm">Aujourd'hui</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">Vue classique</span>
+                    <span className="text-[10px] md:text-xs text-muted-foreground">Vue classique</span>
                   </div>
                 </Button>
               </div>
