@@ -127,7 +127,7 @@ export function HeroSection() {
           >
             Tu ne gères pas des tâches.
             <br />
-            <span className="gradient-primary bg-clip-text text-transparent">
+            <span className="text-gradient-primary">
               Tu deviens quelqu'un.
             </span>
           </motion.h1>

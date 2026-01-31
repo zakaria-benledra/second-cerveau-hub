@@ -76,7 +76,7 @@ export function SolutionSection() {
             <h2 className="text-3xl md:text-5xl font-bold mt-4 mb-6">
               Second Brain fait ce que
               <br />
-              <span className="gradient-primary bg-clip-text text-transparent">
+              <span className="text-gradient-primary">
                 tu n'arrives pas à faire seul
               </span>
             </h2>
