@@ -16,6 +16,7 @@ import {
   TestTube2,
   Shield,
   Activity,
+  Calendar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ const navGroups = [
     items: [
       { icon: Heart, label: 'Behavior Hub', path: '/behavior-hub' },
       { icon: ListChecks, label: 'Kanban', path: '/kanban' },
+      { icon: Calendar, label: 'Calendrier', path: '/calendar' },
     ],
   },
   {
