@@ -10,12 +10,14 @@ import { QuickStatsFooter } from '@/components/today/QuickStatsFooter';
 import { AICoachCard } from '@/components/today/AICoachCard';
 import { WeatherCard } from '@/components/today/WeatherCard';
 import { AnimatedContainer } from '@/components/ui/animated-container';
+import { BehavioralMetricsBar, AIEngineStatus } from '@/components/ai';
 import { useTodayCommand } from '@/hooks/useTodayCommand';
 import { useCompleteTask } from '@/hooks/useTasks';
 import { useToggleHabitLog } from '@/hooks/useHabits';
 import { useAICoach } from '@/hooks/useAICoach';
 import { useSound } from '@/hooks/useSound';
 import { useActiveInterventions } from '@/hooks/useAIInterventions';
+import { useTodayScore } from '@/hooks/useScores';
 import { Loader2, Settings2, CheckCircle, Brain } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -54,6 +56,7 @@ export default function TodayPage() {
   const { refetchBriefing, briefingLoading } = useAICoach();
   const { play } = useSound();
   const { data: activeInterventions } = useActiveInterventions();
+  const { data: todayScore } = useTodayScore();
 
   // BUG #1 FIX: Prevent race conditions with refs
   const completingTaskRef = useRef<string | null>(null);
@@ -199,6 +202,16 @@ export default function TodayPage() {
         {/* SECTION 1: AI Coach - Behavioral Message */}
         <AnimatedContainer delay={50} animation="fade-up">
           <AICoachCard />
+        </AnimatedContainer>
+
+        {/* SECTION: Behavioral Metrics - IA ENGINE VISIBLE */}
+        <AnimatedContainer delay={60} animation="fade-up">
+          <BehavioralMetricsBar 
+            coherence={todayScore?.habits_score ?? 0}
+            momentum={todayScore?.global_score ? (todayScore.global_score / 2) + 25 : 50}
+            friction={cognitiveLoad}
+            burnout={financialStress}
+          />
         </AnimatedContainer>
 
         {/* Weather Card - Contextual Signal */}
