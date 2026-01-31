@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { WIN_CATEGORIES, type WinCategory } from '@/constants';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus } from "lucide-react";
-import type { Win, WinCategory, WinInput } from "@/hooks/useWins";
+import type { Win, WinInput } from "@/hooks/useWins";
 
 interface WinFormModalProps {
   open: boolean;
@@ -29,14 +30,6 @@ interface WinFormModalProps {
   isSubmitting?: boolean;
 }
 
-const CATEGORIES: { value: WinCategory; label: string; color: string }[] = [
-  { value: "habit", label: "Habitude", color: "bg-success" },
-  { value: "task", label: "Tâche", color: "bg-primary" },
-  { value: "goal", label: "Objectif", color: "bg-warning" },
-  { value: "finance", label: "Finance", color: "bg-info" },
-  { value: "health", label: "Santé", color: "bg-destructive" },
-  { value: "other", label: "Autre", color: "bg-muted" },
-];
 
 export function WinFormModal({
   open,
@@ -149,7 +142,7 @@ export function WinFormModal({
                   <SelectValue placeholder="Choisir..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((cat) => (
+                  {WIN_CATEGORIES.map((cat) => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
                     </SelectItem>
