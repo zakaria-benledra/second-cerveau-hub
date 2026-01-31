@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CHART_COLORS } from '@/constants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useMonthlyBreakdown, useDailySpendingTrend, useBudgetVsActual, useExportFinanceData } from '@/hooks/useFinanceV2';
@@ -11,16 +12,6 @@ import { Download, TrendingUp, TrendingDown, PiggyBank, AlertCircle } from 'luci
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-const COLORS = [
-  'hsl(var(--primary))',
-  'hsl(var(--secondary))',
-  'hsl(var(--accent))',
-  'hsl(220 70% 50%)',
-  'hsl(280 70% 50%)',
-  'hsl(160 70% 50%)',
-  'hsl(30 70% 50%)',
-  'hsl(340 70% 50%)',
-];
 
 export function FinanceVisuals() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
@@ -60,7 +51,7 @@ export function FinanceVisuals() {
   const categoryData = breakdown?.categories.map((c, i) => ({
     name: c.name,
     value: c.amount,
-    color: COLORS[i % COLORS.length],
+    color: CHART_COLORS[i % CHART_COLORS.length],
   })) || [];
 
   const trendData = dailyTrend?.map((d) => ({
