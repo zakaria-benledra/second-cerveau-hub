@@ -18,6 +18,12 @@ import { toast } from 'sonner';
 // Rate limiting constants
 const MIN_REFETCH_INTERVAL = 30000; // 30 seconds minimum between refetches
 
+// Session-level LLM call limiter
+// Prevents runaway API costs from excessive AI proposal generation
+// Resets on page refresh - this is intentional to allow recovery
+let sessionLLMCalls = 0;
+const MAX_LLM_CALLS_PER_SESSION = 10;
+
 export function useAICoach() {
   const queryClient = useQueryClient();
   const lastBriefingFetchRef = useRef<number>(0);
@@ -52,9 +58,14 @@ export function useAICoach() {
   });
 
   const generateProposalMutation = useMutation({
-    mutationFn: ({ type, context }: { type: string; context?: Record<string, unknown> }) =>
-      generateProposal(type, context),
-    onSuccess: (data) => {
+    mutationFn: ({ type, context }: { type: string; context?: Record<string, unknown> }) => {
+      if (sessionLLMCalls >= MAX_LLM_CALLS_PER_SESSION) {
+        throw new Error('Limite d\'appels IA atteinte pour cette session. Rafraîchissez la page.');
+      }
+      sessionLLMCalls++;
+      return generateProposal(type, context);
+    },
+    onSuccess: () => {
       toast.success('Proposition IA générée');
       queryClient.invalidateQueries({ queryKey: ['ai-proposals'] });
     },
