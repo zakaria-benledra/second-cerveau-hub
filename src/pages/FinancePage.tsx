@@ -18,6 +18,7 @@ import { SavingsGoalCard } from '@/components/finance/SavingsGoalCard';
 import { FinanceImportWizard } from '@/components/finance/FinanceImportWizard';
 import { FinanceVisualDashboard } from '@/components/finance/FinanceVisualDashboard';
 import { FinanceExportModal } from '@/components/finance/FinanceExportModal';
+import { FinanceDisciplineTab } from '@/components/finance/FinanceDisciplineTab';
 import { ScoreRing } from '@/components/today/ScoreRing';
 import { cn } from '@/lib/utils';
 import { 
@@ -434,8 +435,9 @@ export default function FinancePage() {
 
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="glass-strong">
+          <TabsList className="glass-strong flex-wrap">
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="discipline">🎯 Discipline</TabsTrigger>
             <TabsTrigger value="visuals">📊 Visuels</TabsTrigger>
             <TabsTrigger value="import">📥 Import</TabsTrigger>
             <TabsTrigger value="savings">Épargne</TabsTrigger>
@@ -443,6 +445,11 @@ export default function FinancePage() {
             <TabsTrigger value="statements">Relevés</TabsTrigger>
             <TabsTrigger value="categories">Catégories</TabsTrigger>
           </TabsList>
+
+          {/* Discipline Tab */}
+          <TabsContent value="discipline">
+            <FinanceDisciplineTab />
+          </TabsContent>
 
           {/* Visual Dashboard Tab */}
           <TabsContent value="visuals">

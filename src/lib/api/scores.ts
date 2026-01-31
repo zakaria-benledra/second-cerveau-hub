@@ -12,6 +12,11 @@ export interface DailyScore {
   momentum_index: number;
   burnout_index: number;
   consistency_factor: number;
+  // Financial discipline metrics
+  financial_discipline_score: number;
+  budget_adherence: number;
+  impulsive_spending: number;
+  savings_rate: number;
   metadata: Record<string, unknown>;
   computed_at: string;
 }
