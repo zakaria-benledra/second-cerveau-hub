@@ -188,57 +188,6 @@ export default function IdentityDashboard() {
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 px-1 py-2 md:py-4">
         
-        {/* HERO SECTION - Current Persona */}
-        <AnimatedContainer delay={0}>
-          <Card className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-background border-primary/20">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-            <CardContent className="relative p-4 md:p-6">
-              <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6">
-                {/* Avatar */}
-                <div className="relative shrink-0">
-                  <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center shadow-2xl shadow-primary/30">
-                    <User className="h-10 w-10 md:h-12 md:w-12 text-primary-foreground" />
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 p-1.5 md:p-2 rounded-full bg-background border-2 border-primary shadow-lg">
-                    {getTrendIcon()}
-                  </div>
-                </div>
-
-                {/* Persona Info */}
-                <div className="flex-1 text-center md:text-left">
-                  <Badge 
-                    variant="outline" 
-                    className={cn(
-                      "mb-2 text-xs",
-                      trajectory.direction === 'up' && "border-success/50 bg-success/10 text-success",
-                      trajectory.direction === 'down' && "border-destructive/50 bg-destructive/10 text-destructive",
-                      trajectory.direction === 'stable' && "border-muted-foreground/50"
-                    )}
-                  >
-                    {trajectory.direction === 'up' && "En progression"}
-                    {trajectory.direction === 'down' && "En transition"}
-                    {trajectory.direction === 'stable' && "Stable"}
-                  </Badge>
-                  <h2 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-                    {identity?.currentPersona || 'Explorer'}
-                  </h2>
-                  <p className="text-sm md:text-base text-muted-foreground mt-1">
-                    {identity?.tagline || 'Tu explores tes capacités'}
-                  </p>
-                </div>
-
-                {/* Discipline Score */}
-                <div className="text-center p-3 md:p-4 rounded-2xl bg-background/50 border border-border/50 w-full md:w-auto">
-                  <div className="text-3xl md:text-4xl font-bold text-primary">
-                    {identity?.disciplineLevel || 0}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">Score Global</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </AnimatedContainer>
-
         {/* 4 METRICS GRID */}
         <AnimatedContainer delay={50}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
