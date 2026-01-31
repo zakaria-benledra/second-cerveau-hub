@@ -29,6 +29,7 @@ import {
   AlertTriangle,
   Zap,
   Clock,
+  Activity,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -105,7 +106,7 @@ export default function ExecutiveDashboardPage() {
             Vue d'ensemble de votre performance (BI Mode)
           </p>
         </div>
-        <Button variant="outline" onClick={() => navigate('/bi/behavior')}>
+        <Button variant="outline" onClick={() => navigate('/bi/behavior-trends')}>
           Tendances
           <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
@@ -243,7 +244,55 @@ export default function ExecutiveDashboardPage() {
         </Card>
       </div>
 
-      {/* Weekly Trend */}
+      {/* Quick Links - Analyses Détaillées */}
+      <Card className="col-span-full">
+        <CardHeader>
+          <CardTitle>Analyses Détaillées</CardTitle>
+          <CardDescription>
+            Explorez vos données en profondeur
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Button 
+              variant="outline" 
+              className="justify-start"
+              onClick={() => navigate('/bi/behavior-trends')}
+            >
+              <Activity className="mr-2 h-4 w-4" />
+              Tendances Comportement
+            </Button>
+            
+            <Button 
+              variant="outline"
+              className="justify-start"
+              onClick={() => navigate('/bi/financial-health')}
+            >
+              <Wallet className="mr-2 h-4 w-4" />
+              Santé Financière
+            </Button>
+            
+            <Button 
+              variant="outline"
+              className="justify-start"
+              onClick={() => navigate('/bi/habit-stability')}
+            >
+              <Target className="mr-2 h-4 w-4" />
+              Stabilité Habitudes
+            </Button>
+            
+            <Button 
+              variant="outline"
+              className="justify-start"
+              onClick={() => navigate('/bi/decision-impact')}
+            >
+              <Zap className="mr-2 h-4 w-4" />
+              Impact Décisions
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Tendance sur 7 jours</CardTitle>
