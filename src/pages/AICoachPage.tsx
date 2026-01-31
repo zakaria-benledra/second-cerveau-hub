@@ -37,7 +37,8 @@ import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
-// Behavior analysis functions
+// TODO: PHASE 3 - Remplacer par appel ai-coach detect_risks
+// Cette fonction est temporairement locale mais devrait utiliser le LLM
 function analyzeBehavior(score: any, habits: any[], tasks: any[]) {
   const insights: Array<{
     type: 'strength' | 'weakness' | 'drift';
