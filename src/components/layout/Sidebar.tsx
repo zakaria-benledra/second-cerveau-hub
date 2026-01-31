@@ -13,10 +13,10 @@ import {
   ListChecks,
   Heart,
   Zap,
-  TestTube2,
   Shield,
   Activity,
   Calendar,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -31,12 +31,12 @@ interface SidebarProps {
 // Grouped navigation structure - Transformation Comportementale
 const navGroups = [
   {
-    label: 'Ma Trajectoire',
+    label: 'Ma Transformation',
     icon: Target,
     items: [
+      { icon: BarChart3, label: "Vue d'Ensemble", path: '/bi/executive' },
       { icon: Home, label: 'Qui Je Deviens', path: '/' },
       { icon: TrendingUp, label: 'Mon Momentum', path: '/scores' },
-      { icon: Brain, label: 'Intelligence IA', path: '/intelligence' },
     ],
   },
   {
@@ -46,6 +46,17 @@ const navGroups = [
       { icon: Heart, label: 'Behavior Hub', path: '/behavior-hub' },
       { icon: ListChecks, label: 'Kanban', path: '/kanban' },
       { icon: Calendar, label: 'Calendrier', path: '/calendar' },
+      { icon: Brain, label: 'Intelligence IA', path: '/intelligence' },
+    ],
+  },
+  {
+    label: 'Insights',
+    icon: BarChart3,
+    items: [
+      { icon: Activity, label: 'Tendances Comportement', path: '/bi/behavior-trends' },
+      { icon: Wallet, label: 'Santé Financière', path: '/bi/financial-health' },
+      { icon: Target, label: 'Stabilité Habitudes', path: '/bi/habit-stability' },
+      { icon: Zap, label: 'Impact Décisions', path: '/bi/decision-impact' },
     ],
   },
   {
@@ -53,7 +64,7 @@ const navGroups = [
     icon: Shield,
     items: [
       { icon: Wallet, label: 'Finances', path: '/finance' },
-      { icon: Heart, label: 'Bien-être', path: '/journal' },
+      { icon: Heart, label: 'Journal', path: '/journal' },
       { icon: Timer, label: 'Focus', path: '/focus' },
     ],
   },
@@ -61,9 +72,10 @@ const navGroups = [
     label: 'Système',
     icon: Settings,
     items: [
+      { icon: Brain, label: 'Interventions IA', path: '/ai-interventions' },
       { icon: Zap, label: 'Automations', path: '/automation' },
-      { icon: Activity, label: 'Interventions IA', path: '/observability' },
       { icon: Bell, label: 'Notifications', path: '/notifications' },
+      { icon: Activity, label: 'Observabilité', path: '/observability' },
       { icon: Settings, label: 'Paramètres', path: '/settings' },
     ],
   },
