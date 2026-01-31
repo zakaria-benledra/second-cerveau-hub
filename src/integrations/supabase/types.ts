@@ -3064,52 +3064,64 @@ export type Database = {
       }
       scores_daily: {
         Row: {
+          budget_adherence: number | null
           burnout_index: number | null
           computed_at: string
           consistency_factor: number | null
           created_at: string
           date: string
           finance_score: number | null
+          financial_discipline_score: number | null
           global_score: number | null
           habits_score: number | null
           health_score: number | null
           id: string
+          impulsive_spending: number | null
           metadata: Json | null
           momentum_index: number | null
+          savings_rate: number | null
           tasks_score: number | null
           user_id: string
           workspace_id: string | null
         }
         Insert: {
+          budget_adherence?: number | null
           burnout_index?: number | null
           computed_at?: string
           consistency_factor?: number | null
           created_at?: string
           date: string
           finance_score?: number | null
+          financial_discipline_score?: number | null
           global_score?: number | null
           habits_score?: number | null
           health_score?: number | null
           id?: string
+          impulsive_spending?: number | null
           metadata?: Json | null
           momentum_index?: number | null
+          savings_rate?: number | null
           tasks_score?: number | null
           user_id: string
           workspace_id?: string | null
         }
         Update: {
+          budget_adherence?: number | null
           burnout_index?: number | null
           computed_at?: string
           consistency_factor?: number | null
           created_at?: string
           date?: string
           finance_score?: number | null
+          financial_discipline_score?: number | null
           global_score?: number | null
           habits_score?: number | null
           health_score?: number | null
           id?: string
+          impulsive_spending?: number | null
           metadata?: Json | null
           momentum_index?: number | null
+          savings_rate?: number | null
           tasks_score?: number | null
           user_id?: string
           workspace_id?: string | null
