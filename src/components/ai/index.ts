@@ -1,3 +1,3 @@
 // AI Components - Render the Behavioral Intelligence Engine visible
-export * from './BehavioralMetricsBar';
-export * from './AIEngineStatus';
+export { BehavioralMetricsBar } from './BehavioralMetricsBar';
+export { AIEngineStatus } from './AIEngineStatus';
