@@ -374,7 +374,7 @@ export default function AuthPage() {
             {/* Bottom links */}
             <div className="mt-6 pt-6 border-t border-border/50 text-center space-y-3">
               <Link 
-                to="/#pricing" 
+                to="/" 
                 className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
               >
                 Voir les plans et tarifs
