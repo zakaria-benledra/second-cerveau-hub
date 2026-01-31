@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTodayScore, useScoreHistory } from '@/hooks/useScores';
 import { useExecutiveKPIs, useDailyStats } from '@/hooks/useBIStats';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -101,9 +102,10 @@ export default function ExecutiveDashboardPage() {
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <BarChart3 className="h-8 w-8 text-primary" />
             Dashboard Exécutif
+            <Badge variant="secondary">BI</Badge>
           </h1>
           <p className="text-muted-foreground mt-1">
-            Vue d'ensemble de votre performance (BI Mode)
+            Vue d'ensemble de votre performance
           </p>
         </div>
         <Button variant="outline" onClick={() => navigate('/bi/behavior-trends')}>

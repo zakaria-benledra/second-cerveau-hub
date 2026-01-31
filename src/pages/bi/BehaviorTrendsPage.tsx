@@ -1,5 +1,6 @@
 import { useScoreHistory } from '@/hooks/useScores';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import {
   LineChart,
@@ -17,6 +18,7 @@ import {
 } from 'recharts';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { BIBreadcrumb } from '@/components/bi/BIBreadcrumb';
 
 export default function BehaviorTrendsPage() {
   const { data: scoreHistory = [], isLoading } = useScoreHistory(14);
@@ -67,12 +69,20 @@ export default function BehaviorTrendsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <BIBreadcrumb currentPage="Tendances Comportementales" />
+
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Tendances Comportementales</h1>
-        <p className="text-muted-foreground mt-1">
-          Analyse de l'évolution de vos habitudes et performances
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            Tendances Comportementales
+            <Badge variant="secondary">BI</Badge>
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Analyse de l'évolution de vos habitudes et performances
+          </p>
+        </div>
       </div>
 
       {/* Trend Cards */}

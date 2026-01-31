@@ -14,6 +14,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import { BIBreadcrumb } from '@/components/bi/BIBreadcrumb';
 
 export default function DecisionImpactPage() {
   const { auditLog, events, auditLogLoading, eventsLoading } = useQA();
@@ -70,11 +71,15 @@ export default function DecisionImpactPage() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <BIBreadcrumb currentPage="Impact des Décisions" />
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-3">
           <GitBranch className="h-8 w-8 text-primary" />
           Impact des Décisions
+          <Badge variant="secondary">BI</Badge>
         </h1>
         <p className="text-muted-foreground mt-1">
           Traçabilité et audit des actions
