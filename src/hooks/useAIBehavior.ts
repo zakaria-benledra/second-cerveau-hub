@@ -1,26 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
-import type { AIIntervention as AIInterventionType } from '@/ai';
+import type { AIIntervention as AIInterventionType, BehaviorContext, SignalType } from '@/ai';
 
 // Type DB - compatible avec AIInterventionType de @/ai
 export type AIIntervention = Tables<'ai_interventions'>;
 export type BehaviorSignal = Tables<'behavior_signals'>;
 
-// Aligned with BehavioralMetrics from @/ai/metrics
-interface BehaviorContext {
-  habits_consistency: number;
-  tasks_overdue: number;
-  streak_status: string;
-  last_activity_days: number;
-  churn_risk: number;
-  recent_completions: number;
-}
-
 interface BehaviorEngineResponse {
   success: boolean;
   intervention: AIIntervention | null;
-  signals: Array<{ type: string; score: number; metadata: Record<string, unknown> }>;
+  signals: Array<{ type: SignalType; score: number; metadata: Record<string, unknown> }>;
   context: BehaviorContext;
 }
 
