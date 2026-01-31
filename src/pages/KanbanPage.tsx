@@ -3,17 +3,20 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { useKanbanTasks, useMoveKanbanTask, type KanbanStatus, type KanbanTask } from '@/hooks/useKanban';
 import { useCreateTask } from '@/hooks/useTasks';
 import { useProjects, useGoals } from '@/hooks/useProjects';
 import { useRecentUndos } from '@/hooks/useUndo';
+import { useActiveInterventions } from '@/hooks/useAIInterventions';
 import { TaskDialog } from '@/components/tasks/TaskDialog';
 import { KanbanHeader } from '@/components/kanban/KanbanHeader';
 import { KanbanColumn } from '@/components/kanban/KanbanColumn';
 import { KanbanMetricsPanel } from '@/components/kanban/KanbanMetricsPanel';
 import { KanbanSearchFilters, type SortOption, type PriorityFilter } from '@/components/kanban/KanbanSearchFilters';
 import { type TimeRange, useTimeRangeDates } from '@/components/filters/GlobalTimeFilter';
-import { Loader2, Undo2, LayoutGrid, BarChart3 } from 'lucide-react';
+import { Loader2, Undo2, LayoutGrid, BarChart3, Brain } from 'lucide-react';
 import type { CreateTaskInput, UpdateTaskInput } from '@/lib/api/tasks';
 
 const COLUMNS: { id: KanbanStatus; title: string; accent: string; glow: string }[] = [
@@ -43,9 +46,19 @@ export default function KanbanPage() {
   const { data: columns, isLoading } = useKanbanTasks();
   const { data: projects = [] } = useProjects();
   const { data: goals = [] } = useGoals();
+  const { data: todayInterventions } = useActiveInterventions();
   const moveTask = useMoveKanbanTask();
   const createTask = useCreateTask();
   const { recentActions, canUndo, undoLast, isUndoing } = useRecentUndos();
+  
+  // Filter interventions related to Kanban reorganization
+  const kanbanInterventions = useMemo(() => {
+    return todayInterventions?.filter(i => 
+      i.intervention_type === 'reduce_load' || 
+      i.intervention_type === 'reorganize' ||
+      i.intervention_type === 'prioritize'
+    ) || [];
+  }, [todayInterventions]);
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   // BUG #2 FIX: Use refs to prevent state loss during re-renders
@@ -231,7 +244,27 @@ export default function KanbanPage() {
           onCreateTask={() => setIsCreateDialogOpen(true)}
         />
 
-        {/* Tabs: Board / Metrics */}
+        {/* AI Intervention Alert */}
+        {kanbanInterventions.length > 0 && (
+          <Alert className="glass border-primary/30 bg-primary/5">
+            <Brain className="h-4 w-4 text-primary" />
+            <AlertTitle className="text-foreground">L'IA a Réorganisé Ton Kanban</AlertTitle>
+            <AlertDescription>
+              <div className="space-y-2 mt-2">
+                {kanbanInterventions.map(intervention => (
+                  <div key={intervention.id} className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-xs capitalize">
+                      {intervention.intervention_type.replace('_', ' ')}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {intervention.reason || intervention.ai_message}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'board' | 'metrics')}>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <TabsList className="glass">
