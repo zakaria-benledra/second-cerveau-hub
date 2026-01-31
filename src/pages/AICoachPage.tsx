@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useSound } from '@/hooks/useSound';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Brain,
   Sparkles,
@@ -27,9 +30,10 @@ import {
   Check,
   X,
   Zap,
-  Play
+  Play,
+  ListTodo
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -326,12 +330,15 @@ export default function AICoachPage() {
   const { data: habits } = useHabitsWithLogs();
   const { data: tasks } = useTodayTasks();
   const { play } = useSound();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [planAccepted, setPlanAccepted] = useState(false);
   const [planVersion, setPlanVersion] = useState(0);
   const [isAdjustingPlan, setIsAdjustingPlan] = useState(false);
   const [showSimulation, setShowSimulation] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isCreatingTasks, setIsCreatingTasks] = useState(false);
 
   // Generate behavior analysis
   const behaviorInsights = useMemo(() => {
@@ -355,9 +362,70 @@ export default function AICoachPage() {
   const strengths = behaviorInsights.filter(i => i.type === 'strength');
   const drifts = behaviorInsights.filter(i => i.type === 'drift' || i.type === 'weakness');
 
-  const handleAcceptPlan = () => {
-    setPlanAccepted(true);
-    play('goal_progress');
+  const handleAcceptPlan = async () => {
+    setIsCreatingTasks(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Non connecté",
+          description: "Veuillez vous connecter pour créer des tâches.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create Kanban tasks from the plan actions
+      const tomorrow = addDays(new Date(), 1).toISOString().split('T')[0];
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-tasks`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            tasks: tomorrowActions.map((action, index) => ({
+              title: action,
+              description: `Tâche générée par l'AI Coach - Plan du ${format(new Date(), 'd MMMM', { locale: fr })}`,
+              priority: index === 0 ? 'high' : 'medium',
+              due_date: tomorrow,
+              status: 'todo',
+              kanban_status: 'todo',
+              source: 'ai',
+            })),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la création des tâches');
+      }
+
+      setPlanAccepted(true);
+      play('goal_progress');
+      
+      // Invalidate queries to refresh task lists
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['kanban-tasks'] });
+
+      toast({
+        title: "Plan accepté !",
+        description: `${tomorrowActions.length} tâches créées dans votre Kanban pour demain.`,
+      });
+    } catch (error) {
+      console.error('Error creating tasks:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer les tâches. Réessayez.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingTasks(false);
+    }
   };
 
   const handleAdjustPlan = async () => {
@@ -567,15 +635,20 @@ export default function AICoachPage() {
                 <Button 
                   className="flex-1 gradient-primary"
                   onClick={handleAcceptPlan}
+                  disabled={isCreatingTasks}
                 >
-                  <Check className="h-4 w-4 mr-2" />
-                  Accepter le plan
+                  {isCreatingTasks ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4 mr-2" />
+                  )}
+                  {isCreatingTasks ? "Création..." : "Accepter le plan"}
                 </Button>
                 <Button 
                   variant="outline"
                   className="flex-1"
                   onClick={handleAdjustPlan}
-                  disabled={isAdjustingPlan}
+                  disabled={isAdjustingPlan || isCreatingTasks}
                 >
                   {isAdjustingPlan ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -586,11 +659,15 @@ export default function AICoachPage() {
                 </Button>
               </div>
             ) : (
-              <div className="text-center py-2">
+              <div className="text-center py-2 space-y-2">
                 <Badge className="bg-success/15 text-success border-0 py-2 px-4">
                   <Sparkles className="h-4 w-4 mr-2" />
                   Plan accepté pour demain
                 </Badge>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                  <ListTodo className="h-3 w-3" />
+                  {tomorrowActions.length} tâches ajoutées au Kanban
+                </p>
               </div>
             )}
           </CardContent>
