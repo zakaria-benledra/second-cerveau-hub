@@ -70,7 +70,7 @@ export function Header({ onMenuClick }: HeaderProps) {
     try {
       await signOut();
       toast.success('Déconnexion réussie');
-      navigate('/auth');
+      navigate('/');
     } catch (error) {
       toast.error('Erreur lors de la déconnexion');
     }
