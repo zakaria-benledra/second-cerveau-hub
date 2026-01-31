@@ -3441,6 +3441,57 @@ export type Database = {
         }
         Relationships: []
       }
+      task_checklist_items: {
+        Row: {
+          completed: boolean
+          created_at: string
+          id: string
+          sort_order: number
+          task_id: string
+          title: string
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          sort_order?: number
+          task_id: string
+          title: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          sort_order?: number
+          task_id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_checklist_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_checklist_items_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_events: {
         Row: {
           created_at: string
@@ -3492,6 +3543,7 @@ export type Database = {
       tasks: {
         Row: {
           actual_duration_min: number | null
+          archived_at: string | null
           completed_at: string | null
           created_at: string
           deleted_at: string | null
@@ -3516,6 +3568,7 @@ export type Database = {
         }
         Insert: {
           actual_duration_min?: number | null
+          archived_at?: string | null
           completed_at?: string | null
           created_at?: string
           deleted_at?: string | null
@@ -3540,6 +3593,7 @@ export type Database = {
         }
         Update: {
           actual_duration_min?: number | null
+          archived_at?: string | null
           completed_at?: string | null
           created_at?: string
           deleted_at?: string | null

@@ -65,6 +65,8 @@ Deno.serve(async (req) => {
         .select('*')
         .eq('user_id', user.id)
         .is('deleted_at', null)
+        .is('archived_at', null) // Exclude archived tasks
+        .neq('status', 'cancelled') // Exclude cancelled tasks
         .order('sort_order', { ascending: true })
 
       if (error) throw error
