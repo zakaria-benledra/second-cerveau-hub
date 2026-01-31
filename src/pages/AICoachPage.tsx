@@ -178,6 +178,8 @@ export default function AICoachPage() {
   const { play } = useSound();
 
   const [planAccepted, setPlanAccepted] = useState(false);
+  const [showSimulation, setShowSimulation] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
 
   // Generate behavior analysis
   const behaviorInsights = useMemo(() => {
@@ -198,6 +200,60 @@ export default function AICoachPage() {
   const handleAcceptPlan = () => {
     setPlanAccepted(true);
     play('goal_progress');
+  };
+
+  // Simulation scenario generation
+  const simulationScenario = useMemo(() => {
+    if (!showSimulation) return null;
+    
+    const currentScore = score?.global_score || 50;
+    const activeHabits = habits?.filter(h => h.is_active).length || 0;
+    
+    // Simulate adding one habit
+    const projectedScore = Math.min(100, currentScore + 5);
+    const projectedConsistency = Math.min(100, (score?.consistency_factor || 0.5) * 100 + 8);
+    
+    return {
+      scenario: "Ajout d'une habitude matinale",
+      impact: [
+        {
+          metric: "Score Global",
+          current: currentScore,
+          projected: projectedScore,
+          change: projectedScore - currentScore,
+        },
+        {
+          metric: "Cohérence",
+          current: Math.round((score?.consistency_factor || 0.5) * 100),
+          projected: Math.round(projectedConsistency),
+          change: Math.round(projectedConsistency - (score?.consistency_factor || 0.5) * 100),
+        },
+        {
+          metric: "Habitudes actives",
+          current: activeHabits,
+          projected: activeHabits + 1,
+          change: 1,
+        },
+      ],
+      recommendation: projectedScore > 70 
+        ? "Cette habitude vous rapprocherait du statut de Performeur Discipliné."
+        : "Cette habitude améliorerait votre constance et renforcerait votre discipline.",
+      risks: [
+        "Risque de surcharge si non intégrée progressivement",
+        "Nécessite 21 jours pour devenir automatique",
+      ],
+    };
+  }, [showSimulation, score, habits]);
+
+  const handleSimulate = () => {
+    setIsSimulating(true);
+    play('ai_insight');
+    
+    // Simulate loading
+    setTimeout(() => {
+      setShowSimulation(true);
+      setIsSimulating(false);
+    }, 800);
   };
 
   return (
@@ -362,8 +418,11 @@ export default function AICoachPage() {
           </CardContent>
         </Card>
 
-        {/* Simulate Scenario - Collapsed */}
-        <Card className="glass-subtle">
+        {/* Simulate Scenario */}
+        <Card className={cn(
+          "glass-subtle transition-all duration-300",
+          showSimulation && "border-accent/30"
+        )}>
           <CardContent className="py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -377,11 +436,84 @@ export default function AICoachPage() {
                   </p>
                 </div>
               </div>
-              <Button variant="ghost" size="sm" className="text-accent">
-                <Play className="h-4 w-4 mr-1" />
-                Simuler
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-accent"
+                onClick={handleSimulate}
+                disabled={isSimulating}
+              >
+                {isSimulating ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Play className="h-4 w-4 mr-1" />
+                )}
+                {showSimulation ? "Recalculer" : "Simuler"}
               </Button>
             </div>
+
+            {/* Simulation Results */}
+            {showSimulation && simulationScenario && (
+              <div className="mt-4 pt-4 border-t border-border/50 space-y-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Badge className="bg-accent/15 text-accent border-0">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    Scénario : {simulationScenario.scenario}
+                  </Badge>
+                </div>
+
+                {/* Impact Metrics */}
+                <div className="grid grid-cols-3 gap-3">
+                  {simulationScenario.impact.map((item, i) => (
+                    <div key={i} className="text-center p-3 rounded-xl bg-background/50 border border-border/50">
+                      <div className="text-xs text-muted-foreground mb-1">{item.metric}</div>
+                      <div className="flex items-center justify-center gap-2">
+                        <span className="text-lg font-bold text-muted-foreground">{item.current}</span>
+                        <ArrowRight className="h-3 w-3 text-accent" />
+                        <span className="text-lg font-bold text-accent">{item.projected}</span>
+                      </div>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "mt-1 text-xs",
+                          item.change > 0 ? "border-success/50 text-success" : "border-muted-foreground/50"
+                        )}
+                      >
+                        {item.change > 0 ? '+' : ''}{item.change}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recommendation */}
+                <div className="p-3 rounded-xl bg-accent/10 border border-accent/20">
+                  <div className="flex items-start gap-2">
+                    <TrendingUp className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                    <p className="text-sm">{simulationScenario.recommendation}</p>
+                  </div>
+                </div>
+
+                {/* Risks */}
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground font-medium">Points d'attention :</p>
+                  {simulationScenario.risks.map((risk, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <AlertTriangle className="h-3 w-3 text-warning" />
+                      {risk}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Action */}
+                <Button 
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => setShowSimulation(false)}
+                >
+                  Fermer la simulation
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
