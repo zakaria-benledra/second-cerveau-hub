@@ -31,34 +31,43 @@ export function useCurrentIdentity() {
         .limit(1)
         .maybeSingle();
 
-      // Default values if no scores exist
+      // Default to 0 for new users without any data
       // Normalize indices: if > 1, assume they're already percentages
-      const globalScore = scores?.global_score ?? 50;
-      const consistencyFactor = scores?.consistency_factor ?? 0.5;
+      const globalScore = scores?.global_score ?? 0;
+      const consistencyFactor = scores?.consistency_factor ?? 0;
       const rawMomentum = scores?.momentum_index ?? 0;
       const momentumIndex = rawMomentum > 1 ? rawMomentum / 100 : rawMomentum;
       const rawBurnout = scores?.burnout_index ?? 0;
       const burnoutIndex = rawBurnout > 1 ? rawBurnout / 100 : rawBurnout;
+      
+      // Check if user is brand new (no scores at all)
+      const isNewUser = !scores;
 
       // 2. Déterminer persona based on available metrics
-      let persona = "Explorer";
-      let tagline = "Tu explores tes capacités";
+      let persona = "Nouveau Voyageur";
+      let tagline = "Ton aventure commence aujourd'hui";
       
-      if (globalScore > 80 && consistencyFactor > 0.75) {
-        persona = "Maître de Discipline";
-        tagline = "Tu incarnes la discipline au quotidien";
-      } else if (globalScore > 60 && momentumIndex > 0.5) {
-        persona = "Bâtisseur en Progression";
-        tagline = "Tu construis de nouvelles habitudes solides";
-      } else if (globalScore < 50 && burnoutIndex > 0.7) {
-        persona = "En Reconstruction";
-        tagline = "Tu reprends le contrôle progressivement";
-      } else if (consistencyFactor > 0.8) {
-        persona = "Roc de Stabilité";
-        tagline = "Ta cohérence est exemplaire";
-      } else if (globalScore > 70) {
-        persona = "Performeur Régulier";
-        tagline = "Tu maintiens un bon niveau de performance";
+      // Only assign personas if user has data
+      if (!isNewUser) {
+        if (globalScore > 80 && consistencyFactor > 0.75) {
+          persona = "Maître de Discipline";
+          tagline = "Tu incarnes la discipline au quotidien";
+        } else if (globalScore > 60 && momentumIndex > 0.5) {
+          persona = "Bâtisseur en Progression";
+          tagline = "Tu construis de nouvelles habitudes solides";
+        } else if (globalScore < 50 && burnoutIndex > 0.7) {
+          persona = "En Reconstruction";
+          tagline = "Tu reprends le contrôle progressivement";
+        } else if (consistencyFactor > 0.8) {
+          persona = "Roc de Stabilité";
+          tagline = "Ta cohérence est exemplaire";
+        } else if (globalScore > 70) {
+          persona = "Performeur Régulier";
+          tagline = "Tu maintiens un bon niveau de performance";
+        } else {
+          persona = "Explorer";
+          tagline = "Tu explores tes capacités";
+        }
       }
 
       // 3. Récupérer comportements façonnants
