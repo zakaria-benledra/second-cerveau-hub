@@ -134,7 +134,7 @@ function analyzeEmotions(entries: any[]): Array<{ name: string; frequency: numbe
   const emotionCounts: Record<string, number> = {};
   
   for (const entry of entries) {
-    const text = `${entry.content || ''} ${entry.title || ''}`;
+    const text = `${entry.reflections || ''} ${entry.gratitude || ''} ${entry.wins || ''} ${entry.challenges || ''}`;
     
     for (const [emotion, config] of Object.entries(EMOTION_KEYWORDS)) {
       const matches = countKeywordMatches(text, config.keywords);
@@ -158,7 +158,7 @@ function analyzeThinkingDomains(entries: any[]): Array<{ name: string; count: nu
   const domainCounts: Record<string, number> = {};
   
   for (const entry of entries) {
-    const text = `${entry.content || ''} ${entry.title || ''}`;
+    const text = `${entry.reflections || ''} ${entry.gratitude || ''} ${entry.wins || ''} ${entry.challenges || ''}`;
     
     // Also use the domain field if available
     if (entry.domain) {
@@ -184,7 +184,7 @@ function analyzeCognitivePatterns(entries: any[]): Array<{ type: string; descrip
   const patternCounts: Record<string, number> = {};
   
   for (const entry of entries) {
-    const text = `${entry.content || ''} ${entry.title || ''}`;
+    const text = `${entry.reflections || ''} ${entry.gratitude || ''} ${entry.wins || ''} ${entry.challenges || ''}`;
     
     for (const [pattern, config] of Object.entries(COGNITIVE_PATTERNS)) {
       const matches = countKeywordMatches(text, config.keywords);
@@ -240,18 +240,13 @@ function analyzeMentalEvolution(entries: any[]): {
     let weekStress = 30;
     
     for (const entry of data.entries) {
-      const text = `${entry.content || ''} ${entry.title || ''}`;
+      const text = `${entry.reflections || ''} ${entry.gratitude || ''} ${entry.wins || ''} ${entry.challenges || ''}`;
       
-      // Clarity: based on entry clarity_score if available, or analyze text structure
-      if (entry.clarity_score) {
-        weekClarity = (weekClarity + entry.clarity_score) / 2;
-      } else {
-        // Longer, structured entries suggest more clarity
-        const textLength = text.length;
-        if (textLength > 500) weekClarity += 10;
-        else if (textLength > 200) weekClarity += 5;
-        else if (textLength < 50) weekClarity -= 10;
-      }
+      // Clarity: based on text structure (longer, structured entries suggest more clarity)
+      const textLength = text.length;
+      if (textLength > 500) weekClarity += 10;
+      else if (textLength > 200) weekClarity += 5;
+      else if (textLength < 50) weekClarity -= 10;
       
       // Positivity: count positive vs negative emotions
       const positiveEmotions = ['Joie', 'Motivation', 'Gratitude', 'Sérénité', 'Fierté'];
@@ -285,10 +280,10 @@ function analyzeMentalEvolution(entries: any[]): {
         else if (entry.mood <= 2) weekPositivity = (weekPositivity + 20) / 2;
       }
       
-      // Use energy if available for stress
-      if (entry.energy) {
-        if (entry.energy <= 2) weekStress = (weekStress + 60) / 2;
-        else if (entry.energy >= 4) weekStress = Math.max(0, (weekStress - 20) / 2);
+      // Use energy_level if available for stress
+      if (entry.energy_level) {
+        if (entry.energy_level <= 2) weekStress = (weekStress + 60) / 2;
+        else if (entry.energy_level >= 4) weekStress = Math.max(0, (weekStress - 20) / 2);
       }
     }
     
@@ -343,7 +338,7 @@ serve(async (req) => {
 
     const { data: entries, error: entriesError } = await supabase
       .from("journal_entries")
-      .select("id, title, content, mood, energy, domain, clarity_score, created_at")
+      .select("id, reflections, gratitude, wins, challenges, mood, energy_level, created_at")
       .eq("user_id", user.id)
       .gte("created_at", startDate.toISOString())
       .order("created_at", { ascending: true });
