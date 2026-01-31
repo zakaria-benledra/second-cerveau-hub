@@ -146,28 +146,178 @@ function generateDailyIdentity(score: any, habits: any[], tasks: any[]) {
   };
 }
 
-function generateTomorrowPlan(insights: ReturnType<typeof analyzeBehavior>) {
-  const drifts = insights.filter(i => i.type === 'drift');
-  const actions: string[] = [];
+// Enhanced plan generation based on multiple data sources
+interface PlanContext {
+  insights: ReturnType<typeof analyzeBehavior>;
+  score: any;
+  habits: any[];
+  tasks: any[];
+  version: number; // For variation on "Ajuster"
+}
 
-  if (drifts.length === 0) {
-    actions.push('Maintenir vos habitudes positives');
-    actions.push('Identifier une nouvelle habitude à adopter');
-  } else {
-    drifts.forEach(d => {
-      if (d.title.includes('retard')) {
-        actions.push('Terminer les tâches en retard dès le matin');
-      }
-      if (d.title.includes('Habitudes')) {
-        actions.push('Commencer la journée par vos habitudes critiques');
-      }
-      if (d.title.includes('négative')) {
-        actions.push('Réduire votre charge cognitive pour regagner du momentum');
-      }
-    });
+function generateTomorrowPlan(ctx: PlanContext): string[] {
+  const { insights, score, habits, tasks, version } = ctx;
+  const drifts = insights.filter(i => i.type === 'drift');
+  const strengths = insights.filter(i => i.type === 'strength');
+  
+  // All possible action categories with variants
+  const actionPool: { category: string; variants: string[]; condition: () => boolean; priority: number }[] = [
+    // HABITS
+    {
+      category: 'habits_struggling',
+      variants: [
+        'Commencer la journée par vos 2 habitudes les plus importantes',
+        'Bloquer 15 min dès le réveil pour vos habitudes critiques',
+        'Réduire temporairement à 3 habitudes max pour reprendre le rythme',
+      ],
+      condition: () => {
+        const active = habits?.filter(h => h.is_active) || [];
+        const completed = active.filter(h => h.todayLog?.completed).length;
+        return active.length > 0 && completed / active.length < 0.5;
+      },
+      priority: 1,
+    },
+    {
+      category: 'habits_strong',
+      variants: [
+        'Maintenir vos habitudes actuelles et célébrer la constance',
+        'Ajouter une micro-habitude de 5 min à votre routine',
+        'Tester une habitude "challenge" pour progresser',
+      ],
+      condition: () => {
+        const active = habits?.filter(h => h.is_active) || [];
+        const completed = active.filter(h => h.todayLog?.completed).length;
+        return active.length > 0 && completed / active.length >= 0.8;
+      },
+      priority: 3,
+    },
+    // TASKS
+    {
+      category: 'tasks_overdue',
+      variants: [
+        'Traiter les tâches en retard en priorité absolue ce matin',
+        'Bloquer 1h pour liquider le backlog de tâches',
+        'Déléguer ou supprimer les tâches non essentielles en retard',
+      ],
+      condition: () => {
+        const overdue = tasks?.filter(t => t.status === 'todo' && t.due_date && new Date(t.due_date) < new Date()) || [];
+        return overdue.length > 0;
+      },
+      priority: 1,
+    },
+    {
+      category: 'tasks_overloaded',
+      variants: [
+        'Limiter à 3 tâches prioritaires maximum demain',
+        'Reporter les tâches basse priorité à la semaine prochaine',
+        'Utiliser la règle du "1 chose importante" pour demain',
+      ],
+      condition: () => {
+        const todo = tasks?.filter(t => t.status === 'todo') || [];
+        return todo.length > 5;
+      },
+      priority: 2,
+    },
+    // JOURNAL & REFLECTION
+    {
+      category: 'journal_reflection',
+      variants: [
+        'Écrire 3 lignes dans votre journal ce soir (gratitude ou leçons)',
+        'Prendre 5 min pour noter ce qui a bien/mal fonctionné aujourd\'hui',
+        'Faire une mini-rétrospective écrite avant de dormir',
+      ],
+      condition: () => (score?.global_score || 0) < 60 || drifts.length > 0,
+      priority: 2,
+    },
+    // CHALLENGES & GROWTH
+    {
+      category: 'challenge_start',
+      variants: [
+        'Lancer un défi de 7 jours sur une habitude difficile',
+        'Se donner un objectif mesurable pour la semaine',
+        'Créer un mini-défi personnel (ex: 0 écran après 21h)',
+      ],
+      condition: () => strengths.length >= 2 && (score?.global_score || 0) >= 50,
+      priority: 3,
+    },
+    // MOMENTUM & ENERGY
+    {
+      category: 'momentum_recovery',
+      variants: [
+        'Réduire la charge cognitive : simplifier la journée',
+        'Prioriser le repos pour reconstruire l\'énergie',
+        'Faire une seule chose importante, pas plus',
+      ],
+      condition: () => (score?.momentum_index || 0) < -0.05 || (score?.burnout_index || 0) > 60,
+      priority: 1,
+    },
+    {
+      category: 'momentum_boost',
+      variants: [
+        'Capitaliser sur le momentum : ajouter un objectif ambitieux',
+        'Profiter de la dynamique pour attaquer un projet reporté',
+        'Transformer cette énergie en progrès visible',
+      ],
+      condition: () => (score?.momentum_index || 0) > 0.05 && (score?.global_score || 0) >= 60,
+      priority: 3,
+    },
+    // FINANCE (if score available)
+    {
+      category: 'finance_alert',
+      variants: [
+        'Revoir vos dépenses de la semaine et identifier les excès',
+        'Planifier un "jour sans dépense" demain',
+        'Mettre à jour votre budget et ajuster vos objectifs',
+      ],
+      condition: () => (score?.finance_score || 100) < 50,
+      priority: 2,
+    },
+    // DEFAULT GROWTH
+    {
+      category: 'growth_default',
+      variants: [
+        'Identifier une compétence à développer cette semaine',
+        'Lire ou apprendre quelque chose de nouveau (15 min)',
+        'Planifier une action qui vous rapproche de vos objectifs',
+      ],
+      condition: () => true, // Always available as fallback
+      priority: 4,
+    },
+  ];
+
+  // Filter applicable actions and sort by priority
+  const applicable = actionPool
+    .filter(a => a.condition())
+    .sort((a, b) => a.priority - b.priority);
+
+  // Select top 3 unique categories, with variant based on version
+  const selected: string[] = [];
+  const usedCategories = new Set<string>();
+
+  for (const action of applicable) {
+    if (usedCategories.has(action.category)) continue;
+    if (selected.length >= 3) break;
+
+    // Pick variant based on version for observable change
+    const variantIndex = version % action.variants.length;
+    selected.push(action.variants[variantIndex]);
+    usedCategories.add(action.category);
   }
 
-  return actions.slice(0, 3);
+  // Ensure we always have 3 actions
+  if (selected.length < 3) {
+    const fallbacks = [
+      'Prendre soin de vous : sommeil, alimentation, mouvement',
+      'Définir 1 priorité claire pour demain',
+      'Célébrer une petite victoire d\'aujourd\'hui',
+    ];
+    for (const fb of fallbacks) {
+      if (selected.length >= 3) break;
+      if (!selected.includes(fb)) selected.push(fb);
+    }
+  }
+
+  return selected;
 }
 
 export default function AICoachPage() {
@@ -193,48 +343,14 @@ export default function AICoachPage() {
   }, [score, habits, tasks]);
 
   const tomorrowActions = useMemo(() => {
-    // Base actions from analysis
-    const base = generateTomorrowPlan(behaviorInsights);
-    if (base.length === 0) return base;
-
-    // Deterministic variations: rotate + swap phrasing to make "Ajuster" observable
-    const rotateBy = planVersion % base.length;
-    const rotated = [...base.slice(rotateBy), ...base.slice(0, rotateBy)];
-
-    const variants: Record<string, string[]> = {
-      'Maintenir vos habitudes positives': [
-        'Maintenir vos habitudes positives',
-        'Protéger vos habitudes déjà en place',
-        'Conserver votre rythme actuel',
-      ],
-      'Identifier une nouvelle habitude à adopter': [
-        'Identifier une nouvelle habitude à adopter',
-        'Tester une micro-habitude simple',
-        'Ajouter une habitude “facile” (5 min)',
-      ],
-      'Terminer les tâches en retard dès le matin': [
-        'Terminer les tâches en retard dès le matin',
-        'Traiter les retards en premier',
-        'Bloquer 30 min pour rattraper les retards',
-      ],
-      'Commencer la journée par vos habitudes critiques': [
-        'Commencer la journée par vos habitudes critiques',
-        'Lancer la journée avec 1 habitude clé',
-        'Prioriser vos habitudes avant le reste',
-      ],
-      'Réduire votre charge cognitive pour regagner du momentum': [
-        'Réduire votre charge cognitive pour regagner du momentum',
-        'Alléger votre journée pour relancer le momentum',
-        'Simplifier votre plan pour remonter',
-      ],
-    };
-
-    return rotated.map((a) => {
-      const opts = variants[a];
-      if (!opts) return a;
-      return opts[planVersion % opts.length];
+    return generateTomorrowPlan({
+      insights: behaviorInsights,
+      score,
+      habits: habits || [],
+      tasks: tasks || [],
+      version: planVersion,
     });
-  }, [behaviorInsights, planVersion]);
+  }, [behaviorInsights, score, habits, tasks, planVersion]);
 
   const strengths = behaviorInsights.filter(i => i.type === 'strength');
   const drifts = behaviorInsights.filter(i => i.type === 'drift' || i.type === 'weakness');
