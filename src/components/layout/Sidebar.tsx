@@ -148,18 +148,15 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         'flex h-16 items-center border-b border-sidebar-border/50 px-4',
         collapsed && 'justify-center px-2'
       )}>
-        <Link to="/" className="flex items-center gap-3 group">
+        <Link to="/" className="flex items-center gap-2 group">
           <div className="relative">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary text-primary-foreground font-bold text-sm shadow-lg group-hover:shadow-glow transition-all duration-300">
-              SC
+            <div className="h-9 w-9 rounded-xl gradient-primary flex items-center justify-center group-hover:scale-105 transition-transform shadow-lg">
+              <Brain className="h-5 w-5 text-primary-foreground" />
             </div>
             <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-primary to-accent opacity-0 group-hover:opacity-30 blur transition-opacity duration-300" />
           </div>
           {!collapsed && (
-            <div className="flex flex-col">
-              <span className="font-bold text-sm text-sidebar-foreground tracking-tight">SECOND</span>
-              <span className="text-[10px] text-sidebar-foreground/50 font-medium uppercase tracking-widest -mt-0.5">CERVEAU</span>
-            </div>
+            <span className="font-bold text-lg text-sidebar-foreground tracking-tight">Minded</span>
           )}
         </Link>
       </div>

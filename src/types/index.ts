@@ -1,4 +1,4 @@
-// Core types for Second Cerveau
+// Core types for Minded
 
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 export type TaskStatus = 'todo' | 'in_progress' | 'done';

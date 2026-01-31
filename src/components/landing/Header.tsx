@@ -51,7 +51,7 @@ export function Header() {
             <div className="h-9 w-9 rounded-xl gradient-primary flex items-center justify-center group-hover:scale-105 transition-transform">
               <Brain className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-xl">Second Brain</span>
+            <span className="font-bold text-xl">Minded</span>
           </button>
 
           {/* Desktop Navigation */}
