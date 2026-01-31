@@ -1,10 +1,10 @@
-import { Menu, Bell, Search, Sun, Moon, ChevronRight, Home } from 'lucide-react';
+import { Menu, Bell, Search, Sun, Moon, ChevronRight, Home, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useAppStore } from '@/stores/useAppStore';
 import { useState, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useUnreadCount } from '@/hooks/useNotifications';
 import { useAINotifications } from '@/hooks/useAIBehavior';
 import { cn } from '@/lib/utils';
@@ -45,11 +45,15 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { inboxItems } = useAppStore();
   const [isDark, setIsDark] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Unified notification count: legacy + AI notifications
   const { data: legacyUnread = 0 } = useUnreadCount();
   const { unreadCount: aiUnread = 0 } = useAINotifications();
   const totalUnread = legacyUnread + aiUnread;
+  
+  // Show back button only if not on home page
+  const showBackButton = location.pathname !== '/';
 
   useEffect(() => {
     // Check localStorage or default to dark
@@ -89,6 +93,18 @@ export function Header({ onMenuClick }: HeaderProps) {
         >
           <Menu className="h-5 w-5" />
         </Button>
+
+        {/* Back Button */}
+        {showBackButton && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => navigate(-1)}
+            className="rounded-lg"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
 
         {/* Breadcrumbs */}
         <nav className="hidden md:flex items-center gap-1.5 text-sm">
