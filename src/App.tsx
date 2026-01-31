@@ -102,10 +102,10 @@ const App = () => (
             
             {/* BI Dashboards */}
             <Route path="/bi/executive" element={<ProtectedRoute><AppLayout><ExecutiveDashboardPage /></AppLayout></ProtectedRoute>} />
-            <Route path="/bi/behavior" element={<ProtectedRoute><AppLayout><BehaviorTrendsPage /></AppLayout></ProtectedRoute>} />
-            <Route path="/bi/financial" element={<ProtectedRoute><AppLayout><FinancialHealthPage /></AppLayout></ProtectedRoute>} />
-            <Route path="/bi/habits" element={<ProtectedRoute><AppLayout><HabitStabilityPage /></AppLayout></ProtectedRoute>} />
-            <Route path="/bi/decisions" element={<ProtectedRoute><AppLayout><DecisionImpactPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/bi/behavior-trends" element={<ProtectedRoute><AppLayout><BehaviorTrendsPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/bi/financial-health" element={<ProtectedRoute><AppLayout><FinancialHealthPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/bi/habit-stability" element={<ProtectedRoute><AppLayout><HabitStabilityPage /></AppLayout></ProtectedRoute>} />
+            <Route path="/bi/decision-impact" element={<ProtectedRoute><AppLayout><DecisionImpactPage /></AppLayout></ProtectedRoute>} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>
