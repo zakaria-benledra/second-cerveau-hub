@@ -79,7 +79,7 @@ export function ImpactTasksCard({ tasks, onComplete, isLoading }: ImpactTasksCar
               Toutes les tâches terminées !
             </p>
             <Link 
-              to="/tasks" 
+              to="/kanban" 
               className="text-xs text-muted-foreground hover:text-primary mt-1 inline-block"
             >
               Planifier demain →
@@ -143,7 +143,7 @@ export function ImpactTasksCard({ tasks, onComplete, isLoading }: ImpactTasksCar
 
             {/* View all */}
             <Link 
-              to="/tasks"
+              to="/kanban"
               className="flex items-center justify-center gap-1 p-2 text-xs text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-muted/50 mt-2"
             >
               Voir toutes les tâches

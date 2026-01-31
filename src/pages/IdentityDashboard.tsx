@@ -355,7 +355,7 @@ export default function IdentityDashboard() {
                   
                   <Button 
                     className="w-full"
-                    onClick={() => navigate('/tasks')}
+                    onClick={() => navigate('/kanban')}
                   >
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     Commencer maintenant
