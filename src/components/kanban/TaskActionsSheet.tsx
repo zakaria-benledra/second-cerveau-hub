@@ -13,12 +13,19 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   useTaskChecklist, 
   useAddChecklistItem, 
   useToggleChecklistItem,
   useDeleteChecklistItem 
 } from '@/hooks/useTaskChecklist';
+import { 
+  useTaskComments,
+  useAddTaskComment,
+  useDeleteTaskComment 
+} from '@/hooks/useTaskComments';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Flag, 
@@ -34,7 +41,9 @@ import {
   Trash2,
   CalendarPlus,
   Loader2,
-  ListChecks
+  ListChecks,
+  MessageSquare,
+  Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays } from 'date-fns';
@@ -74,12 +83,18 @@ export function TaskActionsSheet({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newChecklistItem, setNewChecklistItem] = useState('');
+  const [newComment, setNewComment] = useState('');
 
   // Checklist hooks
   const { data: checklistItems = [], isLoading: isLoadingChecklist } = useTaskChecklist(task.id);
   const addChecklistItem = useAddChecklistItem();
   const toggleChecklistItem = useToggleChecklistItem();
   const deleteChecklistItem = useDeleteChecklistItem();
+
+  // Comments hooks
+  const { data: comments = [], isLoading: isLoadingComments } = useTaskComments(task.id);
+  const addComment = useAddTaskComment();
+  const deleteComment = useDeleteTaskComment();
 
   // Status change mutation
   const updateStatus = useMutation({
@@ -174,6 +189,12 @@ export function TaskActionsSheet({
     if (!newChecklistItem.trim()) return;
     await addChecklistItem.mutateAsync({ taskId: task.id, title: newChecklistItem.trim() });
     setNewChecklistItem('');
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+    await addComment.mutateAsync({ taskId: task.id, content: newComment.trim() });
+    setNewComment('');
   };
 
   const completedCount = checklistItems.filter(item => item.completed).length;
@@ -420,6 +441,86 @@ export function TaskActionsSheet({
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Comments Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Commentaires
+              </h3>
+              {comments.length > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {comments.length}
+                </Badge>
+              )}
+            </div>
+
+            {/* Comments list */}
+            <ScrollArea className="max-h-[200px]">
+              <div className="space-y-3 pr-2">
+                {isLoadingComments ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : comments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-2">
+                    Aucun commentaire
+                  </p>
+                ) : (
+                  comments.map((comment) => (
+                    <div 
+                      key={comment.id} 
+                      className="group p-3 rounded-lg bg-muted/50 border border-border/50"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm flex-1">{comment.content}</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                          onClick={() => deleteComment.mutate({ commentId: comment.id, taskId: task.id })}
+                        >
+                          <Trash2 className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {format(new Date(comment.created_at), 'd MMM à HH:mm', { locale: fr })}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
+
+            {/* Add new comment */}
+            <div className="flex items-end gap-2">
+              <Textarea
+                placeholder="Ajouter un commentaire..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="min-h-[60px] text-sm resize-none"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
+                    handleAddComment();
+                  }
+                }}
+              />
+              <Button 
+                size="icon"
+                onClick={handleAddComment}
+                disabled={!newComment.trim() || addComment.isPending}
+              >
+                {addComment.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           </div>
 
