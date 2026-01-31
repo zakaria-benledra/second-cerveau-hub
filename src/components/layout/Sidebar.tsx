@@ -40,6 +40,7 @@ const navGroups = [
     collapsible: false,
     items: [
       { icon: BarChart3, label: "Vue d'Ensemble", path: '/bi/executive' },
+      { icon: Activity, label: 'Dashboard BI', path: '/dashboard' },
       { icon: Home, label: 'Qui Je Deviens', path: '/' },
       { icon: TrendingUp, label: 'Mon Momentum', path: '/scores' },
     ],
