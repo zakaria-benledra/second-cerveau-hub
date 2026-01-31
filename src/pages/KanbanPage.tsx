@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,9 @@ function calculateImpactScore(task: KanbanTask): number {
 }
 
 export default function KanbanPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const highlightedTaskId = searchParams.get('task') || undefined;
+  
   const { data: columns, isLoading } = useKanbanTasks();
   const { data: projects = [] } = useProjects();
   const { data: goals = [] } = useGoals();
@@ -50,6 +54,19 @@ export default function KanbanPage() {
   const moveTask = useMoveKanbanTask();
   const createTask = useCreateTask();
   const { recentActions, canUndo, undoLast, isUndoing } = useRecentUndos();
+  
+  // Clear the highlight param after 5 seconds
+  useEffect(() => {
+    if (highlightedTaskId) {
+      const timer = setTimeout(() => {
+        setSearchParams(params => {
+          params.delete('task');
+          return params;
+        });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedTaskId, setSearchParams]);
   
   // Filter interventions related to Kanban reorganization
   const kanbanInterventions = useMemo(() => {
@@ -313,7 +330,7 @@ export default function KanbanPage() {
                     glowColor={column.glow}
                     isDropTarget={dragOverColumn === column.id}
                     draggedTaskId={draggedTaskId || undefined}
-                    
+                    highlightedTaskId={highlightedTaskId}
                     projectsMap={projectsMap}
                     goalsMap={goalsMap}
                     onDragOver={(e) => handleDragOver(e, column.id)}

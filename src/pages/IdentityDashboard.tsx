@@ -355,7 +355,7 @@ export default function IdentityDashboard() {
                   
                   <Button 
                     className="w-full"
-                    onClick={() => navigate('/kanban')}
+                    onClick={() => navigate(`/kanban?task=${transformativeAction.id}`)}
                   >
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     Commencer maintenant

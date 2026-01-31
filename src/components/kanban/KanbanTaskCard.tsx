@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { 
   GripVertical, 
@@ -20,6 +20,7 @@ import { useTaskChecklist } from '@/hooks/useTaskChecklist';
 interface KanbanTaskCardProps {
   task: KanbanTask;
   isDragging: boolean;
+  isHighlighted?: boolean;
   isTopInDoing?: boolean;
   projectName?: string;
   goalTitle?: string;
@@ -61,12 +62,14 @@ function calculateImpactScore(task: KanbanTask): number {
 export function KanbanTaskCard({
   task,
   isDragging,
+  isHighlighted,
   isTopInDoing,
   projectName,
   goalTitle,
   onDragStart,
   onDragEnd,
 }: KanbanTaskCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isLocalDragging, setIsLocalDragging] = useState(false);
   const priority = priorityConfig[task.priority] || priorityConfig.medium;
@@ -83,6 +86,13 @@ export function KanbanTaskCard({
   const age = differenceInDays(new Date(), new Date(task.created_at));
   const isAging = age > 7 && task.kanban_status !== 'done';
   const isStale = age > 14 && task.kanban_status !== 'done';
+
+  // Auto-scroll and pulse effect when highlighted
+  useEffect(() => {
+    if (isHighlighted && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isHighlighted]);
 
   // ISSUE #11 FIX: Better visual feedback for dragging
   const handleDragStart = (e: React.DragEvent) => {
@@ -111,6 +121,7 @@ export function KanbanTaskCard({
   return (
     <>
       <div
+        ref={cardRef}
         draggable
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
@@ -123,7 +134,9 @@ export function KanbanTaskCard({
           'transition-all duration-300 ease-out',
           // ISSUE #11 FIX: Enhanced dragging visual
           actualDragging && 'opacity-40 scale-95 ring-2 ring-primary shadow-xl shadow-primary/20',
-          isTopInDoing && 'ring-1 ring-warning/50 bg-warning/5'
+          isTopInDoing && 'ring-1 ring-warning/50 bg-warning/5',
+          // Highlighted task (from URL param)
+          isHighlighted && 'ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse bg-primary/10 shadow-xl shadow-primary/30'
         )}
       >
         {/* Checklist indicator on card - inside draggable container */}
