@@ -123,6 +123,104 @@ async function computeFinanceScore(supabase: any, userId: string, date: string):
   return Math.min(100, Math.max(0, score));
 }
 
+interface FinancialDisciplineResult {
+  score: number;
+  budgetAdherence: number;
+  impulsiveSpending: number;
+  savingsRate: number;
+}
+
+async function computeFinancialDisciplineScore(
+  supabase: any, 
+  userId: string, 
+  date: string
+): Promise<FinancialDisciplineResult> {
+  const monthStart = date.substring(0, 7) + "-01";
+  
+  // Fetch budgets with category info
+  const { data: budgets } = await supabase
+    .from("budgets")
+    .select("category_id, monthly_limit")
+    .eq("user_id", userId);
+
+  // Fetch all transactions for the month
+  const { data: transactions } = await supabase
+    .from("finance_transactions")
+    .select("amount, type, category_id, source")
+    .eq("user_id", userId)
+    .gte("date", monthStart)
+    .lte("date", date);
+
+  if (!transactions?.length) {
+    return { score: 100, budgetAdherence: 100, impulsiveSpending: 0, savingsRate: 0 };
+  }
+
+  // Calculate income and expenses
+  const income = transactions
+    .filter((t: any) => t.type === 'income')
+    .reduce((sum: number, t: any) => sum + Math.abs(Number(t.amount)), 0);
+  
+  const expenses = transactions
+    .filter((t: any) => t.type === 'expense')
+    .reduce((sum: number, t: any) => sum + Math.abs(Number(t.amount)), 0);
+
+  // 1. Budget Adherence: % of categories within budget
+  let budgetAdherence = 100;
+  if (budgets?.length) {
+    const categorySpending: Record<string, number> = {};
+    
+    for (const t of transactions.filter((t: any) => t.type === 'expense' && t.category_id)) {
+      const catId = t.category_id;
+      categorySpending[catId] = (categorySpending[catId] || 0) + Math.abs(Number(t.amount));
+    }
+    
+    let categoriesInBudget = 0;
+    let totalBudgetedCategories = 0;
+    
+    for (const budget of budgets) {
+      if (!budget.category_id) continue;
+      totalBudgetedCategories++;
+      const spent = categorySpending[budget.category_id] || 0;
+      if (spent <= Number(budget.monthly_limit)) {
+        categoriesInBudget++;
+      }
+    }
+    
+    budgetAdherence = totalBudgetedCategories > 0 
+      ? (categoriesInBudget / totalBudgetedCategories) * 100 
+      : 100;
+  }
+
+  // 2. Impulsive Spending: % of transactions without category or from non-planned sources
+  const impulsiveTransactions = transactions.filter((t: any) => 
+    t.type === 'expense' && (!t.category_id || t.source === 'import')
+  ).length;
+  
+  const totalExpenseTransactions = transactions.filter((t: any) => t.type === 'expense').length;
+  const impulsiveSpending = totalExpenseTransactions > 0 
+    ? (impulsiveTransactions / totalExpenseTransactions) * 100 
+    : 0;
+
+  // 3. Savings Rate: % saved vs income
+  const savings = income - expenses;
+  const savingsRate = income > 0 
+    ? Math.max(0, (savings / income) * 100) 
+    : 0;
+
+  // Composite score with weights
+  const score = 
+    (budgetAdherence * 0.4) +
+    ((100 - impulsiveSpending) * 0.3) +
+    (Math.min(100, savingsRate * 2) * 0.3); // savingsRate capped at 50% = 100 points
+
+  return {
+    score: Math.min(100, Math.max(0, score)),
+    budgetAdherence: Math.round(budgetAdherence * 100) / 100,
+    impulsiveSpending: Math.round(impulsiveSpending * 100) / 100,
+    savingsRate: Math.round(savingsRate * 100) / 100,
+  };
+}
+
 async function computeHealthScore(supabase: any, userId: string, date: string): Promise<number> {
   const dateStart = `${date}T00:00:00`;
   const dateEnd = `${date}T23:59:59`;
@@ -232,6 +330,9 @@ serve(async (req) => {
     const tasksScore = await computeTasksScore(supabase, user_id, date);
     const financeScore = await computeFinanceScore(supabase, user_id, date);
     const healthScore = await computeHealthScore(supabase, user_id, date);
+    
+    // Financial Discipline Score (detailed breakdown)
+    const financialDiscipline = await computeFinancialDisciplineScore(supabase, user_id, date);
 
     // Global score with weights
     const globalScore = 
@@ -268,6 +369,10 @@ serve(async (req) => {
         tasks_score: Math.round(tasksScore * 100) / 100,
         finance_score: Math.round(financeScore * 100) / 100,
         health_score: Math.round(healthScore * 100) / 100,
+        financial_discipline_score: Math.round(financialDiscipline.score * 100) / 100,
+        budget_adherence: financialDiscipline.budgetAdherence,
+        impulsive_spending: financialDiscipline.impulsiveSpending,
+        savings_rate: financialDiscipline.savingsRate,
         momentum_index: Math.round(momentumIndex * 100) / 100,
         burnout_index: Math.round(burnoutIndex * 100) / 100,
         consistency_factor: Math.round(consistency * 100) / 100,
