@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { AIRisk, AIAction } from '@/ai';
 
 export interface DailyBriefing {
   summary: {
@@ -21,16 +22,8 @@ export interface DailyBriefing {
     total: number;
     list: any[];
   };
-  risks: Array<{
-    type: string;
-    level: string;
-    message: string;
-  }>;
-  recommendations: Array<{
-    action: string;
-    message: string;
-    confidence: number;
-  }>;
+  risks: Array<AIRisk | { type: string; level: string; message: string }>;
+  recommendations: Array<AIAction | { action: string; message: string; confidence: number }>;
   pending_proposals: number;
 }
 

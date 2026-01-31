@@ -223,12 +223,15 @@ export function useTodayCommand(): CommandCenterState {
     // AI-BASED SIGNALS (from briefing)
     if (briefing?.risks) {
       briefing.risks.slice(0, 2).forEach((risk, i) => {
+        // Handle both AIRisk and legacy format
+        const level = 'severity' in risk ? risk.severity : ('level' in risk ? risk.level : 'medium');
+        const message = 'description' in risk ? risk.description : ('message' in risk ? risk.message : '');
         signals.push({
           id: `ai-risk-${i}`,
-          type: risk.level === 'critical' ? 'danger' : 'warning',
+          type: level === 'critical' ? 'danger' : 'warning',
           category: 'energy',
-          title: risk.message.slice(0, 40),
-          description: risk.message,
+          title: message.slice(0, 40),
+          description: message,
           source: 'ai',
         });
       });
@@ -276,7 +279,9 @@ export function useTodayCommand(): CommandCenterState {
   // AI Insight
   const aiInsight = useMemo(() => {
     if (briefing?.recommendations?.[0]) {
-      return briefing.recommendations[0].message;
+      const rec = briefing.recommendations[0];
+      // Handle both AIAction and legacy format
+      return 'description' in rec ? rec.description : ('message' in rec ? rec.message : '');
     }
     // Fallback insight
     if (energyLevel === 'high') {
