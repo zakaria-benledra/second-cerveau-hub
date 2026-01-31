@@ -61,7 +61,7 @@ export function FooterSection() {
               <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
                 <Brain className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="font-bold text-lg">Second Brain</span>
+              <span className="font-bold text-lg">Minded</span>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               Le système d'intelligence comportementale 
@@ -101,7 +101,7 @@ export function FooterSection() {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-border/40 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Second Brain. Tous droits réservés.
+            © {new Date().getFullYear()} Minded. Tous droits réservés.
           </p>
           
           <div className="flex items-center gap-6">

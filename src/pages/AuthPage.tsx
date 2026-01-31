@@ -191,7 +191,7 @@ export default function AuthPage() {
               >
                 <Brain className="h-8 w-8 text-primary-foreground" />
               </motion.div>
-              <h1 className="text-2xl font-bold tracking-tight mb-1">SECOND BRAIN</h1>
+              <h1 className="text-2xl font-bold tracking-tight mb-1">MINDED</h1>
               <p className="text-sm text-muted-foreground">
                 Behavioral Intelligence System
               </p>

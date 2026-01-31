@@ -40,7 +40,7 @@ export function TestimonialsSection() {
       name: 'Marie L.',
       role: 'Designer Freelance',
       avatar: 'ML',
-      quote: 'J\'ai enfin compris pourquoi je sabotais mes objectifs financiers. Les patterns révélés par Second Brain m\'ont permis d\'économiser plus en 2 mois qu\'en toute l\'année précédente.',
+      quote: 'J\'ai enfin compris pourquoi je sabotais mes objectifs financiers. Les patterns révélés par Minded m\'ont permis d\'économiser plus en 2 mois qu\'en toute l\'année précédente.',
       stats: [
         { icon: Target, label: 'Économies', value: '+2 400€' },
         { icon: TrendingUp, label: 'Cohérence', value: '+89%' }

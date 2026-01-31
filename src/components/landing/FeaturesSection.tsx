@@ -39,7 +39,7 @@ export function FeaturesSection() {
   const features = [
     {
       icon: Brain,
-      title: 'Second Brain',
+      title: 'Minded',
       description: 'Un système intelligent qui apprend de tes comportements et te guide vers ta meilleure version.',
       highlight: true
     },
@@ -122,7 +122,7 @@ export function FeaturesSection() {
               </span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Plus besoin de jongler entre 10 apps. Second Brain unifie tout 
+              Plus besoin de jongler entre 10 apps. Minded unifie tout 
               ce qui compte pour ta transformation.
             </p>
           </motion.div>
