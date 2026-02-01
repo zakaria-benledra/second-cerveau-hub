@@ -619,6 +619,45 @@ export type Database = {
         }
         Relationships: []
       }
+      badges: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string
+          icon: string
+          id: string
+          name: string
+          rarity: string | null
+          requirement_type: string
+          requirement_value: number
+          xp_reward: number | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description: string
+          icon: string
+          id: string
+          name: string
+          rarity?: string | null
+          requirement_type: string
+          requirement_value: number
+          xp_reward?: number | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          rarity?: string | null
+          requirement_type?: string
+          requirement_value?: number
+          xp_reward?: number | null
+        }
+        Relationships: []
+      }
       bank_connections: {
         Row: {
           access_token: string | null
@@ -1801,6 +1840,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gamification_profiles: {
+        Row: {
+          created_at: string | null
+          current_level: number | null
+          current_streak: number | null
+          id: string
+          last_activity_date: string | null
+          lifetime_habits_completed: number | null
+          lifetime_tasks_completed: number | null
+          longest_streak: number | null
+          total_xp: number | null
+          updated_at: string | null
+          xp_to_next_level: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_level?: number | null
+          current_streak?: number | null
+          id: string
+          last_activity_date?: string | null
+          lifetime_habits_completed?: number | null
+          lifetime_tasks_completed?: number | null
+          longest_streak?: number | null
+          total_xp?: number | null
+          updated_at?: string | null
+          xp_to_next_level?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          current_level?: number | null
+          current_streak?: number | null
+          id?: string
+          last_activity_date?: string | null
+          lifetime_habits_completed?: number | null
+          lifetime_tasks_completed?: number | null
+          longest_streak?: number | null
+          total_xp?: number | null
+          updated_at?: string | null
+          xp_to_next_level?: number | null
+        }
+        Relationships: []
       }
       goals: {
         Row: {
@@ -4004,6 +4085,73 @@ export type Database = {
           },
         ]
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          id: string
+          unlocked_at: string | null
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          id?: string
+          unlocked_at?: string | null
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          id?: string
+          unlocked_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_challenge_progress: {
+        Row: {
+          challenge_id: string
+          completed_at: string | null
+          created_at: string | null
+          current_progress: number | null
+          id: string
+          is_completed: boolean | null
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_progress?: number | null
+          id?: string
+          is_completed?: boolean | null
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_progress?: number | null
+          id?: string
+          is_completed?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenge_progress_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_journey_events: {
         Row: {
           created_at: string
@@ -4223,6 +4371,48 @@ export type Database = {
           },
         ]
       }
+      weekly_challenges: {
+        Row: {
+          challenge_type: string
+          created_at: string | null
+          description: string
+          ends_at: string
+          icon: string
+          id: string
+          is_active: boolean | null
+          starts_at: string
+          target_value: number
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          challenge_type: string
+          created_at?: string | null
+          description: string
+          ends_at: string
+          icon: string
+          id?: string
+          is_active?: boolean | null
+          starts_at: string
+          target_value: number
+          title: string
+          xp_reward: number
+        }
+        Update: {
+          challenge_type?: string
+          created_at?: string | null
+          description?: string
+          ends_at?: string
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          starts_at?: string
+          target_value?: number
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       weekly_stats: {
         Row: {
           created_at: string
@@ -4375,6 +4565,7 @@ export type Database = {
     }
     Functions: {
       archive_completed_tasks: { Args: never; Returns: number }
+      calculate_level: { Args: { xp: number }; Returns: number }
       check_feature_access: {
         Args: { _feature: string; _user_id: string }
         Returns: boolean
@@ -4415,6 +4606,7 @@ export type Database = {
         Args: { p_habit_id: string; p_user_id: string }
         Returns: boolean
       }
+      xp_for_next_level: { Args: { current_level: number }; Returns: number }
     }
     Enums: {
       app_role: "owner" | "admin" | "member"
