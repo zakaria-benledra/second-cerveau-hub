@@ -15,7 +15,8 @@ export type SageContext =
   | 'focus'
   | 'celebration'
   | 'encouragement'
-  | 'rest';
+  | 'rest'
+  | 'settings';
 
 export type SageMood = 'neutral' | 'happy' | 'proud' | 'supportive' | 'celebratory';
 
@@ -122,6 +123,11 @@ const contextMessages: Record<SageContext, ContextMessageFn> = {
   rest: (name) => ({
     message: `Tu as bien travaillé, ${name}. Repose-toi bien ce soir.`,
     emoji: '😴'
+  }),
+  
+  settings: (name) => ({
+    message: `Personnalise ton expérience comme tu le souhaites, ${name}.`,
+    emoji: '⚙️'
   }),
 };
 
