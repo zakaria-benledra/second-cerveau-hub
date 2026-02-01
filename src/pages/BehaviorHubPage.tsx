@@ -1,4 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { GlobalHeader } from "@/components/layout/GlobalHeader";
+import { SageCompanion } from "@/components/sage";
+import { usePageSage } from "@/hooks/usePageSage";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -23,21 +26,21 @@ export default function BehaviorHubPage() {
     <AppLayout>
       <div className="container max-w-5xl mx-auto py-6 px-4 space-y-6">
         {/* Header */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl gradient-primary">
-              <Zap className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                Behavior Hub
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                L'usine à discipline — Construis qui tu veux devenir
-              </p>
-            </div>
-          </div>
-        </div>
+        <GlobalHeader
+          variant="page"
+          title="Ton Hub"
+          subtitle="Habitudes, victoires et gratitude"
+          icon={<Zap className="h-5 w-5 text-white" />}
+          showStreak={true}
+        />
+
+        {/* Sage Companion */}
+        <SageCompanion
+          context="habits"
+          mood="neutral"
+          variant="inline"
+          className="mb-4"
+        />
 
         {/* Global Stats */}
         <div className="grid grid-cols-3 gap-3">
