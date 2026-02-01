@@ -465,6 +465,24 @@
   .stagger-children > *:nth-child(5) { animation-delay: 200ms; }
   .stagger-children > *:nth-child(6) { animation-delay: 250ms; }
 
+  /* Sage Avatar animations */
+  @keyframes pulse-subtle {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  
+  @keyframes ping-slow {
+    75%, 100% { transform: scale(1.5); opacity: 0; }
+  }
+  
+  .animate-pulse-subtle {
+    animation: pulse-subtle 3s ease-in-out infinite;
+  }
+  
+  .animate-ping-slow {
+    animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
   /* Clickable number - links to history */
   .clickable-stat {
     @apply cursor-pointer transition-all duration-200 hover:text-primary hover:underline underline-offset-4;
