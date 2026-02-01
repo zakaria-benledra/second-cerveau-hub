@@ -3209,6 +3209,50 @@ export type Database = {
           },
         ]
       }
+      sage_experiences: {
+        Row: {
+          action_type: string
+          context_vector: number[]
+          created_at: string
+          id: string
+          metrics_after: Json | null
+          metrics_before: Json | null
+          reward: number
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          action_type: string
+          context_vector: number[]
+          created_at?: string
+          id?: string
+          metrics_after?: Json | null
+          metrics_before?: Json | null
+          reward?: number
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          context_vector?: number[]
+          created_at?: string
+          id?: string
+          metrics_after?: Json | null
+          metrics_before?: Json | null
+          reward?: number
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sage_experiences_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sage_feedback: {
         Row: {
           action_type: string
@@ -3331,6 +3375,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "sage_memory_patterns_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sage_policy_weights: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          weights: number[]
+          workspace_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          weights: number[]
+          workspace_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weights?: number[]
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sage_policy_weights_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
