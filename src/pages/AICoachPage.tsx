@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAICoach } from '@/hooks/useAICoach';
 import { useAICoachEngine } from '@/hooks/useAIBehavior';
@@ -424,7 +424,7 @@ function generateTomorrowPlan(ctx: PlanContext): PlanAction[] {
 }
 
 export default function AICoachPage() {
-  const { refetchBriefing, proposals, approveProposal, isApproving, rejectProposal, isRejecting, risks, risksLoading } = useAICoach();
+  const { refetchBriefing, proposals, approveProposal, isApproving, rejectProposal, isRejecting, risks, risksLoading, generateProposal, isGeneratingProposal } = useAICoach();
   const { interventionHistory, historyLoading } = useAICoachEngine();
   const { data: score } = useTodayScore();
   const { data: habits } = useHabitsWithLogs();
@@ -571,16 +571,30 @@ export default function AICoachPage() {
     }
   };
 
+  // Generate tomorrow plan via backend AI
+  const handleGeneratePlan = useCallback(async () => {
+    // Use real AI backend instead of local hardcoded function
+    const context = {
+      current_score: score?.global_score || 0,
+      habits_completion: habits?.filter(h => h.todayLog?.completed).length || 0,
+      habits_total: habits?.filter(h => h.is_active).length || 0,
+      pending_tasks: tasks?.filter(t => t.status !== 'done').length || 0,
+      insights_count: behaviorInsights.length,
+    };
+
+    generateProposal({ 
+      type: 'tomorrow_plan', 
+      context 
+    });
+  }, [generateProposal, score, habits, tasks, behaviorInsights]);
+
   const handleAdjustPlan = async () => {
     setIsAdjustingPlan(true);
     setPlanAccepted(false);
     play('ai_insight');
 
-    // Optional: ask backend for a refreshed briefing (throttled in hook)
-    await refetchBriefing();
-
-    // Force a new local plan variant (observable UI change)
-    setPlanVersion((v) => v + 1);
+    // Use backend AI to generate new plan
+    await handleGeneratePlan();
 
     // Small delay to make adjustment feel intentional
     setTimeout(() => setIsAdjustingPlan(false), 500);
