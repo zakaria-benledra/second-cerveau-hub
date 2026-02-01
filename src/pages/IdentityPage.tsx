@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { IdentitySnapshotCard, IdentityComparison, PrimaryActionCard } from '@/components/identity';
 import { SageMessage } from '@/components/ai/SageMessage';
@@ -38,8 +39,14 @@ import { cn } from '@/lib/utils';
 
 export default function IdentityPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [trajectoryOpen, setTrajectoryOpen] = useState(true);
   const [evolutionOpen, setEvolutionOpen] = useState(false);
+  
+  // Pull-to-refresh state
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullStart, setPullStart] = useState(0);
+  const [pullDistance, setPullDistance] = useState(0);
   
   // Core data hooks
   const {
@@ -77,6 +84,40 @@ export default function IdentityPage() {
 
   const today = new Date();
   const formattedDate = format(today, "EEEE d MMMM", { locale: fr });
+
+  // Pull-to-refresh handlers
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['today-command'] }),
+      queryClient.invalidateQueries({ queryKey: ['today-score'] }),
+      queryClient.invalidateQueries({ queryKey: ['user-streak'] }),
+    ]);
+    setIsRefreshing(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY === 0) {
+      setPullStart(e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (pullStart > 0) {
+      const distance = e.touches[0].clientY - pullStart;
+      if (distance > 0 && distance < 150) {
+        setPullDistance(distance);
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullDistance > 80) {
+      handleRefresh();
+    }
+    setPullStart(0);
+    setPullDistance(0);
+  };
 
   // Calculate momentum direction
   const momentumDirection = todayScore?.momentum_index 
@@ -166,7 +207,28 @@ export default function IdentityPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-6 pb-8">
+      <div 
+        className="max-w-4xl mx-auto space-y-6 pb-8"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Pull-to-refresh indicator */}
+        {(pullDistance > 0 || isRefreshing) && (
+          <div 
+            className="flex justify-center py-2 transition-all"
+            style={{ 
+              height: isRefreshing ? 40 : pullDistance, 
+              opacity: isRefreshing ? 1 : pullDistance / 80 
+            }}
+          >
+            <Loader2 className={cn(
+              "h-6 w-6 text-primary",
+              (pullDistance > 80 || isRefreshing) && "animate-spin"
+            )} />
+          </div>
+        )}
+        
         {/* Header */}
         <AnimatedContainer delay={0} animation="fade-up">
           <div className="flex items-center justify-between">
