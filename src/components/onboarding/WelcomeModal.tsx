@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useUpdateProfile } from '@/hooks/useUserProfile';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { useConfetti } from '@/hooks/useConfetti';
+import { Sparkles, ArrowRight, Brain } from 'lucide-react';
 
 interface WelcomeModalProps {
   open: boolean;
@@ -15,6 +16,7 @@ export function WelcomeModal({ open, onComplete }: WelcomeModalProps) {
   const [firstName, setFirstName] = useState('');
   const [step, setStep] = useState(1);
   const updateProfile = useUpdateProfile();
+  const { fire } = useConfetti();
 
   const handleSubmit = async () => {
     if (!firstName.trim()) return;
@@ -26,34 +28,37 @@ export function WelcomeModal({ open, onComplete }: WelcomeModalProps) {
     });
     
     setStep(2);
-    setTimeout(onComplete, 2000);
+    fire('fireworks');
+    setTimeout(onComplete, 2500);
   };
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
         {step === 1 ? (
           <>
             <DialogHeader className="text-center">
               <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Sparkles className="h-8 w-8 text-primary" />
+                <Brain className="w-8 h-8 text-primary" />
               </div>
               <DialogTitle className="text-2xl">
                 Bienvenue sur Minded 👋
               </DialogTitle>
               <DialogDescription className="text-base">
-                Je suis Sage, ton coach personnel. Comment dois-je t'appeler ?
+                Je suis Sage, ton coach personnel. 
+                Je vais t'accompagner dans ta transformation.
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">Ton prénom</Label>
+                <Label htmlFor="firstName">Comment dois-je t'appeler ?</Label>
                 <Input
                   id="firstName"
-                  placeholder="Ex: Marie"
+                  placeholder="Ton prénom"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                   className="text-lg py-6"
                   autoFocus
                 />
@@ -61,28 +66,32 @@ export function WelcomeModal({ open, onComplete }: WelcomeModalProps) {
               
               <Button 
                 onClick={handleSubmit} 
-                className="w-full" 
-                size="lg"
                 disabled={!firstName.trim() || updateProfile.isPending}
+                className="w-full"
+                size="lg"
               >
                 {updateProfile.isPending ? 'Un instant...' : (
                   <>
                     C'est parti !
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
               </Button>
             </div>
           </>
         ) : (
-          <div className="py-8 text-center space-y-4">
-            <div className="text-6xl">🎉</div>
+          <div className="py-8 text-center space-y-4 animate-slide-up-fade">
+            <div className="text-6xl animate-celebration-shake">🎉</div>
             <DialogTitle className="text-2xl">
               Enchanté {firstName} !
             </DialogTitle>
             <DialogDescription className="text-base">
               On va faire de grandes choses ensemble.
             </DialogDescription>
+            <div className="flex items-center justify-center gap-2 text-muted-foreground">
+              <Sparkles className="w-4 h-4 animate-pulse" />
+              Préparation de ton espace...
+            </div>
           </div>
         )}
       </DialogContent>
