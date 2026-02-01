@@ -10,6 +10,8 @@ import { useTodayScore } from '@/hooks/useScores';
 import { useCompleteTask } from '@/hooks/useTasks';
 import { useToggleHabitLog } from '@/hooks/useHabits';
 import { useCelebration } from '@/hooks/useCelebration';
+import { useGamification } from '@/hooks/useGamification';
+import { XPProgressBar } from '@/components/gamification/XPProgressBar';
 import { useAnalytics, usePageTime } from '@/hooks/useAnalytics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,6 +49,7 @@ export default function ZenHomePage() {
   const toggleHabit = useToggleHabitLog();
   const { celebrate } = useCelebration();
   const { trackAction } = useAnalytics();
+  const { rewardAction } = useGamification();
   usePageTime('home');
   
   // Refs pour éviter les doubles clics
@@ -75,18 +78,19 @@ export default function ZenHomePage() {
   }, [habitsForCard, tasksForCard, completedHabitsCount, completedTasksCount]);
 
   // Handlers
-  const handleCompleteTask = useCallback((id: string, title: string) => {
+  const handleCompleteTask = useCallback(async (id: string, title: string) => {
     if (actionRef.current === id || completeTask.isPending) return;
     actionRef.current = id;
     
     completeTask.mutate(id, {
-      onSuccess: () => {
+      onSuccess: async () => {
         const remaining = tasksForCard?.filter(t => t.id !== id && t.status !== 'done').length || 0;
         if (remaining === 0) {
           celebrate('all_tasks_done');
         } else {
           celebrate('task_complete', title);
         }
+        await rewardAction('task_complete');
         trackAction('task_completed', { taskId: id, taskTitle: title });
         actionRef.current = null;
       },
@@ -94,20 +98,21 @@ export default function ZenHomePage() {
         actionRef.current = null;
       }
     });
-  }, [completeTask, tasksForCard, celebrate, trackAction]);
+  }, [completeTask, tasksForCard, celebrate, trackAction, rewardAction]);
 
-  const handleToggleHabit = useCallback((id: string, name: string) => {
+  const handleToggleHabit = useCallback(async (id: string, name: string) => {
     if (actionRef.current === id || toggleHabit.isPending) return;
     actionRef.current = id;
     
     toggleHabit.mutate(id, {
-      onSuccess: () => {
+      onSuccess: async () => {
         const allDone = habitsForCard?.every(h => h.completed || h.id === id);
         if (allDone) {
           celebrate('all_habits_done');
         } else {
           celebrate('habit_complete', name);
         }
+        await rewardAction('habit_complete');
         trackAction('habit_toggled', { habitId: id, habitName: name });
         actionRef.current = null;
       },
@@ -115,7 +120,7 @@ export default function ZenHomePage() {
         actionRef.current = null;
       }
     });
-  }, [toggleHabit, habitsForCard, celebrate, trackAction]);
+  }, [toggleHabit, habitsForCard, celebrate, trackAction, rewardAction]);
 
   // Action principale suggérée
   const primaryAction = nextBestAction && nextBestAction.status !== 'done' 
@@ -152,7 +157,10 @@ export default function ZenHomePage() {
       <div className="space-y-6 pb-8">
         
         {/* Header avec Greeting */}
-        <GlobalHeader variant="greeting" />
+        <div className="flex items-center justify-between">
+          <GlobalHeader variant="greeting" />
+          <XPProgressBar variant="compact" />
+        </div>
 
         {/* Sage Hero - Message principal */}
         <SageCompanion
