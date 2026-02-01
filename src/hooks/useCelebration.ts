@@ -4,6 +4,7 @@ import { useSound } from '@/hooks/useSound';
 import { useHaptic } from '@/hooks/useHaptic';
 import { useToast } from '@/hooks/use-toast';
 import { useFirstName } from '@/hooks/useUserProfile';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 type CelebrationType = 
   | 'task_complete'
@@ -25,6 +26,7 @@ export function useCelebration() {
   const { vibrate } = useHaptic();
   const { toast } = useToast();
   const firstName = useFirstName() || 'Champion';
+  const { trackAction } = useAnalytics();
 
   const celebrate = useCallback((type: CelebrationType, customMessage?: string) => {
     const messages: Record<CelebrationType, CelebrationMessages> = {
@@ -81,7 +83,10 @@ export function useCelebration() {
       description: config.description,
       duration: 3000,
     });
-  }, [fireConfetti, play, vibrate, toast, firstName]);
+
+    // Analytics
+    trackAction(`celebration_${type}`, { customMessage: customMessage || null });
+  }, [fireConfetti, play, vibrate, toast, firstName, trackAction]);
 
   return { celebrate };
 }

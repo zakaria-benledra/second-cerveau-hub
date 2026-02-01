@@ -10,6 +10,7 @@ import { useTodayScore } from '@/hooks/useScores';
 import { useCompleteTask } from '@/hooks/useTasks';
 import { useToggleHabitLog } from '@/hooks/useHabits';
 import { useCelebration } from '@/hooks/useCelebration';
+import { useAnalytics, usePageTime } from '@/hooks/useAnalytics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -45,6 +46,8 @@ export default function ZenHomePage() {
   const completeTask = useCompleteTask();
   const toggleHabit = useToggleHabitLog();
   const { celebrate } = useCelebration();
+  const { trackAction } = useAnalytics();
+  usePageTime('home');
   
   // Refs pour éviter les doubles clics
   const actionRef = useRef<string | null>(null);
@@ -84,13 +87,14 @@ export default function ZenHomePage() {
         } else {
           celebrate('task_complete', title);
         }
+        trackAction('task_completed', { taskId: id, taskTitle: title });
         actionRef.current = null;
       },
       onError: () => {
         actionRef.current = null;
       }
     });
-  }, [completeTask, tasksForCard, celebrate]);
+  }, [completeTask, tasksForCard, celebrate, trackAction]);
 
   const handleToggleHabit = useCallback((id: string, name: string) => {
     if (actionRef.current === id || toggleHabit.isPending) return;
@@ -104,13 +108,14 @@ export default function ZenHomePage() {
         } else {
           celebrate('habit_complete', name);
         }
+        trackAction('habit_toggled', { habitId: id, habitName: name });
         actionRef.current = null;
       },
       onError: () => {
         actionRef.current = null;
       }
     });
-  }, [toggleHabit, habitsForCard, celebrate]);
+  }, [toggleHabit, habitsForCard, celebrate, trackAction]);
 
   // Action principale suggérée
   const primaryAction = nextBestAction && nextBestAction.status !== 'done' 
