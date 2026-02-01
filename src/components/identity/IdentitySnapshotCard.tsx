@@ -62,68 +62,110 @@ export function IdentitySnapshotCard({
   const momentumInfo = getMomentumDisplay(momentum);
   const MomentumIcon = momentumInfo.icon;
 
+  const getHumanLabel = {
+    discipline: (value: number) => {
+      if (value >= 80) return "Tu gères !";
+      if (value >= 60) return "En forme";
+      if (value >= 40) return "Peut mieux faire";
+      return "Coup de pouce ?";
+    },
+    coherence: (value: number) => {
+      if (value >= 80) return "Très régulier";
+      if (value >= 60) return "Solide";
+      if (value >= 40) return "Variable";
+      return "À stabiliser";
+    },
+    energy: (value: number) => {
+      if (value >= 70) return "Plein d'énergie";
+      if (value >= 45) return "Ça roule";
+      return "Recharge-toi";
+    },
+    resilience: (value: number) => {
+      if (value >= 80) return "Inébranlable";
+      if (value >= 60) return "Solide";
+      if (value >= 40) return "Flexible";
+      return "En reconstruction";
+    },
+  };
+
   const primaryMetrics = [
     {
       icon: Flame,
-      label: 'Discipline',
+      label: '🔥 Discipline',
       value: globalScore,
-      suffix: '%',
+      numericValue: globalScore,
       color: 'text-destructive',
       bg: 'bg-destructive/10',
       historyPath: '/history?metric=discipline&range=30',
+      humanLabel: getHumanLabel.discipline(globalScore),
     },
     {
       icon: Target,
-      label: 'Cohérence',
+      label: '🎯 Cohérence',
       value: consistencyLevel,
-      suffix: '%',
+      numericValue: consistencyLevel,
       color: 'text-primary',
       bg: 'bg-primary/10',
       historyPath: '/history?metric=habits&range=7',
+      humanLabel: getHumanLabel.coherence(consistencyLevel),
     },
     {
       icon: Zap,
-      label: 'Énergie',
+      label: '⚡ Énergie',
       value: energyConfig.label,
-      suffix: '',
+      numericValue: energyConfig.value,
       color: energyConfig.color,
       bg: energyConfig.bg,
       historyPath: '/behavior-hub?tab=habits',
-      numericValue: energyConfig.value,
+      humanLabel: getHumanLabel.energy(energyConfig.value),
     },
     {
       icon: Shield,
-      label: 'Résilience',
+      label: '🛡️ Résilience',
       value: resilienceLevel,
-      suffix: '%',
+      numericValue: resilienceLevel,
       color: 'text-accent',
       bg: 'bg-accent/10',
       historyPath: '/history?metric=resilience&range=30',
+      humanLabel: getHumanLabel.resilience(resilienceLevel),
     },
   ];
+
+  const getSecondaryHumanLabel = {
+    financial: (value: number) => {
+      if (value <= 30) return "Zen 💚";
+      if (value <= 60) return "Vigilant";
+      return "Tendu";
+    },
+    cognitive: (value: number) => {
+      if (value <= 50) return "Dispo 🧠";
+      if (value <= 80) return "Chargé";
+      return "Surchargé";
+    },
+  };
 
   const secondaryMetrics = [
     {
       icon: Wallet,
-      label: 'Stress Finance',
+      label: '💰 Finances',
       value: financialStress,
-      suffix: '%',
       color: financialStress > 60 ? 'text-destructive' : financialStress > 30 ? 'text-warning' : 'text-success',
       bg: financialStress > 60 ? 'bg-destructive/10' : financialStress > 30 ? 'bg-warning/10' : 'bg-success/10',
       tooltip: 'Indice de stress financier (budget vs dépenses)',
       historyPath: '/finance',
       invertedScore: true,
+      humanLabel: getSecondaryHumanLabel.financial(financialStress),
     },
     {
       icon: Brain,
-      label: 'Charge Cognitive',
+      label: '🧠 Charge mentale',
       value: cognitiveLoad,
-      suffix: '%',
       color: cognitiveLoad > 80 ? 'text-destructive' : cognitiveLoad > 50 ? 'text-warning' : 'text-success',
       bg: cognitiveLoad > 80 ? 'bg-destructive/10' : cognitiveLoad > 50 ? 'bg-warning/10' : 'bg-success/10',
       tooltip: 'Charge de travail estimée pour aujourd\'hui',
       historyPath: '/kanban',
       invertedScore: true,
+      humanLabel: getSecondaryHumanLabel.cognitive(cognitiveLoad),
     },
   ];
 
@@ -154,11 +196,13 @@ export function IdentitySnapshotCard({
                 <span className="text-xs font-medium">{metric.label}</span>
               </div>
 
-              <div className="flex items-baseline gap-1">
-                <span className={cn("text-2xl font-bold", getScoreColor(typeof metric.value === 'number' ? metric.value : metric.numericValue || 0))}>
+              <div className="flex flex-col">
+                <span className={cn("text-2xl font-bold", getScoreColor(metric.numericValue || 0))}>
                   {typeof metric.value === 'number' ? metric.value : metric.value}
                 </span>
-                <span className="text-sm text-muted-foreground">{metric.suffix}</span>
+                <span className="text-xs text-muted-foreground/80 font-medium">
+                  {metric.humanLabel}
+                </span>
               </div>
 
               <Progress
@@ -197,9 +241,14 @@ export function IdentitySnapshotCard({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={cn("text-lg font-semibold", metric.color)}>
-                      {metric.value}{metric.suffix}
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className={cn("text-lg font-semibold", metric.color)}>
+                        {metric.value}
+                      </span>
+                      <span className="text-xs text-muted-foreground/80">
+                        {metric.humanLabel}
+                      </span>
+                    </div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </Link>
