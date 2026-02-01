@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { IdentitySnapshotCard, IdentityComparison, PrimaryActionCard } from '@/components/identity';
-import { AICoachCard } from '@/components/today/AICoachCard';
+import { SageMessage } from '@/components/ai/SageMessage';
 import { CriticalHabitsCard } from '@/components/today/CriticalHabitsCard';
 import { ImpactTasksCard } from '@/components/today/ImpactTasksCard';
 import { DriftSignalsCard } from '@/components/today/DriftSignalsCard';
@@ -217,7 +217,14 @@ export default function IdentityPage() {
 
         {/* AI Coach */}
         <AnimatedContainer delay={100} animation="fade-up">
-          <AICoachCard />
+          <SageMessage 
+            context={{
+              score: todayScore?.global_score || disciplineScore,
+              tasksLeft: tasksForCard?.filter(t => t.status !== 'done').length || 0,
+            }}
+            onActionClick={nextBestAction ? () => handleCompleteTask(nextBestAction.id) : undefined}
+            actionLabel={nextBestAction ? "Commencer" : undefined}
+          />
         </AnimatedContainer>
 
         {/* Primary Action */}
