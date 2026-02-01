@@ -3,6 +3,8 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSam
 import { fr } from 'date-fns/locale';
 
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
+import { SageCompanion } from '@/components/sage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ScoreRing } from '@/components/today/ScoreRing';
 import { cn } from '@/lib/utils';
 import { 
-  Calendar, 
+  Calendar as CalendarIcon, 
   ChevronLeft, 
   ChevronRight, 
   Plus,
@@ -34,7 +36,8 @@ import {
   Battery,
   BatteryLow,
   BatteryMedium,
-  Target
+  Target,
+  Calendar
 } from 'lucide-react';
 
 // Energy levels for overlay
@@ -177,15 +180,22 @@ export default function CalendarPage() {
     <AppLayout>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gradient">
-              Calendrier Comportemental
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Overlay d'énergie et discipline
-            </p>
-          </div>
+        <GlobalHeader
+          variant="page"
+          title="Ton calendrier"
+          subtitle="Ta semaine en un coup d'œil"
+          icon={<CalendarIcon className="h-5 w-5 text-white" />}
+          showStreak={false}
+        />
+
+        <SageCompanion
+          context="welcome"
+          mood="neutral"
+          variant="inline"
+          className="mb-6"
+        />
+
+        <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4">
 
           <div className="flex items-center gap-2">
             {/* Overlay Toggle */}
