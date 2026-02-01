@@ -106,6 +106,23 @@ export default function IdentityPage() {
     });
   }, [toggleHabit, play]);
 
+  // Dynamic greeting message based on time and score
+  const getGreetingMessage = () => {
+    const hour = new Date().getHours();
+    const score = todayScore?.global_score || 50;
+    
+    if (hour < 12) {
+      if (score >= 70) return "Prêt à conquérir cette journée ? 💪";
+      return "Une nouvelle journée commence !";
+    } else if (hour < 18) {
+      if (score >= 70) return "Tu gères bien aujourd'hui !";
+      return "L'après-midi est à toi";
+    } else {
+      if (score >= 70) return "Belle journée, bravo ! 🌟";
+      return "Bientôt l'heure de se reposer";
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -132,11 +149,11 @@ export default function IdentityPage() {
         <AnimatedContainer delay={0} animation="fade-up">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight capitalize text-gradient">
-                {formattedDate}
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                Bonjour 👋
               </h1>
-              <p className="text-muted-foreground mt-1">
-                Qui je deviens aujourd'hui
+              <p className="text-muted-foreground mt-1 capitalize">
+                {formattedDate} — {getGreetingMessage()}
               </p>
             </div>
             <AIEngineStatus 
