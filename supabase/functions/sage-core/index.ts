@@ -89,7 +89,11 @@ serve(async (req) => {
     // 2. Load Memory
     const memory = await loadMemory(supabase, user.id);
 
-    // 3. Check Safety
+    // 3. Fetch consent snapshot for audit
+    const consentSnapshot = await getConsentSnapshot(supabase, user.id);
+    const learningEnabled = consentSnapshot.ai_profiling && consentSnapshot.policy_learning;
+
+    // 4. Check Safety
     const safetyCheck = checkSafety(context, memory);
     if (!safetyCheck.allowed) {
       await logRun(supabase, user.id, {
@@ -98,6 +102,9 @@ serve(async (req) => {
         safety_blocked: true,
         safety_reason: safetyCheck.reason,
         latency_ms: Date.now() - startTime,
+        consent_snapshot: consentSnapshot,
+        learning_enabled: learningEnabled,
+        context_vector: [],
       });
 
       return new Response(JSON.stringify({
@@ -108,12 +115,12 @@ serve(async (req) => {
       });
     }
 
-    // 4. Policy Engine - Choose Action
+    // 5. Policy Engine - Choose Action
     const contextVector = contextToVector(context);
     const weights = await loadWeights(supabase, user.id);
     const decision = chooseAction(contextVector, weights);
 
-    // 5. Call LLM via Lovable AI Gateway
+    // 6. Call LLM via Lovable AI Gateway
     const llmResponse = await callLovableAI({
       skill,
       action: decision.action,
@@ -136,10 +143,10 @@ serve(async (req) => {
       throw new Error(llmResponse.error);
     }
 
-    // 6. Validate Response
+    // 7. Validate Response
     const validatedResponse = validateResponse(llmResponse.content || '');
 
-    // 7. Log Run
+    // 8. Log Run with consent and context vector for learning loop
     const runId = await logRun(supabase, user.id, {
       skill,
       model_engine: 'lovable-ai',
@@ -149,6 +156,9 @@ serve(async (req) => {
       action_type: decision.action,
       confidence: decision.confidence,
       reasoning: decision.reasoning,
+      consent_snapshot: consentSnapshot,
+      learning_enabled: learningEnabled,
+      context_vector: contextVector,
     });
 
     return new Response(JSON.stringify({
@@ -326,6 +336,32 @@ function checkSafety(context: UserContext, memory: SageMemory): SafetyCheck {
   }
 
   return { allowed: true };
+}
+
+// ============================================
+// CONSENT SNAPSHOT
+// ============================================
+interface ConsentSnapshot {
+  ai_profiling: boolean;
+  behavioral_tracking: boolean;
+  policy_learning: boolean;
+  data_export: boolean;
+}
+
+async function getConsentSnapshot(supabase: any, userId: string): Promise<ConsentSnapshot> {
+  const { data } = await supabase
+    .from('user_consents')
+    .select('purpose, granted')
+    .eq('user_id', userId);
+
+  const consents = data || [];
+
+  return {
+    ai_profiling: consents.find((c: any) => c.purpose === 'ai_profiling')?.granted ?? false,
+    behavioral_tracking: consents.find((c: any) => c.purpose === 'behavioral_tracking')?.granted ?? false,
+    policy_learning: consents.find((c: any) => c.purpose === 'policy_learning')?.granted ?? false,
+    data_export: consents.find((c: any) => c.purpose === 'data_export')?.granted ?? false,
+  };
 }
 
 // ============================================
