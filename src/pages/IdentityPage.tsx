@@ -106,11 +106,207 @@ export default function IdentityPage() {
     });
   }, [toggleHabit, play]);
 
-  // PLACEHOLDER - PART 2 WILL CONTINUE HERE
+  // Loading state
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full gradient-primary animate-pulse opacity-20" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <p className="text-sm text-muted-foreground animate-pulse">
+              Chargement de votre identité...
+            </p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
-      <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="max-w-4xl mx-auto space-y-6 pb-8">
+        {/* Header */}
+        <AnimatedContainer delay={0} animation="fade-up">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight capitalize text-gradient">
+                {formattedDate}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Qui je deviens aujourd'hui
+              </p>
+            </div>
+            <AIEngineStatus 
+              isActive={!!todayScore}
+              isLoading={!todayScore}
+              lastUpdate={todayScore?.date}
+              signalsCount={driftSignals.length}
+            />
+          </div>
+        </AnimatedContainer>
+
+        {/* Active Interventions Alert */}
+        {activeInterventions && activeInterventions.length > 0 && (
+          <AnimatedContainer delay={25} animation="fade-up">
+            <Alert 
+              variant={activeInterventions[0].severity === 'critical' ? 'destructive' : 'default'}
+              className="border-2"
+            >
+              <Brain className="h-5 w-5" />
+              <AlertTitle className="flex items-center gap-2">
+                Intervention IA Active
+                <Badge variant="outline">{activeInterventions[0].severity}</Badge>
+              </AlertTitle>
+              <AlertDescription>
+                <p className="mt-2">{activeInterventions[0].reason || activeInterventions[0].ai_message}</p>
+                <Button 
+                  variant="link" 
+                  className="px-0 mt-2"
+                  onClick={() => navigate('/ai-interventions')}
+                >
+                  Voir détails et historique →
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </AnimatedContainer>
+        )}
+
+        {/* Identity Snapshot - Unified metrics */}
+        <AnimatedContainer delay={50} animation="fade-up">
+          <IdentitySnapshotCard
+            globalScore={todayScore?.global_score || disciplineScore}
+            habitsScore={todayScore?.habits_score || 0}
+            consistencyLevel={identity?.consistencyLevel || todayScore?.habits_score || 0}
+            energyLevel={energyLevel}
+            resilienceLevel={identity?.stabilityLevel || 50}
+            financialStress={financialStress}
+            cognitiveLoad={cognitiveLoad}
+            momentum={momentumDirection as 'up' | 'down' | 'stable'}
+          />
+        </AnimatedContainer>
+
+        {/* Behavioral Metrics Bar */}
+        <AnimatedContainer delay={75} animation="fade-up">
+          <BehavioralMetricsBar 
+            coherence={todayScore?.habits_score ?? 0}
+            momentum={todayScore?.global_score ? (todayScore.global_score / 2) + 25 : 50}
+            friction={cognitiveLoad}
+            burnout={financialStress}
+          />
+        </AnimatedContainer>
+
+        {/* AI Coach */}
+        <AnimatedContainer delay={100} animation="fade-up">
+          <AICoachCard />
+        </AnimatedContainer>
+
+        {/* Primary Action */}
+        <AnimatedContainer delay={125} animation="fade-up">
+          <PrimaryActionCard
+            action={nextBestAction && nextBestAction.status !== 'done' ? nextBestAction : null}
+            onStart={() => nextBestAction && handleCompleteTask(nextBestAction.id)}
+            isLoading={completeTask.isPending}
+            disabled={completeTask.isPending || completingTaskRef.current === nextBestAction?.id}
+          />
+        </AnimatedContainer>
+
+        {/* Drift Signals */}
+        {driftSignals.length > 0 && (
+          <AnimatedContainer delay={150} animation="fade-up">
+            <DriftSignalsCard signals={driftSignals} />
+          </AnimatedContainer>
+        )}
+
+        {/* Focus Zone - Habits + Tasks */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <AnimatedContainer delay={175} animation="fade-up">
+            <CriticalHabitsCard
+              habits={habitsForCard}
+              onToggle={handleToggleHabit}
+              isToggling={toggleHabit.isPending}
+            />
+          </AnimatedContainer>
+
+          <AnimatedContainer delay={200} animation="fade-up">
+            <ImpactTasksCard
+              tasks={tasksForCard}
+              onComplete={handleCompleteTask}
+              isLoading={completeTask.isPending}
+            />
+          </AnimatedContainer>
+        </div>
+
+        {/* Trajectory - Collapsible */}
+        <AnimatedContainer delay={225} animation="fade-up">
+          <Collapsible open={trajectoryOpen} onOpenChange={setTrajectoryOpen}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <span className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                      Trajectoire 7 jours
+                    </span>
+                    <ChevronDown className={cn(
+                      "h-4 w-4 text-muted-foreground transition-transform",
+                      trajectoryOpen && "rotate-180"
+                    )} />
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-muted-foreground text-center">
+                    {momentumDirection === 'up' && '🔺 Tes efforts portent leurs fruits. Continue ainsi !'}
+                    {momentumDirection === 'down' && '🔻 Un moment de transition. Reviens aux fondamentaux.'}
+                    {momentumDirection === 'stable' && '➖ Maintiens le cap. La cohérence est ta force.'}
+                  </p>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </AnimatedContainer>
+
+        {/* Evolution 30j - Collapsible */}
+        <AnimatedContainer delay={250} animation="fade-up">
+          <Collapsible open={evolutionOpen} onOpenChange={setEvolutionOpen}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors rounded-t-lg">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <span className="flex items-center gap-2">
+                      🔄 Évolution 30 jours
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">Comparaison</Badge>
+                      <ChevronDown className={cn(
+                        "h-4 w-4 text-muted-foreground transition-transform",
+                        evolutionOpen && "rotate-180"
+                      )} />
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0">
+                  <IdentityComparison daysAgo={30} />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </AnimatedContainer>
+
+        {/* Footer Stats */}
+        <AnimatedContainer delay={275} animation="fade">
+          <QuickStatsFooter
+            completedHabitsCount={completedHabitsCount}
+            completedTasksCount={completedTasksCount}
+            newInboxCount={newInboxCount}
+          />
+        </AnimatedContainer>
       </div>
     </AppLayout>
   );
