@@ -3209,6 +3209,182 @@ export type Database = {
           },
         ]
       }
+      sage_feedback: {
+        Row: {
+          action_type: string
+          created_at: string
+          helpful: boolean | null
+          id: string
+          ignored: boolean | null
+          run_id: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          helpful?: boolean | null
+          id?: string
+          ignored?: boolean | null
+          run_id: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          helpful?: boolean | null
+          id?: string
+          ignored?: boolean | null
+          run_id?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sage_feedback_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sage_memory_facts: {
+        Row: {
+          category: string
+          confidence: number
+          created_at: string
+          fact: string
+          id: string
+          last_seen: string
+          source: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          category: string
+          confidence?: number
+          created_at?: string
+          fact: string
+          id?: string
+          last_seen?: string
+          source?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          fact?: string
+          id?: string
+          last_seen?: string
+          source?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sage_memory_facts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sage_memory_patterns: {
+        Row: {
+          actionable: boolean | null
+          confidence: number
+          created_at: string
+          evidence: string[] | null
+          id: string
+          pattern: string
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          actionable?: boolean | null
+          confidence?: number
+          created_at?: string
+          evidence?: string[] | null
+          id?: string
+          pattern: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          actionable?: boolean | null
+          confidence?: number
+          created_at?: string
+          evidence?: string[] | null
+          id?: string
+          pattern?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sage_memory_patterns_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sage_user_profile: {
+        Row: {
+          communication_style: string | null
+          constraints: Json | null
+          created_at: string
+          id: string
+          north_star_identity: string
+          timezone: string | null
+          updated_at: string
+          user_id: string
+          values: string[] | null
+          workspace_id: string | null
+        }
+        Insert: {
+          communication_style?: string | null
+          constraints?: Json | null
+          created_at?: string
+          id?: string
+          north_star_identity?: string
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+          values?: string[] | null
+          workspace_id?: string | null
+        }
+        Update: {
+          communication_style?: string | null
+          constraints?: Json | null
+          created_at?: string
+          id?: string
+          north_star_identity?: string
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+          values?: string[] | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sage_user_profile_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       savings_goals: {
         Row: {
           category_id: string | null
