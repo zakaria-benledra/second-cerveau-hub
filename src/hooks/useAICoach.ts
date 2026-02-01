@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import {
   getDailyBriefing,
   detectRisks,
@@ -14,6 +14,8 @@ import {
 } from '@/lib/api/ai-coach';
 import type { AIRisk, AIAction } from '@/ai';
 import { toast } from 'sonner';
+import { useAuth } from './useAuth';
+import { LearningLoop, createLearningLoop } from '@/ai/learning-loop';
 
 // Rate limiting constants
 const MIN_REFETCH_INTERVAL = 30000; // 30 seconds minimum between refetches
@@ -26,8 +28,17 @@ const MAX_LLM_CALLS_PER_SESSION = 10;
 
 export function useAICoach() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const lastBriefingFetchRef = useRef<number>(0);
   const lastRisksFetchRef = useRef<number>(0);
+  const learningLoopRef = useRef<LearningLoop | null>(null);
+
+  // Initialize learning loop when user is available
+  useEffect(() => {
+    if (user?.id) {
+      learningLoopRef.current = createLearningLoop(user.id);
+    }
+  }, [user?.id]);
 
   const briefingQuery = useQuery({
     queryKey: ['ai-briefing'],
@@ -76,8 +87,14 @@ export function useAICoach() {
 
   const approveProposalMutation = useMutation({
     mutationFn: approveProposal,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast.success('Proposition approuvée et exécutée');
+      
+      // Record feedback for learning loop
+      if (learningLoopRef.current && data.run_id) {
+        await learningLoopRef.current.recordFeedback(data.run_id, 'accepted');
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['ai-proposals'] });
       queryClient.invalidateQueries({ queryKey: ['agent-actions'] });
       queryClient.invalidateQueries({ queryKey: ['audit-log'] });
@@ -90,8 +107,14 @@ export function useAICoach() {
   const rejectProposalMutation = useMutation({
     mutationFn: ({ proposalId, reason }: { proposalId: string; reason?: string }) =>
       rejectProposal(proposalId, reason),
-    onSuccess: () => {
+    onSuccess: async (data) => {
       toast.info('Proposition rejetée');
+      
+      // Record feedback for learning loop
+      if (learningLoopRef.current && data.run_id) {
+        await learningLoopRef.current.recordFeedback(data.run_id, 'rejected');
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['ai-proposals'] });
     },
     onError: (error) => {
@@ -188,5 +211,11 @@ export function useAICoach() {
     
     simulateEvent: simulateEventMutation.mutate,
     isSimulating: simulateEventMutation.isPending,
+    
+    // Learning loop
+    getLearningStats: async () => {
+      if (!learningLoopRef.current) return null;
+      return learningLoopRef.current.getLearningStats();
+    },
   };
 }

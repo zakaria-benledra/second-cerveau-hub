@@ -106,13 +106,13 @@ export async function generateProposal(type: string, context?: Record<string, un
   return result.data;
 }
 
-export async function approveProposal(proposalId: string): Promise<{ action: any; message: string }> {
+export async function approveProposal(proposalId: string): Promise<{ action: any; message: string; run_id?: string }> {
   const result = await callAICoach('approve_proposal', { proposal_id: proposalId });
   if (!result.success) throw new Error(result.error);
   return result.data;
 }
 
-export async function rejectProposal(proposalId: string, reason?: string): Promise<{ message: string }> {
+export async function rejectProposal(proposalId: string, reason?: string): Promise<{ message: string; run_id?: string }> {
   const result = await callAICoach('reject_proposal', { proposal_id: proposalId, reason });
   if (!result.success) throw new Error(result.error);
   return result.data;
