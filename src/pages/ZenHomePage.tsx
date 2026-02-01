@@ -13,6 +13,7 @@ import { useCelebration } from '@/hooks/useCelebration';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { CircularProgress } from '@/components/ui/circular-progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -151,7 +152,12 @@ export default function ZenHomePage() {
           }}
         />
 
-        {/* Progression du jour */}
+        {/* Score du jour */}
+        <div className="flex justify-center py-4">
+          <CircularProgress value={globalScore} size={140} />
+        </div>
+
+        {/* Progression des actions */}
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
