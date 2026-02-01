@@ -75,9 +75,15 @@ const App = () => (
             <Route path="/identity" element={<ProtectedRoute><IdentityPage /></ProtectedRoute>} />
             <Route path="/today" element={<Navigate to="/identity" replace />} />
             <Route path="/dashboard" element={<Navigate to="/identity" replace />} />
+            
+            {/* Redirects for deprecated routes */}
+            <Route path="/scores" element={<Navigate to="/identity" replace />} />
+            <Route path="/behavior-hub" element={<Navigate to="/identity" replace />} />
+            <Route path="/habits" element={<Navigate to="/kanban" replace />} />
+            <Route path="/intelligence" element={<Navigate to="/ai-coach" replace />} />
+            
             <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><KanbanPage /></ProtectedRoute>} />
-            <Route path="/habits" element={<ProtectedRoute><HabitsPage /></ProtectedRoute>} />
             <Route path="/routines" element={<ProtectedRoute><RoutinesPage /></ProtectedRoute>} />
             <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
             
@@ -88,8 +94,6 @@ const App = () => (
             <Route path="/learning" element={<ProtectedRoute><LearningPage /></ProtectedRoute>} />
             <Route path="/journal" element={<ProtectedRoute><JournalPage /></ProtectedRoute>} />
             <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
-            <Route path="/scores" element={<ProtectedRoute><ScoresPage /></ProtectedRoute>} />
-            <Route path="/intelligence" element={<ProtectedRoute><IntelligenceHubPage /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
             <Route path="/automation" element={<ProtectedRoute><AutomationPage /></ProtectedRoute>} />
             <Route path="/agent" element={<ProtectedRoute><AgentPage /></ProtectedRoute>} />
@@ -98,7 +102,6 @@ const App = () => (
             <Route path="/observability" element={<ProtectedRoute><ObservabilityPage /></ProtectedRoute>} />
             <Route path="/product-intelligence" element={<ProtectedRoute><ProductIntelligencePage /></ProtectedRoute>} />
             <Route path="/ai-interventions" element={<ProtectedRoute><AIInterventionsPage /></ProtectedRoute>} />
-            <Route path="/behavior-hub" element={<ProtectedRoute><BehaviorHubPage /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             
