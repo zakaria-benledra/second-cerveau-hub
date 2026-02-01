@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
+import { SageCompanion } from '@/components/sage';
 import { useAICoach } from '@/hooks/useAICoach';
 import { useAICoachEngine } from '@/hooks/useAIBehavior';
 import { useTodayScore } from '@/hooks/useScores';
@@ -322,19 +324,21 @@ export default function AICoachPage() {
 
   return (
     <AppLayout>
+      <GlobalHeader
+        variant="page"
+        title="Coach IA"
+        subtitle="Sage t'accompagne"
+        icon={<Brain className="h-5 w-5 text-white" />}
+      />
+
+      <SageCompanion
+        context="welcome"
+        mood="supportive"
+        variant="card"
+        className="mb-6"
+      />
+
       <div className="max-w-3xl mx-auto space-y-8">
-        {/* Header - Minimal */}
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <Brain className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold tracking-tight text-gradient">
-              Revue Quotidienne
-            </h1>
-          </div>
-          <p className="text-muted-foreground">
-            {format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
-          </p>
-        </div>
 
         {/* SECTION 1: Who You Were Today */}
         <Card className="glass-strong overflow-hidden">
