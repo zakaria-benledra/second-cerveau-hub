@@ -2837,6 +2837,9 @@ export type Database = {
           email: string
           id: string
           name: string | null
+          processing_limit_date: string | null
+          processing_limit_scope: string | null
+          processing_limited: boolean | null
           role: string | null
           updated_at: string
           user_id: string
@@ -2846,6 +2849,9 @@ export type Database = {
           email: string
           id?: string
           name?: string | null
+          processing_limit_date?: string | null
+          processing_limit_scope?: string | null
+          processing_limited?: boolean | null
           role?: string | null
           updated_at?: string
           user_id: string
@@ -2855,6 +2861,9 @@ export type Database = {
           email?: string
           id?: string
           name?: string | null
+          processing_limit_date?: string | null
+          processing_limit_scope?: string | null
+          processing_limited?: boolean | null
           role?: string | null
           updated_at?: string
           user_id?: string
@@ -3420,13 +3429,65 @@ export type Database = {
           },
         ]
       }
+      sage_runs: {
+        Row: {
+          action_type: string
+          completed_at: string | null
+          confidence: number | null
+          context_vector: number[] | null
+          created_at: string
+          feedback: string | null
+          id: string
+          outcome: string | null
+          reasoning: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          action_type: string
+          completed_at?: string | null
+          confidence?: number | null
+          context_vector?: number[] | null
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          outcome?: string | null
+          reasoning?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          completed_at?: string | null
+          confidence?: number | null
+          context_vector?: number[] | null
+          created_at?: string
+          feedback?: string | null
+          id?: string
+          outcome?: string | null
+          reasoning?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sage_runs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sage_user_profile: {
         Row: {
+          ai_profiling_enabled: boolean | null
           communication_style: string | null
           constraints: Json | null
           created_at: string
           id: string
           north_star_identity: string
+          opt_out_date: string | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -3434,11 +3495,13 @@ export type Database = {
           workspace_id: string | null
         }
         Insert: {
+          ai_profiling_enabled?: boolean | null
           communication_style?: string | null
           constraints?: Json | null
           created_at?: string
           id?: string
           north_star_identity?: string
+          opt_out_date?: string | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -3446,11 +3509,13 @@ export type Database = {
           workspace_id?: string | null
         }
         Update: {
+          ai_profiling_enabled?: boolean | null
           communication_style?: string | null
           constraints?: Json | null
           created_at?: string
           id?: string
           north_star_identity?: string
+          opt_out_date?: string | null
           timezone?: string | null
           updated_at?: string
           user_id?: string
