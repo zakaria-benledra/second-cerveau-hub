@@ -23,6 +23,7 @@ import { useConfetti } from '@/hooks/useConfetti';
 import { useActiveInterventions } from '@/hooks/useAIInterventions';
 import { useStreak } from '@/hooks/useStreak';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useHaptic } from '@/hooks/useHaptic';
 import { 
   Loader2, 
   Brain, 
@@ -77,6 +78,7 @@ export default function IdentityPage() {
   const toggleHabit = useToggleHabitLog();
   const { play } = useSound();
   const { fire: fireConfetti } = useConfetti();
+  const { vibrate } = useHaptic();
 
   // Race condition prevention
   const completingTaskRef = useRef<string | null>(null);
@@ -133,6 +135,7 @@ export default function IdentityPage() {
       onSuccess: () => {
         play('task_done');
         fireConfetti('success');
+        vibrate('success');
         completingTaskRef.current = null;
         
         // Si c'était la dernière tâche
@@ -155,6 +158,7 @@ export default function IdentityPage() {
       onSuccess: () => {
         play('habit_done');
         fireConfetti('success');
+        vibrate('success');
         togglingHabitRef.current = null;
         
         // Si toutes les habitudes sont faites
