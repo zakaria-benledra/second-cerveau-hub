@@ -11,7 +11,6 @@ import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { AppLayout } from "@/components/layout/AppLayout";
 import AuthPage from "./pages/AuthPage";
-import TodayPage from "./pages/TodayPage";
 import TasksPage from "./pages/TasksPage";
 import SimplifiedTasksPage from "./pages/SimplifiedTasksPage";
 import KanbanPage from "./pages/KanbanPage";
