@@ -2,23 +2,23 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Home,
+  ListChecks,
+  Sparkles,
+  TrendingUp,
   Target,
+  BookOpen,
+  Calendar,
   Wallet,
+  MoreHorizontal,
+  Heart,
+  ListTodo,
+  Timer,
+  Brain,
+  BarChart3,
   Settings,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  Brain,
-  Timer,
-  TrendingUp,
-  Bell,
-  ListChecks,
-  Heart,
-  Zap,
-  Shield,
-  Activity,
-  Calendar,
-  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -35,57 +35,44 @@ interface SidebarProps {
 // Grouped navigation structure - Transformation Comportementale
 const navGroups = [
   {
-    label: 'Ma Transformation',
-    icon: Target,
+    label: 'Mon Quotidien',
+    icon: Home,
     collapsible: false,
     items: [
-      { icon: BarChart3, label: "Vue d'Ensemble", path: '/bi/executive' },
-      { icon: Home, label: 'Mon Identité', path: '/identity' },
-      { icon: TrendingUp, label: 'Mon Momentum', path: '/scores' },
+      { icon: Home, label: 'Accueil', path: '/identity' },
+      { icon: ListChecks, label: 'Tâches', path: '/tasks' },
+      { icon: Sparkles, label: 'Habitudes', path: '/habits' },
     ],
   },
   {
-    label: 'Engagement',
-    icon: Zap,
+    label: 'Ma Croissance',
+    icon: TrendingUp,
     collapsible: false,
+    items: [
+      { icon: TrendingUp, label: 'Progression', path: '/scores' },
+      { icon: Target, label: 'Objectifs', path: '/goals' },
+      { icon: BookOpen, label: 'Journal', path: '/journal' },
+    ],
+  },
+  {
+    label: 'Mon Organisation',
+    icon: Calendar,
+    collapsible: false,
+    items: [
+      { icon: Calendar, label: 'Calendrier', path: '/calendar' },
+      { icon: Wallet, label: 'Finances', path: '/finance' },
+    ],
+  },
+  {
+    label: 'Plus',
+    icon: MoreHorizontal,
+    collapsible: true,
     items: [
       { icon: Heart, label: 'Behavior Hub', path: '/behavior-hub' },
-      { icon: ListChecks, label: 'Kanban', path: '/kanban' },
-      { icon: Calendar, label: 'Calendrier', path: '/calendar' },
-      { icon: Brain, label: 'Intelligence IA', path: '/intelligence' },
-    ],
-  },
-  {
-    label: 'Insights',
-    icon: BarChart3,
-    collapsible: true,
-    badge: 'BI',
-    items: [
-      { icon: Activity, label: 'Tendances Comportement', path: '/bi/behavior-trends' },
-      { icon: Wallet, label: 'Santé Financière', path: '/bi/financial-health' },
-      { icon: Target, label: 'Stabilité Habitudes', path: '/bi/habit-stability' },
-      { icon: Zap, label: 'Impact Décisions', path: '/bi/decision-impact' },
-    ],
-  },
-  {
-    label: 'Stabilité',
-    icon: Shield,
-    collapsible: false,
-    items: [
-      { icon: Wallet, label: 'Finances', path: '/finance' },
-      { icon: Heart, label: 'Journal', path: '/journal' },
+      { icon: ListTodo, label: 'Kanban', path: '/kanban' },
       { icon: Timer, label: 'Focus', path: '/focus' },
-    ],
-  },
-  {
-    label: 'Système',
-    icon: Settings,
-    collapsible: true,
-    items: [
-      { icon: Brain, label: 'Interventions IA', path: '/ai-interventions' },
-      { icon: Zap, label: 'Automations', path: '/automation' },
-      { icon: Bell, label: 'Notifications', path: '/notifications' },
-      { icon: Activity, label: 'Observabilité', path: '/observability' },
+      { icon: Brain, label: 'Coach IA', path: '/ai-coach' },
+      { icon: BarChart3, label: 'Analyses', path: '/bi/executive' },
       { icon: Settings, label: 'Paramètres', path: '/settings' },
     ],
   },
@@ -278,7 +265,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                       collapsible 
                       isOpen={isOpen || hasActiveItem}
                       onToggle={() => toggleGroup(group.label)}
-                      badge={group.badge}
                       hasActiveItem={hasActiveItem}
                     />
                   </div>
@@ -299,7 +285,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <GroupLabel 
                 icon={group.icon} 
                 label={group.label} 
-                badge={group.badge}
                 hasActiveItem={hasActiveItem}
               />
               <div className="space-y-0.5">
