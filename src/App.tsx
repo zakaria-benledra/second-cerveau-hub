@@ -12,6 +12,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import AuthPage from "./pages/AuthPage";
 import TodayPage from "./pages/TodayPage";
 import TasksPage from "./pages/TasksPage";
+import SimplifiedTasksPage from "./pages/SimplifiedTasksPage";
 import KanbanPage from "./pages/KanbanPage";
 import HabitsPage from "./pages/HabitsPage";
 import InboxPage from "./pages/InboxPage";
@@ -91,7 +92,7 @@ function AppContent() {
           <Route path="/identity/details" element={<ProtectedRoute><IdentityDetailsPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<Navigate to="/identity" replace />} />
           <Route path="/today" element={<Navigate to="/identity" replace />} />
-          <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
+          <Route path="/tasks" element={<ProtectedRoute><SimplifiedTasksPage /></ProtectedRoute>} />
           <Route path="/kanban" element={<ProtectedRoute><KanbanPage /></ProtectedRoute>} />
           <Route path="/habits" element={<ProtectedRoute><HabitsPage /></ProtectedRoute>} />
           <Route path="/routines" element={<ProtectedRoute><RoutinesPage /></ProtectedRoute>} />
