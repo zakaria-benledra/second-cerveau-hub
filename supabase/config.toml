@@ -1,1 +1,4 @@
 project_id = "yehiuraflziicsuxpvfy"
+
+[functions.sage-core]
+verify_jwt = false
