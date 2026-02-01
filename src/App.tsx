@@ -47,6 +47,8 @@ import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
 import PricingPage from "./pages/PricingPage";
 import AchievementsPage from "./pages/AchievementsPage";
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { OfflineIndicator } from '@/components/pwa/OfflineIndicator';
 
 // BI Dashboards
 import {
@@ -148,6 +150,8 @@ const App = () => (
           <AppContent />
         </AnalyticsProvider>
       </BrowserRouter>
+      <OfflineIndicator />
+      <InstallPrompt />
     </TooltipProvider>
   </QueryClientProvider>
 );
