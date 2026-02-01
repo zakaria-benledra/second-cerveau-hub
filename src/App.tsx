@@ -38,8 +38,8 @@ import ProductIntelligencePage from "./pages/ProductIntelligencePage";
 import AIInterventionsPage from "./pages/AIInterventionsPage";
 import IdentityDashboard from "./pages/IdentityDashboard";
 import BehaviorHubPage from "./pages/BehaviorHubPage";
+import IdentityPage from "./pages/IdentityPage";
 import IdentityDetailsPage from "./pages/IdentityDetailsPage";
-import ZenHomePage from "./pages/ZenHomePage";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
 import PricingPage from "./pages/PricingPage";
@@ -87,7 +87,7 @@ function AppContent() {
           <Route path="/pricing" element={<PricingPage />} />
           
           {/* Protected routes */}
-          <Route path="/identity" element={<ProtectedRoute><ZenHomePage /></ProtectedRoute>} />
+          <Route path="/identity" element={<ProtectedRoute><IdentityPage /></ProtectedRoute>} />
           <Route path="/identity/details" element={<ProtectedRoute><IdentityDetailsPage /></ProtectedRoute>} />
           <Route path="/dashboard" element={<Navigate to="/identity" replace />} />
           <Route path="/today" element={<Navigate to="/identity" replace />} />
