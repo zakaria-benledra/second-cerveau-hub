@@ -39,80 +39,7 @@ import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
-// TODO: PHASE 3 - Remplacer par appel ai-coach detect_risks
-// Cette fonction est temporairement locale mais devrait utiliser le LLM
-function analyzeBehavior(score: any, habits: any[], tasks: any[]) {
-  const insights: Array<{
-    type: 'strength' | 'weakness' | 'drift';
-    title: string;
-    description: string;
-    severity: 'positive' | 'warning' | 'neutral';
-  }> = [];
-
-  // Analyze habits
-  const activeHabits = habits?.filter(h => h.is_active) || [];
-  const completedToday = activeHabits.filter(h => h.todayLog?.completed).length;
-  const habitRate = activeHabits.length > 0 ? completedToday / activeHabits.length : 0;
-
-  if (habitRate >= 0.8) {
-    insights.push({
-      type: 'strength',
-      title: 'Habitudes solides',
-      description: `${Math.round(habitRate * 100)}% de vos habitudes complétées aujourd'hui.`,
-      severity: 'positive',
-    });
-  } else if (habitRate < 0.5 && activeHabits.length > 0) {
-    insights.push({
-      type: 'drift',
-      title: 'Habitudes en souffrance',
-      description: `Seulement ${Math.round(habitRate * 100)}% des habitudes faites.`,
-      severity: 'warning',
-    });
-  }
-
-  // Analyze tasks
-  const todoTasks = tasks?.filter(t => t.status === 'todo') || [];
-  const doneTasks = tasks?.filter(t => t.status === 'done') || [];
-  const overdueTasks = todoTasks.filter(t => t.due_date && new Date(t.due_date) < new Date());
-
-  if (overdueTasks.length > 0) {
-    insights.push({
-      type: 'drift',
-      title: `${overdueTasks.length} tâche${overdueTasks.length > 1 ? 's' : ''} en retard`,
-      description: 'Des engagements non tenus affectent votre discipline.',
-      severity: 'warning',
-    });
-  }
-
-  if (doneTasks.length >= 3) {
-    insights.push({
-      type: 'strength',
-      title: 'Bonne productivité',
-      description: `${doneTasks.length} tâches accomplies aujourd'hui.`,
-      severity: 'positive',
-    });
-  }
-
-  // Score trend
-  if (score?.momentum_index > 0.05) {
-    insights.push({
-      type: 'strength',
-      title: 'Tendance positive',
-      description: 'Votre score s\'améliore régulièrement.',
-      severity: 'positive',
-    });
-  } else if (score?.momentum_index < -0.05) {
-    insights.push({
-      type: 'drift',
-      title: 'Tendance négative',
-      description: 'Votre score décline. Identifiez les blocages.',
-      severity: 'warning',
-    });
-  }
-
-  return insights;
-}
-
+// generateDailyIdentity - Still used for identity display
 function generateDailyIdentity(score: any, habits: any[], tasks: any[]) {
   const activeHabits = habits?.filter(h => h.is_active) || [];
   const completedHabits = activeHabits.filter(h => h.todayLog?.completed).length;
@@ -151,276 +78,6 @@ function generateDailyIdentity(score: any, habits: any[], tasks: any[]) {
       score: globalScore,
     },
   };
-}
-
-// Enhanced plan generation based on multiple data sources
-interface PlanContext {
-  insights: ReturnType<typeof analyzeBehavior>;
-  score: any;
-  habits: any[];
-  tasks: any[];
-  version: number; // For variation on "Ajuster"
-}
-
-interface PlanAction {
-  action: string;
-  reason: string;
-  impact: string;
-  effort: 'faible' | 'moyen' | 'élevé';
-  category: 'habits' | 'tasks' | 'mindset' | 'growth' | 'recovery';
-}
-
-// TODO: PHASE 3 - Remplacer par appel LLM via ai-coach generate_proposal
-// Le plan devrait être généré par l'IA, pas hardcodé
-// Endpoint: ai-coach action="generate_proposal" type="tomorrow_plan"
-function generateTomorrowPlan(ctx: PlanContext): PlanAction[] {
-  const { insights, score, habits, tasks, version } = ctx;
-  const drifts = insights.filter(i => i.type === 'drift');
-  const strengths = insights.filter(i => i.type === 'strength');
-  
-  // All possible action categories with variants
-  const actionPool: { 
-    category: PlanAction['category']; 
-    variants: Omit<PlanAction, 'category'>[]; 
-    condition: () => boolean; 
-    priority: number;
-  }[] = [
-    // HABITS - STRUGGLING
-    {
-      category: 'habits',
-      variants: [
-        {
-          action: 'Commencer par vos 2 habitudes les plus importantes',
-          reason: 'Votre taux de complétion est bas - focus sur l\'essentiel',
-          impact: '+15% de constance attendue',
-          effort: 'faible',
-        },
-        {
-          action: 'Bloquer 15 min dès le réveil pour vos habitudes critiques',
-          reason: 'Le matin est votre meilleur moment pour ancrer les routines',
-          impact: '+20% de probabilité de complétion',
-          effort: 'moyen',
-        },
-        {
-          action: 'Réduire temporairement à 3 habitudes max',
-          reason: 'Trop d\'habitudes créent de la surcharge cognitive',
-          impact: 'Qualité > Quantité, meilleure constance',
-          effort: 'faible',
-        },
-      ],
-      condition: () => {
-        const active = habits?.filter(h => h.is_active) || [];
-        const completed = active.filter(h => h.todayLog?.completed).length;
-        return active.length > 0 && completed / active.length < 0.5;
-      },
-      priority: 1,
-    },
-    // HABITS - STRONG
-    {
-      category: 'habits',
-      variants: [
-        {
-          action: 'Maintenir vos habitudes et célébrer la constance',
-          reason: 'Votre discipline est solide, ne changez rien',
-          impact: 'Consolidation des acquis',
-          effort: 'faible',
-        },
-        {
-          action: 'Ajouter une micro-habitude de 5 min à votre routine',
-          reason: 'Vous avez la capacité d\'absorber plus',
-          impact: '+1 habitude = +3 points de score potentiel',
-          effort: 'moyen',
-        },
-      ],
-      condition: () => {
-        const active = habits?.filter(h => h.is_active) || [];
-        const completed = active.filter(h => h.todayLog?.completed).length;
-        return active.length > 0 && completed / active.length >= 0.8;
-      },
-      priority: 3,
-    },
-    // TASKS - OVERDUE
-    {
-      category: 'tasks',
-      variants: [
-        {
-          action: 'Traiter les tâches en retard en priorité absolue',
-          reason: `${tasks?.filter(t => t.status === 'todo' && t.due_date && new Date(t.due_date) < new Date()).length || 0} tâche(s) dépassée(s) affectent votre score`,
-          impact: 'Récupérer jusqu\'à 10 points de productivité',
-          effort: 'élevé',
-        },
-        {
-          action: 'Bloquer 1h ce matin pour liquider le backlog',
-          reason: 'Concentration intensive = efficacité maximale',
-          impact: 'Libération mentale + boost de motivation',
-          effort: 'moyen',
-        },
-        {
-          action: 'Supprimer ou reporter les tâches non essentielles',
-          reason: 'Certaines tâches ne méritent plus votre attention',
-          impact: 'Réduction de la charge cognitive',
-          effort: 'faible',
-        },
-      ],
-      condition: () => {
-        const overdue = tasks?.filter(t => t.status === 'todo' && t.due_date && new Date(t.due_date) < new Date()) || [];
-        return overdue.length > 0;
-      },
-      priority: 1,
-    },
-    // TASKS - OVERLOADED
-    {
-      category: 'tasks',
-      variants: [
-        {
-          action: 'Limiter à 3 tâches prioritaires maximum',
-          reason: `${tasks?.filter(t => t.status === 'todo').length || 0} tâches en attente = surcharge probable`,
-          impact: 'Focus accru, moins de dispersion',
-          effort: 'faible',
-        },
-        {
-          action: 'Reporter les tâches basse priorité à la semaine prochaine',
-          reason: 'Libérer de l\'espace mental pour l\'essentiel',
-          impact: 'Réduction du stress de 20-30%',
-          effort: 'faible',
-        },
-      ],
-      condition: () => {
-        const todo = tasks?.filter(t => t.status === 'todo') || [];
-        return todo.length > 5;
-      },
-      priority: 2,
-    },
-    // MINDSET - RECOVERY
-    {
-      category: 'recovery',
-      variants: [
-        {
-          action: 'Réduire la charge : faire moins mais mieux',
-          reason: 'Votre momentum est en baisse, besoin de récupération',
-          impact: 'Prévention du burnout, énergie préservée',
-          effort: 'faible',
-        },
-        {
-          action: 'Prioriser le repos et le sommeil ce soir',
-          reason: 'L\'épuisement nuit à toutes les performances',
-          impact: 'Meilleure clarté mentale demain',
-          effort: 'faible',
-        },
-      ],
-      condition: () => (score?.momentum_index || 0) < -0.05 || (score?.burnout_index || 0) > 60,
-      priority: 1,
-    },
-    // GROWTH - MOMENTUM BOOST
-    {
-      category: 'growth',
-      variants: [
-        {
-          action: 'Profiter du momentum pour un objectif ambitieux',
-          reason: 'Votre énergie est haute, capitalisez dessus',
-          impact: 'Accélération des progrès',
-          effort: 'élevé',
-        },
-        {
-          action: 'Attaquer un projet reporté depuis longtemps',
-          reason: 'Le bon moment pour débloquer ce qui stagne',
-          impact: 'Satisfaction + libération mentale',
-          effort: 'élevé',
-        },
-      ],
-      condition: () => (score?.momentum_index || 0) > 0.05 && (score?.global_score || 0) >= 60,
-      priority: 3,
-    },
-    // MINDSET - REFLECTION
-    {
-      category: 'mindset',
-      variants: [
-        {
-          action: 'Écrire 3 lignes de gratitude ou leçons ce soir',
-          reason: 'La réflexion renforce l\'apprentissage',
-          impact: '+5% de clarté mentale sur 7 jours',
-          effort: 'faible',
-        },
-        {
-          action: 'Faire une mini-rétrospective de 5 min',
-          reason: 'Identifier ce qui fonctionne et ce qui bloque',
-          impact: 'Meilleure prise de décision',
-          effort: 'faible',
-        },
-      ],
-      condition: () => (score?.global_score || 0) < 60 || drifts.length > 0,
-      priority: 2,
-    },
-    // DEFAULT GROWTH
-    {
-      category: 'growth',
-      variants: [
-        {
-          action: 'Définir 1 priorité claire pour demain',
-          reason: 'La clarté précède l\'action efficace',
-          impact: 'Focus amélioré dès le réveil',
-          effort: 'faible',
-        },
-        {
-          action: 'Célébrer une petite victoire d\'aujourd\'hui',
-          reason: 'Reconnaître les progrès motive à continuer',
-          impact: 'Boost de motivation',
-          effort: 'faible',
-        },
-      ],
-      condition: () => true,
-      priority: 4,
-    },
-  ];
-
-  // Filter applicable actions and sort by priority
-  const applicable = actionPool
-    .filter(a => a.condition())
-    .sort((a, b) => a.priority - b.priority);
-
-  // Select top 3 unique categories, with variant based on version
-  const selected: PlanAction[] = [];
-  const usedCategories = new Set<string>();
-
-  for (const action of applicable) {
-    if (selected.length >= 3) break;
-    // Allow multiple from same category if priority is high (1)
-    if (usedCategories.has(action.category) && action.priority > 1) continue;
-
-    // Pick variant based on version for observable change
-    const variantIndex = version % action.variants.length;
-    selected.push({
-      ...action.variants[variantIndex],
-      category: action.category,
-    });
-    usedCategories.add(action.category);
-  }
-
-  // Ensure we always have 3 actions
-  if (selected.length < 3) {
-    const fallbacks: PlanAction[] = [
-      {
-        action: 'Prendre soin de vous : sommeil, alimentation, mouvement',
-        reason: 'Les fondamentaux supportent tout le reste',
-        impact: 'Énergie et clarté améliorées',
-        effort: 'faible',
-        category: 'recovery',
-      },
-      {
-        action: 'Définir 1 priorité claire pour demain',
-        reason: 'La clarté précède l\'action',
-        impact: 'Meilleur focus',
-        effort: 'faible',
-        category: 'mindset',
-      },
-    ];
-    for (const fb of fallbacks) {
-      if (selected.length >= 3) break;
-      if (!selected.find(s => s.action === fb.action)) selected.push(fb);
-    }
-  }
-
-  return selected;
 }
 
 export default function AICoachPage() {
@@ -488,20 +145,10 @@ export default function AICoachPage() {
     return generateDailyIdentity(score, habits || [], tasks || []);
   }, [score, habits, tasks]);
 
-  const tomorrowActions = useMemo(() => {
-    return generateTomorrowPlan({
-      insights: behaviorInsights,
-      score,
-      habits: habits || [],
-      tasks: tasks || [],
-      version: planVersion,
-    });
-  }, [behaviorInsights, score, habits, tasks, planVersion]);
-
   const strengths = behaviorInsights.filter(i => i.type === 'strength');
   const drifts = behaviorInsights.filter(i => i.type === 'drift' || i.type === 'weakness');
 
-  // Display plan: use AI-generated proposals if available, fallback to local
+  // Display plan: use AI-generated proposals only (no more local fallback)
   const pendingTomorrowProposals = proposals.filter(p => p.type === 'tomorrow_plan' && p.status === 'pending');
   const displayPlan = useMemo(() => {
     // If we have AI-generated proposals, transform them to display format
@@ -524,9 +171,15 @@ export default function AICoachPage() {
         }));
       }
     }
-    // Fallback to local plan generation
-    return tomorrowActions;
-  }, [pendingTomorrowProposals, tomorrowActions]);
+    // Empty fallback - user must generate plan via AI
+    return [] as Array<{
+      action: string;
+      reason: string;
+      impact: string;
+      effort: 'faible' | 'moyen' | 'élevé';
+      category: 'habits' | 'tasks' | 'mindset' | 'growth' | 'recovery';
+    }>;
+  }, [pendingTomorrowProposals]);
 
   const handleAcceptPlan = async () => {
     setIsCreatingTasks(true);
@@ -916,7 +569,7 @@ export default function AICoachPage() {
                 </Badge>
                 <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
                   <ListTodo className="h-3 w-3" />
-                  {tomorrowActions.length} tâches ajoutées au Kanban
+                  {displayPlan.length} tâches ajoutées au Kanban
                 </p>
               </div>
             )}
