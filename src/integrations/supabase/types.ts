@@ -313,6 +313,109 @@ export type Database = {
           },
         ]
       }
+      analytics_events: {
+        Row: {
+          created_at: string | null
+          device_type: string | null
+          event_category: string
+          event_data: Json | null
+          event_name: string
+          id: string
+          page_path: string | null
+          referrer: string | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_type?: string | null
+          event_category: string
+          event_data?: Json | null
+          event_name: string
+          id?: string
+          page_path?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_type?: string | null
+          event_category?: string
+          event_data?: Json | null
+          event_name?: string
+          id?: string
+          page_path?: string | null
+          referrer?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analytics_sessions: {
+        Row: {
+          browser: string | null
+          country: string | null
+          device_type: string | null
+          ended_at: string | null
+          events_count: number | null
+          id: string
+          os: string | null
+          page_views: number | null
+          started_at: string | null
+          user_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          browser?: string | null
+          country?: string | null
+          device_type?: string | null
+          ended_at?: string | null
+          events_count?: number | null
+          id: string
+          os?: string | null
+          page_views?: number | null
+          started_at?: string | null
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          browser?: string | null
+          country?: string | null
+          device_type?: string | null
+          ended_at?: string | null
+          events_count?: number | null
+          id?: string
+          os?: string | null
+          page_views?: number | null
+          started_at?: string | null
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_sessions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -4246,7 +4349,29 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      analytics_daily_summary: {
+        Row: {
+          count: number | null
+          date: string | null
+          event_category: string | null
+          event_name: string | null
+          unique_sessions: number | null
+          unique_users: number | null
+        }
+        Relationships: []
+      }
+      analytics_user_retention: {
+        Row: {
+          day_0: number | null
+          day_1: number | null
+          day_30: number | null
+          day_7: number | null
+          signup_date: string | null
+          signup_day: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       archive_completed_tasks: { Args: never; Returns: number }
