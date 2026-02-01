@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
+import { SageCompanion } from '@/components/sage';
+import { usePageSage } from '@/hooks/usePageSage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,6 +73,7 @@ export default function FinancePage() {
   const { data: goals = [] } = useGoals();
   const { data: savingsGoals = [] } = useSavingsGoals();
   const { data: todayScore } = useTodayScore();
+  const { mood } = usePageSage('finance');
   const createTransaction = useCreateTransaction();
   const deleteTransaction = useDeleteTransaction();
   const createCategory = useCreateCategory();
@@ -180,12 +184,22 @@ export default function FinancePage() {
     <AppLayout>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gradient">Finances</h1>
-            <p className="text-muted-foreground">{format(new Date(), 'MMMM yyyy', { locale: fr })}</p>
-          </div>
-        </div>
+        <GlobalHeader
+          variant="page"
+          title="Tes finances"
+          subtitle={format(new Date(), 'MMMM yyyy', { locale: fr })}
+          icon={<Wallet className="h-5 w-5 text-white" />}
+          showStreak={false}
+        />
+
+        {/* Sage Companion */}
+        <SageCompanion
+          context="finance"
+          mood={mood}
+          data={{ score: todayScore?.financial_discipline_score || 50 }}
+          variant="card"
+          className="mb-6"
+        />
 
         {/* Financial Discipline Card - Behavioral Score */}
         {todayScore && (
