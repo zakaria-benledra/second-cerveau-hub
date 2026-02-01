@@ -1,6 +1,10 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
+import { SageCompanion } from '@/components/sage';
+import { usePageSage } from '@/hooks/usePageSage';
+import { useCelebration } from '@/hooks/useCelebration';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,7 +21,7 @@ import { KanbanColumn } from '@/components/kanban/KanbanColumn';
 import { KanbanMetricsPanel } from '@/components/kanban/KanbanMetricsPanel';
 import { KanbanSearchFilters, type SortOption, type PriorityFilter } from '@/components/kanban/KanbanSearchFilters';
 import { type TimeRange, useTimeRangeDates } from '@/components/filters/GlobalTimeFilter';
-import { Loader2, Undo2, LayoutGrid, BarChart3, Brain } from 'lucide-react';
+import { Loader2, Undo2, LayoutGrid, BarChart3, Brain, ListTodo } from 'lucide-react';
 import type { CreateTaskInput, UpdateTaskInput } from '@/lib/api/tasks';
 
 const COLUMNS: { id: KanbanStatus; title: string; accent: string; glow: string }[] = [
@@ -54,6 +58,14 @@ export default function KanbanPage() {
   const moveTask = useMoveKanbanTask();
   const createTask = useCreateTask();
   const { recentActions, canUndo, undoLast, isUndoing } = useRecentUndos();
+  const { context, mood, data: sageData } = usePageSage('tasks');
+  const { celebrate } = useCelebration();
+  
+  // Flatten all tasks for counting
+  const tasks = useMemo(() => {
+    if (!columns) return [];
+    return [...columns.backlog, ...columns.todo, ...columns.doing, ...columns.done];
+  }, [columns]);
   
   // Clear the highlight param after 5 seconds
   useEffect(() => {
@@ -208,11 +220,17 @@ export default function KanbanPage() {
       moveTask.mutate({
         taskId: task.id,
         newStatus,
+      }, {
+        onSuccess: () => {
+          if (newStatus === 'done') {
+            celebrate('task_complete', task.title);
+          }
+        }
       });
     }
     draggedTaskRef.current = null;
     setDraggedTaskId(null);
-  }, [moveTask]);
+  }, [moveTask, celebrate]);
 
   const handleDragEnd = useCallback(() => {
     draggedTaskRef.current = null;
@@ -252,6 +270,23 @@ export default function KanbanPage() {
   return (
     <AppLayout>
       <div className="space-y-6 h-full">
+        {/* Global Header */}
+        <GlobalHeader
+          variant="page"
+          title="Tes tâches"
+          subtitle={`${tasks?.filter(t => t.kanban_status !== 'done').length || 0} en cours`}
+          icon={<ListTodo className="h-5 w-5 text-white" />}
+        />
+
+        {/* Sage Companion */}
+        <SageCompanion
+          context={context}
+          mood={mood}
+          data={sageData}
+          variant="inline"
+          className="mb-6"
+        />
+
         {/* Header with Stats */}
         <KanbanHeader
           totalTasks={stats.total}
