@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useUpdateProfile } from '@/hooks/useUserProfile';
 import { useConfetti } from '@/hooks/useConfetti';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { Sparkles, ArrowRight, Brain } from 'lucide-react';
 
 interface WelcomeModalProps {
@@ -17,6 +18,13 @@ export function WelcomeModal({ open, onComplete }: WelcomeModalProps) {
   const [step, setStep] = useState(1);
   const updateProfile = useUpdateProfile();
   const { fire } = useConfetti();
+  const { trackConversion, trackEngagement } = useAnalytics();
+
+  useEffect(() => {
+    if (open) {
+      trackEngagement('onboarding_started');
+    }
+  }, [open, trackEngagement]);
 
   const handleSubmit = async () => {
     if (!firstName.trim()) return;
@@ -27,6 +35,7 @@ export function WelcomeModal({ open, onComplete }: WelcomeModalProps) {
       onboarding_completed: true,
     });
     
+    trackConversion('onboarding_completed', { firstName: firstName.trim() });
     setStep(2);
     fire('fireworks');
     setTimeout(onComplete, 2500);
