@@ -486,12 +486,53 @@
   /* Success pulse animation */
   @keyframes success-pulse {
     0% { transform: scale(1); }
-    50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+    50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(34, 197, 94, 0.4); }
     100% { transform: scale(1); }
   }
   
   .animate-success-pulse {
     animation: success-pulse 0.5s ease-out;
+  }
+
+  /* Check bounce animation */
+  @keyframes check-bounce {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .animate-check-bounce {
+    animation: check-bounce 0.3s ease-out;
+  }
+
+  /* Slide up fade animation */
+  @keyframes slide-up-fade {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-slide-up-fade {
+    animation: slide-up-fade 0.3s ease-out;
+  }
+
+  /* Celebration shake animation */
+  @keyframes celebration-shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
+  }
+
+  .animate-celebration-shake {
+    animation: celebration-shake 0.4s ease-in-out;
+  }
+
+  /* Transition douce pour les checkboxes */
+  .checkbox-transition {
+    transition: all 0.2s ease-out;
+  }
+
+  .checkbox-transition:checked {
+    animation: check-bounce 0.3s ease-out;
   }
 
   /* Clickable number - links to history */
