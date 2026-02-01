@@ -73,6 +73,12 @@ export function useUpdateProfile() {
 }
 
 export function useFirstName() {
-  const { data: profile } = useUserProfile();
-  return profile?.first_name || profile?.display_name || null;
+  const { data: profile, isLoading, error } = useUserProfile();
+  
+  // Fallback sécurisé
+  if (isLoading || error || !profile) {
+    return null;
+  }
+  
+  return profile.first_name || profile.display_name || null;
 }
