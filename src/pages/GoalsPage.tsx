@@ -1,5 +1,9 @@
 import { useState, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
+import { SageCompanion } from '@/components/sage';
+import { usePageSage } from '@/hooks/usePageSage';
+import { useCelebration } from '@/hooks/useCelebration';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,6 +78,8 @@ export default function GoalsPage() {
   const updateGoal = useUpdateGoal();
   const deleteGoal = useDeleteGoal();
   const { toast } = useToast();
+  const { mood, data: sageData } = usePageSage('goals');
+  const { celebrate } = useCelebration();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<any>(null);
@@ -124,9 +130,12 @@ export default function GoalsPage() {
     }
   };
 
-  const handleStatusChange = async (goalId: string, status: string) => {
+  const handleStatusChange = async (goalId: string, status: string, goalTitle?: string) => {
     try {
       await updateGoal.mutateAsync({ id: goalId, updates: { status } });
+      if (status === 'completed' && goalTitle) {
+        celebrate('goal_reached', goalTitle);
+      }
       toast({ title: 'Statut mis à jour' });
     } catch (error) {
       toast({ title: 'Erreur', variant: 'destructive' });
@@ -152,15 +161,23 @@ export default function GoalsPage() {
     <AppLayout>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gradient">
-              Objectifs
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Nœuds centraux de votre système comportemental
-            </p>
-          </div>
+        <GlobalHeader
+          variant="page"
+          title="Tes objectifs"
+          subtitle="Ce vers quoi tu tends"
+          icon={<Target className="h-5 w-5 text-white" />}
+        />
+
+        {/* Sage Companion */}
+        <SageCompanion
+          context="goals"
+          mood={mood}
+          data={sageData}
+          variant="card"
+          className="mb-6"
+        />
+
+        <div className="flex justify-end">
 
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -394,7 +411,7 @@ export default function GoalsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleStatusChange(goal.id, 'completed')}>
+                              <DropdownMenuItem onClick={() => handleStatusChange(goal.id, 'completed', goal.title)}>
                                 <CheckCircle2 className="h-4 w-4 mr-2 text-success" />
                                 Marquer atteint
                               </DropdownMenuItem>
