@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -52,14 +52,24 @@ export default function ZenHomePage() {
   // Score global
   const globalScore = todayScore?.global_score || 0;
   
-  // Top 3 habitudes et tâches
-  const topHabits = habitsForCard?.slice(0, 3) || [];
-  const topTasks = tasksForCard?.filter(t => t.status !== 'done').slice(0, 2) || [];
+  // Top 3 habitudes et tâches (memoized)
+  const topHabits = useMemo(() => 
+    habitsForCard?.slice(0, 3) || [], 
+    [habitsForCard]
+  );
   
-  // Calculer la progression du jour
-  const totalItems = (habitsForCard?.length || 0) + (tasksForCard?.length || 0);
-  const completedItems = completedHabitsCount + completedTasksCount;
-  const progressPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+  const topTasks = useMemo(() => 
+    tasksForCard?.filter(t => t.status !== 'done').slice(0, 2) || [], 
+    [tasksForCard]
+  );
+  
+  // Calculer la progression du jour (memoized)
+  const { totalItems, completedItems, progressPercent } = useMemo(() => {
+    const total = (habitsForCard?.length || 0) + (tasksForCard?.length || 0);
+    const completed = completedHabitsCount + completedTasksCount;
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { totalItems: total, completedItems: completed, progressPercent: percent };
+  }, [habitsForCard, tasksForCard, completedHabitsCount, completedTasksCount]);
 
   // Handlers
   const handleCompleteTask = useCallback((id: string, title: string) => {
