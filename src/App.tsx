@@ -38,6 +38,7 @@ import IntelligenceHubPage from "./pages/IntelligenceHubPage";
 import ObservabilityPage from "./pages/ObservabilityPage";
 import ProductIntelligencePage from "./pages/ProductIntelligencePage";
 import AIInterventionsPage from "./pages/AIInterventionsPage";
+import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
 import IdentityDashboard from "./pages/IdentityDashboard";
 import BehaviorHubPage from "./pages/BehaviorHubPage";
 import IdentityPage from "./pages/IdentityPage";
@@ -117,6 +118,7 @@ function AppContent() {
           <Route path="/product-intelligence" element={<ProtectedRoute><ProductIntelligencePage /></ProtectedRoute>} />
           <Route path="/ai-interventions" element={<ProtectedRoute><AIInterventionsPage /></ProtectedRoute>} />
           <Route path="/behavior-hub" element={<ProtectedRoute><BehaviorHubPage /></ProtectedRoute>} />
+          <Route path="/admin/analytics" element={<ProtectedRoute><AdminAnalyticsPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           
