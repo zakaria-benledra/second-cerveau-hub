@@ -2,3 +2,6 @@ project_id = "yehiuraflziicsuxpvfy"
 
 [functions.sage-core]
 verify_jwt = false
+
+[functions.nightly-learning]
+verify_jwt = false
