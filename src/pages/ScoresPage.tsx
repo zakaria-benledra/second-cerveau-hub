@@ -1,4 +1,7 @@
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
+import { SageCompanion } from '@/components/sage';
+import { usePageSage } from '@/hooks/usePageSage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +45,7 @@ export default function ScoresPage() {
   const { data: todayScore, isLoading: scoreLoading } = useTodayScore();
   const { data: history, isLoading: historyLoading } = useScoreHistory(14);
   const recompute = useRecomputeScore();
+  const { mood, data: sageData } = usePageSage('progress');
 
   const getMomentumIcon = (momentum: number) => {
     if (momentum > 55) return <TrendingUp className="h-4 w-4 text-success" />;
@@ -71,16 +75,23 @@ export default function ScoresPage() {
     <AppLayout>
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              <Sparkles className="h-8 w-8 text-primary" />
-              Momentum & Discipline
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Mesurez votre transformation comportementale
-            </p>
-          </div>
+        <GlobalHeader
+          variant="page"
+          title="Ta progression"
+          subtitle="Ton évolution au fil du temps"
+          icon={<TrendingUp className="h-5 w-5 text-white" />}
+        />
+
+        {/* Sage Companion */}
+        <SageCompanion
+          context="welcome"
+          mood={mood}
+          data={sageData}
+          variant="card"
+          className="mb-6"
+        />
+
+        <div className="flex justify-end">
           <Button 
             variant="outline" 
             onClick={() => recompute.mutate(undefined)}
