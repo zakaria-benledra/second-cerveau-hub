@@ -3262,33 +3262,45 @@ export type Database = {
       sage_experiences: {
         Row: {
           action_type: string
+          consent_snapshot: Json | null
           context_vector: number[]
           created_at: string
+          feedback_type: string | null
           id: string
+          learning_enabled: boolean | null
           metrics_after: Json | null
           metrics_before: Json | null
+          policy_version: string | null
           reward: number
           user_id: string
           workspace_id: string | null
         }
         Insert: {
           action_type: string
+          consent_snapshot?: Json | null
           context_vector: number[]
           created_at?: string
+          feedback_type?: string | null
           id?: string
+          learning_enabled?: boolean | null
           metrics_after?: Json | null
           metrics_before?: Json | null
+          policy_version?: string | null
           reward?: number
           user_id: string
           workspace_id?: string | null
         }
         Update: {
           action_type?: string
+          consent_snapshot?: Json | null
           context_vector?: number[]
           created_at?: string
+          feedback_type?: string | null
           id?: string
+          learning_enabled?: boolean | null
           metrics_after?: Json | null
           metrics_before?: Json | null
+          policy_version?: string | null
           reward?: number
           user_id?: string
           workspace_id?: string | null
@@ -3306,6 +3318,7 @@ export type Database = {
       sage_feedback: {
         Row: {
           action_type: string
+          consent_snapshot: Json | null
           created_at: string
           helpful: boolean | null
           id: string
@@ -3316,6 +3329,7 @@ export type Database = {
         }
         Insert: {
           action_type: string
+          consent_snapshot?: Json | null
           created_at?: string
           helpful?: boolean | null
           id?: string
@@ -3326,6 +3340,7 @@ export type Database = {
         }
         Update: {
           action_type?: string
+          consent_snapshot?: Json | null
           created_at?: string
           helpful?: boolean | null
           id?: string
@@ -3475,10 +3490,12 @@ export type Database = {
           action_type: string
           completed_at: string | null
           confidence: number | null
+          consent_snapshot: Json | null
           context_vector: number[] | null
           created_at: string
           feedback: string | null
           id: string
+          learning_enabled: boolean | null
           outcome: string | null
           reasoning: string | null
           user_id: string
@@ -3488,10 +3505,12 @@ export type Database = {
           action_type: string
           completed_at?: string | null
           confidence?: number | null
+          consent_snapshot?: Json | null
           context_vector?: number[] | null
           created_at?: string
           feedback?: string | null
           id?: string
+          learning_enabled?: boolean | null
           outcome?: string | null
           reasoning?: string | null
           user_id: string
@@ -3501,10 +3520,12 @@ export type Database = {
           action_type?: string
           completed_at?: string | null
           confidence?: number | null
+          consent_snapshot?: Json | null
           context_vector?: number[] | null
           created_at?: string
           feedback?: string | null
           id?: string
+          learning_enabled?: boolean | null
           outcome?: string | null
           reasoning?: string | null
           user_id?: string
