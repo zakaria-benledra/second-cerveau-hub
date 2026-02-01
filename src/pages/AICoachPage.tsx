@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAICoach } from '@/hooks/useAICoach';
 import { useAICoachEngine } from '@/hooks/useAIBehavior';
@@ -424,7 +424,7 @@ function generateTomorrowPlan(ctx: PlanContext): PlanAction[] {
 }
 
 export default function AICoachPage() {
-  const { refetchBriefing, risks, risksLoading, proposals, approveProposal, isApproving, rejectProposal, isRejecting } = useAICoach();
+  const { refetchBriefing, risks, risksLoading, proposals, approveProposal, isApproving, rejectProposal, isRejecting, generateProposal, isGeneratingProposal } = useAICoach();
   const { interventionHistory, historyLoading } = useAICoachEngine();
   const { data: score } = useTodayScore();
   const { data: habits } = useHabitsWithLogs();
@@ -501,6 +501,33 @@ export default function AICoachPage() {
   const strengths = behaviorInsights.filter(i => i.type === 'strength');
   const drifts = behaviorInsights.filter(i => i.type === 'drift' || i.type === 'weakness');
 
+  // Display plan: use AI-generated proposals if available, fallback to local
+  const pendingTomorrowProposals = proposals.filter(p => p.type === 'tomorrow_plan' && p.status === 'pending');
+  const displayPlan = useMemo(() => {
+    // If we have AI-generated proposals, transform them to display format
+    if (pendingTomorrowProposals.length > 0) {
+      const latestProposal = pendingTomorrowProposals[0];
+      const actions = latestProposal.proposed_actions as Array<{
+        action?: string;
+        reason?: string;
+        impact?: string;
+        effort?: string;
+        category?: string;
+      }>;
+      if (Array.isArray(actions) && actions.length > 0) {
+        return actions.map(a => ({
+          action: a.action || latestProposal.title,
+          reason: a.reason || latestProposal.reasoning || '',
+          impact: a.impact || 'Impact positif attendu',
+          effort: (a.effort || 'moyen') as 'faible' | 'moyen' | 'élevé',
+          category: (a.category || 'growth') as 'habits' | 'tasks' | 'mindset' | 'growth' | 'recovery',
+        }));
+      }
+    }
+    // Fallback to local plan generation
+    return tomorrowActions;
+  }, [pendingTomorrowProposals, tomorrowActions]);
+
   const handleAcceptPlan = async () => {
     setIsCreatingTasks(true);
     
@@ -520,8 +547,8 @@ export default function AICoachPage() {
       const tomorrow = addDays(new Date(), 1).toISOString().split('T')[0];
       let createdCount = 0;
       
-      for (let i = 0; i < tomorrowActions.length; i++) {
-        const planAction = tomorrowActions[i];
+      for (let i = 0; i < displayPlan.length; i++) {
+        const planAction = displayPlan[i];
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-tasks`,
           {
@@ -571,20 +598,46 @@ export default function AICoachPage() {
     }
   };
 
-  const handleAdjustPlan = async () => {
+  // Generate plan using real AI backend
+  const handleGeneratePlan = useCallback(() => {
+    // Use real AI backend instead of local function
+    generateProposal({ 
+      type: 'tomorrow_plan', 
+      context: {
+        current_score: score?.global_score || 0,
+        habits_completion: habits?.filter(h => h.todayLog?.completed).length || 0,
+        habits_total: habits?.filter(h => h.is_active).length || 0,
+        pending_tasks: tasks?.filter(t => t.status !== 'done').length || 0,
+        insights_count: behaviorInsights.length,
+      }
+    });
+    play('ai_insight');
+  }, [generateProposal, score, habits, tasks, behaviorInsights, play]);
+
+  const handleAdjustPlan = useCallback(() => {
     setIsAdjustingPlan(true);
     setPlanAccepted(false);
     play('ai_insight');
 
-    // Optional: ask backend for a refreshed briefing (throttled in hook)
-    await refetchBriefing();
+    // Use AI backend to generate a new plan variant
+    generateProposal({ 
+      type: 'tomorrow_plan', 
+      context: {
+        current_score: score?.global_score || 0,
+        habits_completion: habits?.filter(h => h.todayLog?.completed).length || 0,
+        habits_total: habits?.filter(h => h.is_active).length || 0,
+        pending_tasks: tasks?.filter(t => t.status !== 'done').length || 0,
+        insights_count: behaviorInsights.length,
+        adjustment_request: true, // Signal this is an adjustment
+      }
+    });
 
-    // Force a new local plan variant (observable UI change)
+    // Also bump local version as fallback
     setPlanVersion((v) => v + 1);
 
     // Small delay to make adjustment feel intentional
     setTimeout(() => setIsAdjustingPlan(false), 500);
-  };
+  }, [generateProposal, score, habits, tasks, behaviorInsights, play]);
 
   // Simulation scenario generation
   const simulationScenario = useMemo(() => {
@@ -751,7 +804,7 @@ export default function AICoachPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              {tomorrowActions.map((planAction, i) => (
+              {displayPlan.map((planAction, i) => (
                 <div 
                   key={i} 
                   className={cn(
