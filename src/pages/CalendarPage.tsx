@@ -17,6 +17,7 @@ import { useCalendarEvents, useCreateCalendarEvent, useDeleteCalendarEvent } fro
 import { useHabitsWithLogs } from '@/hooks/useHabits';
 import { useTasks } from '@/hooks/useTasks';
 import { useToast } from '@/hooks/use-toast';
+import { useCelebration } from '@/hooks/useCelebration';
 import { ScoreRing } from '@/components/today/ScoreRing';
 import { cn } from '@/lib/utils';
 import { 
@@ -62,6 +63,7 @@ const energyIcons = {
 
 export default function CalendarPage() {
   const { toast } = useToast();
+  const { celebrate } = useCelebration();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -132,6 +134,7 @@ export default function CalendarPage() {
       onSuccess: () => {
         setNewEvent({ title: '', description: '', location: '', start_time: '', end_time: '', all_day: false });
         setIsDialogOpen(false);
+        celebrate('task_complete', 'Événement créé');
       },
     });
   };

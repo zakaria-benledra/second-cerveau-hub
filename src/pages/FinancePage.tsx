@@ -25,6 +25,7 @@ import { FinanceDisciplineTab } from '@/components/finance/FinanceDisciplineTab'
 import { FinanceDisciplineCard } from '@/components/finance/FinanceDisciplineCard';
 import { ScoreRing } from '@/components/today/ScoreRing';
 import { useTodayScore } from '@/hooks/useScores';
+import { useCelebration } from '@/hooks/useCelebration';
 import { cn } from '@/lib/utils';
 import { 
   DollarSign, 
@@ -74,6 +75,7 @@ export default function FinancePage() {
   const { data: savingsGoals = [] } = useSavingsGoals();
   const { data: todayScore } = useTodayScore();
   const { mood } = usePageSage('finance');
+  const { celebrate } = useCelebration();
   const createTransaction = useCreateTransaction();
   const deleteTransaction = useDeleteTransaction();
   const createCategory = useCreateCategory();
@@ -128,6 +130,7 @@ export default function FinancePage() {
       onSuccess: () => {
         setNewTransaction({ amount: '', description: '', category_id: '', type: 'expense', date: format(new Date(), 'yyyy-MM-dd'), goal_id: '' });
         setIsTransactionOpen(false);
+        celebrate('task_complete', 'Transaction enregistrée');
       }
     });
   };

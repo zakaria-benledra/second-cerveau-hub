@@ -1,4 +1,5 @@
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,15 +39,12 @@ export default function SettingsPage() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-              <Settings className="h-8 w-8" />
-              Administration
-            </h1>
-            <p className="text-muted-foreground">Gouvernance, métriques et santé système</p>
-          </div>
-        </div>
+        <GlobalHeader
+          variant="page"
+          title="Paramètres"
+          subtitle="Personnalise ton expérience"
+          icon={<Settings className="h-5 w-5 text-white" />}
+        />
 
         {/* Quick Stats */}
         <div className="grid gap-4 md:grid-cols-4">
