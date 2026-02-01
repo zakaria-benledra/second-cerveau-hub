@@ -4012,6 +4012,10 @@ export type Database = {
           first_name: string | null
           id: string
           onboarding_completed: boolean | null
+          onboarding_step: number | null
+          preferred_sage_tone: string | null
+          sound_enabled: boolean | null
+          theme: string | null
           timezone: string | null
           updated_at: string | null
         }
@@ -4022,6 +4026,10 @@ export type Database = {
           first_name?: string | null
           id: string
           onboarding_completed?: boolean | null
+          onboarding_step?: number | null
+          preferred_sage_tone?: string | null
+          sound_enabled?: boolean | null
+          theme?: string | null
           timezone?: string | null
           updated_at?: string | null
         }
@@ -4032,6 +4040,10 @@ export type Database = {
           first_name?: string | null
           id?: string
           onboarding_completed?: boolean | null
+          onboarding_step?: number | null
+          preferred_sage_tone?: string | null
+          sound_enabled?: boolean | null
+          theme?: string | null
           timezone?: string | null
           updated_at?: string | null
         }
