@@ -32,49 +32,36 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-// Grouped navigation structure - Transformation Comportementale
+// Grouped navigation structure - Simplified to 5 main sections
 const navGroups = [
   {
-    label: 'Ma Transformation',
+    label: 'Principal',
     icon: Target,
     collapsible: false,
     items: [
-      { icon: BarChart3, label: "Vue d'Ensemble", path: '/bi/executive' },
-      { icon: Home, label: 'Qui Je Deviens', path: '/dashboard' },
-      { icon: TrendingUp, label: 'Mon Momentum', path: '/scores' },
+      { icon: Home, label: 'Identité', path: '/identity' },
+      { icon: BarChart3, label: 'Insights BI', path: '/bi/executive' },
     ],
   },
   {
-    label: 'Engagement',
+    label: 'Exécution',
     icon: Zap,
     collapsible: false,
     items: [
-      { icon: Heart, label: 'Behavior Hub', path: '/behavior-hub' },
       { icon: ListChecks, label: 'Kanban', path: '/kanban' },
-      { icon: Calendar, label: 'Calendrier', path: '/calendar' },
-      { icon: Brain, label: 'Intelligence IA', path: '/intelligence' },
-    ],
-  },
-  {
-    label: 'Insights',
-    icon: BarChart3,
-    collapsible: true,
-    badge: 'BI',
-    items: [
-      { icon: Activity, label: 'Tendances Comportement', path: '/bi/behavior-trends' },
-      { icon: Wallet, label: 'Santé Financière', path: '/bi/financial-health' },
-      { icon: Target, label: 'Stabilité Habitudes', path: '/bi/habit-stability' },
-      { icon: Zap, label: 'Impact Décisions', path: '/bi/decision-impact' },
-    ],
-  },
-  {
-    label: 'Stabilité',
-    icon: Shield,
-    collapsible: false,
-    items: [
       { icon: Wallet, label: 'Finances', path: '/finance' },
+      { icon: Calendar, label: 'Calendrier', path: '/calendar' },
+    ],
+  },
+  {
+    label: 'Intelligence',
+    icon: Brain,
+    collapsible: true,
+    badge: 'IA',
+    items: [
+      { icon: Brain, label: 'AI Coach', path: '/ai-coach' },
+      { icon: Activity, label: 'Interventions', path: '/ai-interventions' },
       { icon: Heart, label: 'Journal', path: '/journal' },
-      { icon: Timer, label: 'Focus', path: '/focus' },
     ],
   },
   {
@@ -82,10 +69,7 @@ const navGroups = [
     icon: Settings,
     collapsible: true,
     items: [
-      { icon: Brain, label: 'Interventions IA', path: '/ai-interventions' },
-      { icon: Zap, label: 'Automations', path: '/automation' },
       { icon: Bell, label: 'Notifications', path: '/notifications' },
-      { icon: Activity, label: 'Observabilité', path: '/observability' },
       { icon: Settings, label: 'Paramètres', path: '/settings' },
     ],
   },
