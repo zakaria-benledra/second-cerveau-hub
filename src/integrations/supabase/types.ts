@@ -4550,6 +4550,53 @@ export type Database = {
           },
         ]
       }
+      user_consents: {
+        Row: {
+          consent_version: string
+          created_at: string
+          granted: boolean
+          granted_at: string | null
+          id: string
+          purpose: string
+          updated_at: string
+          user_id: string
+          withdrawn_at: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          consent_version?: string
+          created_at?: string
+          granted?: boolean
+          granted_at?: string | null
+          id?: string
+          purpose: string
+          updated_at?: string
+          user_id: string
+          withdrawn_at?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          consent_version?: string
+          created_at?: string
+          granted?: boolean
+          granted_at?: string | null
+          id?: string
+          purpose?: string
+          updated_at?: string
+          user_id?: string
+          withdrawn_at?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_consents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_journey_events: {
         Row: {
           created_at: string
