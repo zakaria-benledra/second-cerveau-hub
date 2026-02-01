@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useTodayScore } from '@/hooks/useScores';
 
 interface ShapingBehavior {
   id: string;
@@ -21,23 +20,30 @@ interface CurrentIdentity {
 }
 
 export function useCurrentIdentity() {
-  const { data: todayScore, isLoading: isScoreLoading } = useTodayScore();
-
-  const query = useQuery<CurrentIdentity>({
-    queryKey: ['identity', 'current', todayScore?.global_score],
+  return useQuery<CurrentIdentity>({
+    queryKey: ['identity', 'current'],
     queryFn: async () => {
-      // Use todayScore data instead of querying scores_daily directly
-      const globalScore = todayScore?.global_score ?? 0;
-      const consistencyFactor = todayScore?.consistency_factor ?? 0;
-      const rawMomentum = todayScore?.momentum_index ?? 0;
+      // 1. Récupérer scores récents
+      const { data: scores } = await supabase
+        .from('scores_daily')
+        .select('*')
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Default to 0 for new users without any data
+      // Normalize indices: if > 1, assume they're already percentages
+      const globalScore = scores?.global_score ?? 0;
+      const consistencyFactor = scores?.consistency_factor ?? 0;
+      const rawMomentum = scores?.momentum_index ?? 0;
       const momentumIndex = rawMomentum > 1 ? rawMomentum / 100 : rawMomentum;
-      const rawBurnout = todayScore?.burnout_index ?? 0;
+      const rawBurnout = scores?.burnout_index ?? 0;
       const burnoutIndex = rawBurnout > 1 ? rawBurnout / 100 : rawBurnout;
       
       // Check if user is brand new (no scores at all)
-      const isNewUser = !todayScore;
+      const isNewUser = !scores;
 
-      // Déterminer persona based on available metrics
+      // 2. Déterminer persona based on available metrics
       let persona = "Nouveau Voyageur";
       let tagline = "Ton aventure commence aujourd'hui";
       
@@ -64,7 +70,7 @@ export function useCurrentIdentity() {
         }
       }
 
-      // Récupérer comportements façonnants
+      // 3. Récupérer comportements façonnants
       const today = new Date().toISOString().split('T')[0];
       
       const [tasksResult, habitsResult, habitLogsResult] = await Promise.all([
@@ -101,8 +107,8 @@ export function useCurrentIdentity() {
       return {
         currentPersona: persona,
         tagline: tagline,
-        disciplineLevel: todayScore?.global_score ?? 0,
-        consistencyLevel: (todayScore?.consistency_factor ?? 0.5) * 100,
+        disciplineLevel: Math.round(globalScore),
+        consistencyLevel: Math.round(consistencyFactor * 100),
         stabilityLevel: Math.round((1 - burnoutIndex) * 100),
         growthRate: momentumIndex,
         shapingBehaviors: [
@@ -123,12 +129,6 @@ export function useCurrentIdentity() {
         ]
       };
     },
-    enabled: !isScoreLoading,
     staleTime: 1000 * 60 * 5 // 5 minutes
   });
-
-  return {
-    ...query,
-    isLoading: isScoreLoading || query.isLoading
-  };
 }
