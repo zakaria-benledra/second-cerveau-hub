@@ -1,13 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-interface UserProfile {
+export interface UserProfile {
   id: string;
   first_name: string | null;
   display_name: string | null;
   avatar_url: string | null;
   timezone: string;
+  theme: string;
+  sound_enabled: boolean;
   onboarding_completed: boolean;
+  onboarding_step: number;
+  preferred_sage_tone: 'encouraging' | 'direct' | 'gentle';
+  created_at: string;
+  updated_at: string;
 }
 
 export function useUserProfile() {
@@ -21,11 +27,24 @@ export function useUserProfile() {
         .from('user_profiles')
         .select('*')
         .eq('id', user.id)
-        .maybeSingle();
+        .single();
       
-      if (error) throw error;
-      return data as UserProfile | null;
+      if (error) {
+        // Si le profil n'existe pas, le créer
+        if (error.code === 'PGRST116') {
+          const { data: newProfile } = await supabase
+            .from('user_profiles')
+            .insert({ id: user.id })
+            .select()
+            .single();
+          return newProfile as UserProfile;
+        }
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+      return data as UserProfile;
     },
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -45,10 +64,15 @@ export function useUpdateProfile() {
         .single();
       
       if (error) throw error;
-      return data;
+      return data as UserProfile;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
     },
   });
+}
+
+export function useFirstName() {
+  const { data: profile } = useUserProfile();
+  return profile?.first_name || profile?.display_name || null;
 }
