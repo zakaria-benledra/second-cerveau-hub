@@ -3,3 +3,4 @@ export { BehavioralMetricsBar } from './BehavioralMetricsBar';
 export { AIEngineStatus } from './AIEngineStatus';
 export { InterventionHistoryCard } from './InterventionHistoryCard';
 export { SageAvatar } from './SageAvatar';
+export { SageMessage } from './SageMessage';
