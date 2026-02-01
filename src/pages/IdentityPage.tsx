@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { IdentitySnapshotCard, IdentityComparison, PrimaryActionCard } from '@/components/identity';
 import { SageMessage } from '@/components/ai/SageMessage';
+import { StreakBadge } from '@/components/gamification/StreakBadge';
 import { CriticalHabitsCard } from '@/components/today/CriticalHabitsCard';
 import { ImpactTasksCard } from '@/components/today/ImpactTasksCard';
 import { DriftSignalsCard } from '@/components/today/DriftSignalsCard';
@@ -19,6 +20,8 @@ import { useToggleHabitLog } from '@/hooks/useHabits';
 import { useSound } from '@/hooks/useSound';
 import { useConfetti } from '@/hooks/useConfetti';
 import { useActiveInterventions } from '@/hooks/useAIInterventions';
+import { useStreak } from '@/hooks/useStreak';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { 
   Loader2, 
   Brain, 
@@ -59,6 +62,9 @@ export default function IdentityPage() {
   const { data: scoreHistory } = useScoreHistory(7);
   const { data: identity } = useCurrentIdentity();
   const { data: activeInterventions } = useActiveInterventions();
+  const { data: streakData } = useStreak();
+  const { data: profile } = useUserProfile();
+  const firstName = profile?.first_name || 'toi';
   
   const completeTask = useCompleteTask();
   const toggleHabit = useToggleHabitLog();
@@ -165,9 +171,14 @@ export default function IdentityPage() {
         <AnimatedContainer delay={0} animation="fade-up">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                Bonjour 👋
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                  Bonjour {firstName} 👋
+                </h1>
+                {streakData && streakData.currentStreak > 0 && (
+                  <StreakBadge days={streakData.currentStreak} />
+                )}
+              </div>
               <p className="text-muted-foreground mt-1 capitalize">
                 {formattedDate} — {getGreetingMessage()}
               </p>
