@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { IdentitySnapshotCard, IdentityComparison, PrimaryActionCard } from '@/components/identity';
 import { SageCompanion } from '@/components/sage';
 import { StreakBadge } from '@/components/gamification/StreakBadge';
@@ -211,6 +212,11 @@ export default function IdentityDetailsPage() {
 
   return (
     <AppLayout>
+      <GlobalHeader
+        variant="page"
+        title="Mon profil détaillé"
+        subtitle="Toutes tes statistiques"
+      />
       <div 
         className="max-w-4xl mx-auto space-y-6 pb-8"
         onTouchStart={handleTouchStart}
