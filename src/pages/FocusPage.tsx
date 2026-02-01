@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
+import { SageCompanion } from '@/components/sage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -157,12 +159,21 @@ export default function FocusPage() {
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Mode Focus</h1>
-          <p className="text-muted-foreground mt-1">
-            Concentrez-vous avec la technique Pomodoro
-          </p>
-        </div>
+        <GlobalHeader
+          variant="page"
+          title="Mode Focus"
+          subtitle="Concentration maximale"
+          icon={<Timer className="h-5 w-5 text-white" />}
+          showStreak={false}
+        />
+
+        {/* Sage Companion */}
+        <SageCompanion
+          context="focus"
+          mood="neutral"
+          variant="inline"
+          className="mb-6"
+        />
 
         {/* Timer */}
         <Card className="overflow-hidden">
