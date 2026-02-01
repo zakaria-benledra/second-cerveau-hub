@@ -4,14 +4,14 @@ import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { SageCompanion } from '@/components/sage';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useUserProfile';
 import { useAuth, signOut } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, User, Volume2, LogOut } from 'lucide-react';
+import { Settings, User, Bell, Volume2, LogOut } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -91,7 +91,7 @@ export default function SettingsPage() {
         <Card className="glass">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Volume2 className="h-5 w-5" />
+              <Bell className="h-5 w-5" />
               Préférences
             </CardTitle>
           </CardHeader>
