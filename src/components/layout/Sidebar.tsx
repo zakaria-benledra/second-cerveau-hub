@@ -104,11 +104,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <Link
         to={path}
         className={cn(
-          'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200',
+          'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200',
           isActive
-            ? 'bg-sidebar-primary/15 text-sidebar-primary shadow-sm border border-sidebar-primary/20'
-            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground',
-          collapsed && 'justify-center px-2'
+            ? 'bg-primary/15 text-primary font-medium border-l-2 border-primary'
+            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+          collapsed && 'justify-center px-2 border-l-0'
         )}
       >
         <Icon className={cn(
@@ -282,11 +282,19 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
           return (
             <div key={group.label} className={cn(groupIndex > 0 && !collapsed && 'mt-2')}>
-              <GroupLabel 
-                icon={group.icon} 
-                label={group.label} 
-                hasActiveItem={hasActiveItem}
-              />
+              {group.label === 'Mon Quotidien' && !collapsed ? (
+                <div className="mb-2 px-3">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                    {group.label}
+                  </span>
+                </div>
+              ) : (
+                <GroupLabel 
+                  icon={group.icon} 
+                  label={group.label} 
+                  hasActiveItem={hasActiveItem}
+                />
+              )}
               <div className="space-y-0.5">
                 {group.items.map((item) => (
                   <NavItem key={item.path} {...item} />
