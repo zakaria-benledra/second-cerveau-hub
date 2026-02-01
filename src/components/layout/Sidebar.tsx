@@ -73,6 +73,7 @@ const navGroups = [
       { icon: Timer, label: 'Focus', path: '/focus' },
       { icon: Brain, label: 'Coach IA', path: '/ai-coach' },
       { icon: BarChart3, label: 'Analyses', path: '/bi/executive' },
+      { icon: BarChart3, label: 'Analytics', path: '/admin/analytics' },
       { icon: Settings, label: 'Paramètres', path: '/settings' },
     ],
   },
