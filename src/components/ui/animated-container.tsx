@@ -1,11 +1,61 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode } from 'react';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
+
+const variants = {
+  'fade-up': {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -10 },
+  },
+  'scale-in': {
+    initial: { opacity: 0, scale: 0.9 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.95 },
+  },
+  'slide-in': {
+    initial: { opacity: 0, x: -20 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: 20 },
+  },
+  'slide-left': {
+    initial: { opacity: 0, x: 20 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -20 },
+  },
+  'slide-right': {
+    initial: { opacity: 0, x: -20 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: 20 },
+  },
+  'fade': {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+  },
+  'bounce-in': {
+    initial: { opacity: 0, scale: 0.3 },
+    animate: { 
+      opacity: 1, 
+      scale: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 300,
+        damping: 15,
+      }
+    },
+    exit: { opacity: 0, scale: 0.5 },
+  },
+} as const;
+
+type AnimationType = keyof typeof variants;
 
 interface AnimatedContainerProps {
   children: ReactNode;
   delay?: number;
   className?: string;
-  animation?: 'fade-up' | 'scale-in' | 'slide-left' | 'slide-right' | 'fade';
+  animation?: AnimationType;
+  duration?: number;
 }
 
 export function AnimatedContainer({
@@ -13,34 +63,25 @@ export function AnimatedContainer({
   delay = 0,
   className,
   animation = 'fade-up',
+  duration = 0.3,
 }: AnimatedContainerProps) {
-  const [isVisible, setIsVisible] = useState(delay === 0);
-
-  useEffect(() => {
-    if (delay > 0) {
-      const timer = setTimeout(() => setIsVisible(true), delay);
-      return () => clearTimeout(timer);
-    }
-  }, [delay]);
-
-  const animationClasses = {
-    'fade-up': 'animate-slide-in-from-bottom',
-    'scale-in': 'animate-scale-in',
-    'slide-left': 'animate-slide-in-from-right',
-    'slide-right': 'animate-slide-in-from-left',
-    'fade': 'animate-fade-in',
-  };
-
+  const selectedVariant = variants[animation];
+  
   return (
-    <div
-      className={cn(
-        'transition-all duration-300',
-        isVisible ? animationClasses[animation] : 'opacity-0 translate-y-2',
-        className
-      )}
+    <motion.div
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={selectedVariant as Variants}
+      transition={{
+        duration,
+        delay: delay / 1000,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
+      className={cn(className)}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -49,6 +90,7 @@ interface StaggeredListProps {
   baseDelay?: number;
   staggerDelay?: number;
   className?: string;
+  animation?: AnimationType;
 }
 
 export function StaggeredList({
@@ -56,18 +98,45 @@ export function StaggeredList({
   baseDelay = 0,
   staggerDelay = 50,
   className,
+  animation = 'fade-up',
 }: StaggeredListProps) {
   return (
     <div className={className}>
-      {children.map((child, index) => (
-        <AnimatedContainer
-          key={index}
-          delay={baseDelay + index * staggerDelay}
-          animation="fade-up"
-        >
-          {child}
-        </AnimatedContainer>
-      ))}
+      <AnimatePresence>
+        {children.map((child, index) => (
+          <AnimatedContainer
+            key={index}
+            delay={baseDelay + index * staggerDelay}
+            animation={animation}
+          >
+            {child}
+          </AnimatedContainer>
+        ))}
+      </AnimatePresence>
     </div>
+  );
+}
+
+interface AnimatedPresenceWrapperProps {
+  children: ReactNode;
+  isVisible: boolean;
+  animation?: AnimationType;
+  className?: string;
+}
+
+export function AnimatedPresenceWrapper({
+  children,
+  isVisible,
+  animation = 'fade-up',
+  className,
+}: AnimatedPresenceWrapperProps) {
+  return (
+    <AnimatePresence mode="wait">
+      {isVisible && (
+        <AnimatedContainer animation={animation} className={className}>
+          {children}
+        </AnimatedContainer>
+      )}
+    </AnimatePresence>
   );
 }
