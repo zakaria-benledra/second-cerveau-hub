@@ -38,6 +38,7 @@ import ObservabilityPage from "./pages/ObservabilityPage";
 import ProductIntelligencePage from "./pages/ProductIntelligencePage";
 import AIInterventionsPage from "./pages/AIInterventionsPage";
 import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
 import IdentityDashboard from "./pages/IdentityDashboard";
 import BehaviorHubPage from "./pages/BehaviorHubPage";
 import IdentityPage from "./pages/IdentityPage";
@@ -122,6 +123,7 @@ function AppContent() {
           <Route path="/behavior-hub" element={<ProtectedRoute><BehaviorHubPage /></ProtectedRoute>} />
           <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
           <Route path="/admin/analytics" element={<ProtectedRoute><AdminAnalyticsPage /></ProtectedRoute>} />
+          <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           
