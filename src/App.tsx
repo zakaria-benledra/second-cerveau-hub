@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { OnboardingProvider } from "@/components/onboarding";
+import { AnalyticsProvider } from "@/providers/AnalyticsProvider";
 import { WelcomeModal } from "@/components/onboarding/WelcomeModal";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -139,7 +140,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppContent />
+        <AnalyticsProvider>
+          <AppContent />
+        </AnalyticsProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
