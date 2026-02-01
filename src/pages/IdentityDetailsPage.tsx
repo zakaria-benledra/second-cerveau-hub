@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { IdentitySnapshotCard, IdentityComparison, PrimaryActionCard } from '@/components/identity';
-import { SageMessage } from '@/components/ai/SageMessage';
+import { SageCompanion } from '@/components/sage';
 import { StreakBadge } from '@/components/gamification/StreakBadge';
 import { CriticalHabitsCard } from '@/components/today/CriticalHabitsCard';
 import { ImpactTasksCard } from '@/components/today/ImpactTasksCard';
@@ -310,13 +310,15 @@ export default function IdentityDetailsPage() {
 
         {/* AI Coach */}
         <AnimatedContainer delay={100} animation="fade-up">
-          <SageMessage 
-            context={{
+          <SageCompanion 
+            context="welcome"
+            mood={todayScore?.global_score && todayScore.global_score >= 70 ? 'happy' : 'supportive'}
+            data={{
               score: todayScore?.global_score || disciplineScore,
-              tasksLeft: tasksForCard?.filter(t => t.status !== 'done').length || 0,
+              completed: completedTasksCount,
+              total: tasksForCard?.length || 0,
             }}
-            onActionClick={nextBestAction ? () => handleCompleteTask(nextBestAction.id) : undefined}
-            actionLabel={nextBestAction ? "Commencer" : undefined}
+            variant="card"
           />
         </AnimatedContainer>
 
