@@ -18,20 +18,31 @@ export function FinanceDisciplineCard({
   savingsRate,
   className 
 }: FinanceDisciplineCardProps) {
+  const getScoreMessage = (value: number) => {
+    if (value >= 70) return 'Tu gères bien ! 💚';
+    if (value >= 40) return 'En bonne voie';
+    return 'On peut améliorer ça ensemble';
+  };
+
   return (
     <Card className={cn("glass-subtle", className)}>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between text-base">
           <div className="flex items-center gap-2">
             <Shield className="h-4 w-4 text-primary" />
-            Discipline Financière
+            Ta discipline financière
           </div>
-          <span className={cn(
-            "text-lg font-bold",
-            score >= 70 ? 'text-success' : score >= 40 ? 'text-warning' : 'text-destructive'
-          )}>
-            {Math.round(score)}%
-          </span>
+          <div className="text-right">
+            <span className={cn(
+              "text-lg font-bold",
+              score >= 70 ? 'text-success' : score >= 40 ? 'text-warning' : 'text-destructive'
+            )}>
+              {Math.round(score)}%
+            </span>
+            <p className="text-[10px] text-muted-foreground font-normal">
+              {getScoreMessage(score)}
+            </p>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -40,7 +51,7 @@ export function FinanceDisciplineCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <DollarSign className="h-3 w-3" />
-              Budget OK
+              Respect du budget
             </div>
             <span className={cn(
               "text-xs font-medium",
@@ -51,7 +62,7 @@ export function FinanceDisciplineCard({
           </div>
           <Progress value={budgetAdherence} className="h-1.5" />
           <span className="text-[10px] text-muted-foreground">
-            {budgetAdherence >= 80 ? '✓ Excellent' : budgetAdherence >= 60 ? '⚠ À surveiller' : '✗ Dépassé'}
+            {budgetAdherence >= 80 ? 'Sérénité budget 💚' : budgetAdherence >= 60 ? 'À surveiller' : 'Dépassé'}
           </span>
         </div>
         
@@ -60,7 +71,7 @@ export function FinanceDisciplineCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <ShoppingBag className="h-3 w-3" />
-              Impulsivité
+              Achats impulsifs
             </div>
             <span className={cn(
               "text-xs font-medium",
@@ -71,7 +82,7 @@ export function FinanceDisciplineCard({
           </div>
           <Progress value={impulsiveSpending} className="h-1.5" />
           <span className="text-[10px] text-muted-foreground">
-            {impulsiveSpending < 20 ? '✓ Maîtrisé' : impulsiveSpending < 40 ? '⚠ Modéré' : '✗ Élevé'}
+            {impulsiveSpending < 20 ? 'Maîtrisé 💪' : impulsiveSpending < 40 ? 'Modéré' : 'Élevé'}
           </span>
         </div>
         
@@ -80,7 +91,7 @@ export function FinanceDisciplineCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <PiggyBank className="h-3 w-3" />
-              Épargne
+              Taux d'épargne
             </div>
             <span className={cn(
               "text-xs font-medium",
@@ -91,7 +102,7 @@ export function FinanceDisciplineCard({
           </div>
           <Progress value={savingsRate} className="h-1.5" />
           <span className="text-[10px] text-muted-foreground">
-            {savingsRate >= 20 ? '✓ Objectif atteint' : savingsRate >= 10 ? '⚠ En progrès' : '✗ À améliorer'}
+            {savingsRate >= 20 ? 'Objectif atteint 🎯' : savingsRate >= 10 ? 'En progrès' : 'À améliorer'}
           </span>
         </div>
       </CardContent>
