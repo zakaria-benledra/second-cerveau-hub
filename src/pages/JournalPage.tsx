@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
+import { SageCompanion } from '@/components/sage';
+import { useCelebration } from '@/hooks/useCelebration';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +18,7 @@ import { JournalEvolutionTab } from '@/components/journal/JournalEvolutionTab';
 import { 
   BookHeart, Sparkles, Smile, Meh, Frown, Battery, BatteryMedium, BatteryLow, 
   Plus, Trash2, FileText, Brain, Lightbulb, Clock, Filter, Search, 
-  LayoutTemplate, RefreshCw, MessageSquare, Activity, Heart
+  LayoutTemplate, RefreshCw, MessageSquare, Activity, Heart, BookOpen
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -69,6 +72,7 @@ export default function JournalPage() {
   const createNote = useCreateNote();
   const deleteNote = useDeleteNote();
   const journalAI = useJournalAI();
+  const { celebrate } = useCelebration();
 
   const [mood, setMood] = useState(todayEntry?.mood || '');
   const [energy, setEnergy] = useState(todayEntry?.energy_level || '');
@@ -100,6 +104,8 @@ export default function JournalPage() {
       energy_level: energy,
       reflections,
       // Note: gratitude, wins, challenges removed - now in Habits behavioral section
+    }, {
+      onSuccess: () => celebrate('journal_entry')
     });
   };
 
@@ -156,16 +162,22 @@ export default function JournalPage() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Journal Intelligent</h1>
-            <p className="text-muted-foreground">{format(new Date(), 'EEEE d MMMM yyyy', { locale: fr })}</p>
-          </div>
-          <Badge variant="outline" className="text-xs">
-            <MessageSquare className="h-3 w-3 mr-1" />
-            Réflexions uniquement
-          </Badge>
-        </div>
+        {/* Header */}
+        <GlobalHeader
+          variant="page"
+          title="Ton journal"
+          subtitle="Ton espace personnel"
+          icon={<BookOpen className="h-5 w-5 text-white" />}
+          showStreak={false}
+        />
+
+        {/* Sage Companion */}
+        <SageCompanion
+          context="journal"
+          mood="supportive"
+          variant="card"
+          className="mb-6"
+        />
 
         <Tabs defaultValue="today" className="space-y-4">
           <TabsList className="glass flex-wrap">
