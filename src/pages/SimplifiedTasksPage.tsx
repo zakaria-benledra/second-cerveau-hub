@@ -20,6 +20,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { usePlanLimits } from '@/hooks/useSubscription';
+import { usePaywall } from '@/components/subscription/Paywall';
 
 export default function SimplifiedTasksPage() {
   const navigate = useNavigate();
@@ -32,6 +34,9 @@ export default function SimplifiedTasksPage() {
   const { celebrate } = useCelebration();
   
   const actionRef = useRef<string | null>(null);
+
+  const { canAddTask } = usePlanLimits();
+  const { showPaywall, PaywallComponent } = usePaywall();
 
   const pendingTasks = tasks?.filter(t => t.status !== 'done') || [];
   const completedTasks = tasks?.filter(t => t.status === 'done') || [];
@@ -57,6 +62,13 @@ export default function SimplifiedTasksPage() {
 
   const handleAddTask = () => {
     if (!newTaskTitle.trim()) return;
+    
+    const currentCount = pendingTasks.length;
+    if (!canAddTask(currentCount)) {
+      showPaywall({ limitType: 'tasks' });
+      return;
+    }
+    
     createTask.mutate(
       { title: newTaskTitle.trim(), priority: 'medium' },
       {
@@ -217,6 +229,7 @@ export default function SimplifiedTasksPage() {
           </Button>
         </div>
       </div>
+      <PaywallComponent />
     </AppLayout>
   );
 }

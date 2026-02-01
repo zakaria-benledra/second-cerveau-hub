@@ -58,6 +58,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { usePlanLimits } from '@/hooks/useSubscription';
+import { usePaywall } from '@/components/subscription/Paywall';
 
 const statusColors: Record<string, string> = {
   active: 'bg-success/15 text-success border-success/30',
@@ -91,6 +93,9 @@ export default function GoalsPage() {
     end_date: '',
   });
 
+  const { canAddGoal } = usePlanLimits();
+  const { showPaywall, PaywallComponent } = usePaywall();
+
   // Calculate linked items for each goal
   const goalStats = useMemo(() => {
     const stats: Record<string, { tasks: number; completed: number; progress: number }> = {};
@@ -108,6 +113,15 @@ export default function GoalsPage() {
     
     return stats;
   }, [goals, allTasks]);
+
+  const handleOpenDialog = () => {
+    const currentCount = activeGoals.length;
+    if (!canAddGoal(currentCount)) {
+      showPaywall({ limitType: 'goals' });
+      return;
+    }
+    setDialogOpen(true);
+  };
 
   const handleCreateGoal = async () => {
     if (!newGoal.title.trim()) return;
@@ -178,14 +192,11 @@ export default function GoalsPage() {
         />
 
         <div className="flex justify-end">
-
+          <Button className="gradient-primary text-primary-foreground shadow-lg" onClick={handleOpenDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvel objectif
+          </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gradient-primary text-primary-foreground shadow-lg">
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvel objectif
-              </Button>
-            </DialogTrigger>
             <DialogContent className="glass-strong">
               <DialogHeader>
                 <DialogTitle>Créer un objectif central</DialogTitle>
@@ -552,6 +563,7 @@ export default function GoalsPage() {
           </SheetContent>
         </Sheet>
       </div>
+      <PaywallComponent />
     </AppLayout>
   );
 }

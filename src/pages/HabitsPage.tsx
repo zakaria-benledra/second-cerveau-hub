@@ -47,6 +47,8 @@ import type { CreateHabitInput } from '@/lib/api/habits';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { usePlanLimits } from '@/hooks/useSubscription';
+import { usePaywall } from '@/components/subscription/Paywall';
 
 
 
@@ -67,6 +69,20 @@ export default function HabitsPage() {
   });
   const [activeTab, setActiveTab] = useState('today');
 
+  const { canAddHabit, limits } = usePlanLimits();
+  const { showPaywall, PaywallComponent } = usePaywall();
+
+  const activeHabits = habits?.filter(h => h.is_active) || [];
+
+  const handleOpenDialog = () => {
+    const currentCount = activeHabits.length;
+    if (!canAddHabit(currentCount)) {
+      showPaywall({ limitType: 'habits' });
+      return;
+    }
+    setIsDialogOpen(true);
+  };
+
   const handleCreateHabit = async () => {
     if (!newHabit.name.trim()) return;
     
@@ -74,8 +90,6 @@ export default function HabitsPage() {
     setNewHabit({ name: '', icon: '✨', target_frequency: 'daily' });
     setIsDialogOpen(false);
   };
-
-  const activeHabits = habits?.filter(h => h.is_active) || [];
   const completedToday = activeHabits.filter(h => h.todayLog?.completed).length;
   const incompleteHabits = activeHabits.filter(h => !h.todayLog?.completed);
   const completedHabits = activeHabits.filter(h => h.todayLog?.completed);
@@ -125,13 +139,11 @@ export default function HabitsPage() {
         {/* Add habit button */}
         <div className="flex justify-end">
 
+          <Button className="gradient-primary text-primary-foreground shadow-lg" onClick={handleOpenDialog}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle habitude
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gradient-primary text-primary-foreground shadow-lg">
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvelle habitude
-              </Button>
-            </DialogTrigger>
             <DialogContent className="glass-strong">
               <DialogHeader>
                 <DialogTitle>Créer une habitude</DialogTitle>
@@ -498,6 +510,7 @@ export default function HabitsPage() {
           </TabsContent>
         </Tabs>
       </div>
+      <PaywallComponent />
     </AppLayout>
   );
 }
