@@ -767,6 +767,47 @@ export type Database = {
           },
         ]
       }
+      behavioral_dna: {
+        Row: {
+          created_at: string
+          dna_data: Json
+          generated_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          version: number
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          dna_data: Json
+          generated_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          version?: number
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          dna_data?: Json
+          generated_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavioral_dna_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_events: {
         Row: {
           created_at: string | null
