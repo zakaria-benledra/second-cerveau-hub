@@ -17,6 +17,7 @@ import { useCurrentIdentity } from '@/hooks/useCurrentIdentity';
 import { useCompleteTask } from '@/hooks/useTasks';
 import { useToggleHabitLog } from '@/hooks/useHabits';
 import { useSound } from '@/hooks/useSound';
+import { useConfetti } from '@/hooks/useConfetti';
 import { useActiveInterventions } from '@/hooks/useAIInterventions';
 import { 
   Loader2, 
@@ -62,6 +63,7 @@ export default function IdentityPage() {
   const completeTask = useCompleteTask();
   const toggleHabit = useToggleHabitLog();
   const { play } = useSound();
+  const { fire: fireConfetti } = useConfetti();
 
   // Race condition prevention
   const completingTaskRef = useRef<string | null>(null);
@@ -83,13 +85,20 @@ export default function IdentityPage() {
     completeTask.mutate(id, {
       onSuccess: () => {
         play('task_done');
+        fireConfetti('success');
         completingTaskRef.current = null;
+        
+        // Si c'était la dernière tâche
+        const remainingTasks = tasksForCard?.filter(t => t.id !== id && t.status !== 'done');
+        if (remainingTasks?.length === 0) {
+          setTimeout(() => fireConfetti('allDone'), 500);
+        }
       },
       onError: () => {
         completingTaskRef.current = null;
       }
     });
-  }, [completeTask, play]);
+  }, [completeTask, play, fireConfetti, tasksForCard]);
 
   const handleToggleHabit = useCallback((id: string) => {
     if (togglingHabitRef.current === id || toggleHabit.isPending) return;
@@ -98,13 +107,20 @@ export default function IdentityPage() {
     toggleHabit.mutate(id, {
       onSuccess: () => {
         play('habit_done');
+        fireConfetti('success');
         togglingHabitRef.current = null;
+        
+        // Si toutes les habitudes sont faites
+        const allDone = habitsForCard?.every(h => h.completed || h.id === id);
+        if (allDone) {
+          setTimeout(() => fireConfetti('allDone'), 500);
+        }
       },
       onError: () => {
         togglingHabitRef.current = null;
       }
     });
-  }, [toggleHabit, play]);
+  }, [toggleHabit, play, fireConfetti, habitsForCard]);
 
   // Dynamic greeting message based on time and score
   const getGreetingMessage = () => {
