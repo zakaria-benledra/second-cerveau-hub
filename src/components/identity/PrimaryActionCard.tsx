@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ export function PrimaryActionCard({
   isLoading,
   disabled 
 }: PrimaryActionCardProps) {
+  const [justCompleted, setJustCompleted] = useState(false);
   // Empty state - all done!
   if (!action) {
     return (
@@ -53,7 +55,10 @@ export function PrimaryActionCard({
   const config = priorityConfig[action.priority] || priorityConfig.medium;
 
   return (
-    <Card className="glass-strong border-primary/30 overflow-hidden group hover:border-primary/50 transition-all duration-500">
+    <Card className={cn(
+      "glass-strong border-primary/30 overflow-hidden group hover:border-primary/50 transition-all duration-500",
+      justCompleted && "animate-success-pulse border-success/50 bg-success/5"
+    )}>
       <div className="h-1 w-full gradient-primary" />
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2 text-primary">
@@ -105,7 +110,11 @@ export function PrimaryActionCard({
         </div>
 
         <Button
-          onClick={onStart}
+          onClick={() => {
+            setJustCompleted(true);
+            onStart();
+            setTimeout(() => setJustCompleted(false), 1000);
+          }}
           disabled={isLoading || disabled}
           className="w-full gradient-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
         >
