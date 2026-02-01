@@ -38,7 +38,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-export default function IdentityPage() {
+export default function IdentityDetailsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [trajectoryOpen, setTrajectoryOpen] = useState(true);
