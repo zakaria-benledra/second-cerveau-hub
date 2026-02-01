@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
+import { SageCompanion } from '@/components/sage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,13 +16,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { useReadingItems, useCreateReadingItem, useUpdateReadingItem, useDeleteReadingItem, useFlashcards, useCreateFlashcard, useDeleteFlashcard, useSaveQuizResult, useQuizResults } from '@/hooks/useLearning';
 import { useGoals } from '@/hooks/useProjects';
 import { ScoreRing } from '@/components/today/ScoreRing';
-import { 
+import {
   BookOpen, 
   Plus, 
   ExternalLink, 
   Brain, 
   Trash2, 
-  GraduationCap, 
+  GraduationCap,
   Sparkles, 
   Target,
   TrendingUp,
@@ -250,16 +252,19 @@ export default function LearningPage() {
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
+        <GlobalHeader
+          variant="page"
+          title="Apprentissage"
+          subtitle="Continue à progresser"
+          icon={<GraduationCap className="h-5 w-5 text-white" />}
+        />
+
+        <SageCompanion context="goals" mood="happy" variant="inline" className="mb-4" />
+
         {/* Header with Growth Index */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gradient">
-              Apprentissage & Quiz
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Lectures, flashcards et quiz adaptatifs
-            </p>
-          </div>
+          <div></div>
 
           <div className="flex items-center gap-4">
             <Button 

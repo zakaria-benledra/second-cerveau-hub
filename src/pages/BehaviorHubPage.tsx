@@ -12,11 +12,13 @@ import { GratitudeJournal } from "@/components/behavior/GratitudeJournal";
 import { HabitsTab } from "@/components/behavior/HabitsTab";
 import { useSearchParams } from "react-router-dom";
 import { useBehaviorHubStats } from "@/hooks/useBehaviorHubStats";
+import { useCelebration } from "@/hooks/useCelebration";
 
 export default function BehaviorHubPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get("tab") || "habits";
   const { data: stats } = useBehaviorHubStats();
+  const { celebrate } = useCelebration();
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });

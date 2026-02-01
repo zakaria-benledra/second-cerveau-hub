@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
+import { SageCompanion } from '@/components/sage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -166,12 +168,18 @@ export default function InboxPage() {
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
+        <GlobalHeader
+          variant="page"
+          title="Boîte de réception"
+          subtitle="Tes messages et notifications"
+          icon={<Inbox className="h-5 w-5 text-white" />}
+        />
+
+        <SageCompanion context="welcome" mood="neutral" variant="inline" className="mb-4" />
+
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gradient">
-              Capture Cognitive
-            </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground">
               {newItems.length} élément{newItems.length > 1 ? 's' : ''} à trier
             </p>
           </div>

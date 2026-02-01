@@ -1,4 +1,5 @@
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -62,12 +63,16 @@ export default function NotificationsPage() {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
+        <GlobalHeader
+          variant="page"
+          title="Notifications"
+          subtitle="Reste informé"
+          icon={<Bell className="h-5 w-5 text-white" />}
+        />
+
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-              Notifications Intelligentes
-            </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground">
               {aiUnreadCount > 0 
                 ? `${aiUnreadCount} alerte${aiUnreadCount > 1 ? 's' : ''} comportementale${aiUnreadCount > 1 ? 's' : ''}`
                 : 'Tout est sous contrôle'
