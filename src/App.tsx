@@ -2,12 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { OnboardingProvider } from "@/components/onboarding";
 import { AppLayout } from "@/components/layout/AppLayout";
 import AuthPage from "./pages/AuthPage";
-import TodayPage from "./pages/TodayPage";
+// import TodayPage from "./pages/TodayPage"; // Replaced by IdentityPage
+import IdentityPage from "./pages/IdentityPage";
 import TasksPage from "./pages/TasksPage";
 import KanbanPage from "./pages/KanbanPage";
 import HabitsPage from "./pages/HabitsPage";
@@ -33,7 +34,7 @@ import IntelligenceHubPage from "./pages/IntelligenceHubPage";
 import ObservabilityPage from "./pages/ObservabilityPage";
 import ProductIntelligencePage from "./pages/ProductIntelligencePage";
 import AIInterventionsPage from "./pages/AIInterventionsPage";
-import IdentityDashboard from "./pages/IdentityDashboard";
+// import IdentityDashboard from "./pages/IdentityDashboard"; // Replaced by IdentityPage
 import BehaviorHubPage from "./pages/BehaviorHubPage";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
@@ -71,8 +72,9 @@ const App = () => (
             <Route path="/pricing" element={<PricingPage />} />
             
             {/* Protected routes */}
-            <Route path="/dashboard" element={<ProtectedRoute><IdentityDashboard /></ProtectedRoute>} />
-            <Route path="/today" element={<ProtectedRoute><TodayPage /></ProtectedRoute>} />
+            <Route path="/identity" element={<ProtectedRoute><IdentityPage /></ProtectedRoute>} />
+            <Route path="/today" element={<Navigate to="/identity" replace />} />
+            <Route path="/dashboard" element={<Navigate to="/identity" replace />} />
             <Route path="/tasks" element={<ProtectedRoute><TasksPage /></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><KanbanPage /></ProtectedRoute>} />
             <Route path="/habits" element={<ProtectedRoute><HabitsPage /></ProtectedRoute>} />
