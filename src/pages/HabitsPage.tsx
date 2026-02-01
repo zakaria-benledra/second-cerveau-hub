@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { HABIT_EMOJI_OPTIONS } from '@/constants';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { GlobalHeader } from '@/components/layout/GlobalHeader';
+import { SageCompanion } from '@/components/sage';
+import { usePageSage } from '@/hooks/usePageSage';
+import { useCelebration } from '@/hooks/useCelebration';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +56,8 @@ export default function HabitsPage() {
   const createHabit = useCreateHabit();
   const toggleHabit = useToggleHabitLog();
   const deleteHabit = useDeleteHabit();
+  const { context, mood, data: sageData } = usePageSage('habits');
+  const { celebrate } = useCelebration();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newHabit, setNewHabit] = useState<CreateHabitInput>({
@@ -100,15 +106,24 @@ export default function HabitsPage() {
     <AppLayout>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gradient">
-              Habitudes & Comportement
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Système unifié de discipline quotidienne
-            </p>
-          </div>
+        <GlobalHeader
+          variant="page"
+          title="Tes habitudes"
+          subtitle={`${habits?.filter(h => h.is_active).length || 0} actives`}
+          icon={<Sparkles className="h-5 w-5 text-white" />}
+        />
+
+        {/* Sage Companion */}
+        <SageCompanion
+          context={context}
+          mood={mood}
+          data={sageData}
+          variant="inline"
+          className="mb-6"
+        />
+
+        {/* Add habit button */}
+        <div className="flex justify-end">
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
@@ -362,7 +377,9 @@ export default function HabitsPage() {
                     "group glass-hover cursor-pointer transition-all",
                     "hover:border-primary/30 hover:-translate-y-0.5"
                   )}
-                  onClick={() => toggleHabit.mutate(habit.id)}
+                  onClick={() => toggleHabit.mutate(habit.id, {
+                    onSuccess: () => celebrate('habit_complete', habit.name)
+                  })}
                 >
                   <CardContent className="py-4">
                     <div className="flex items-center gap-4">
