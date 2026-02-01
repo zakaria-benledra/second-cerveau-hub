@@ -424,7 +424,7 @@ function generateTomorrowPlan(ctx: PlanContext): PlanAction[] {
 }
 
 export default function AICoachPage() {
-  const { refetchBriefing, proposals, approveProposal, isApproving, rejectProposal, isRejecting } = useAICoach();
+  const { refetchBriefing, proposals, approveProposal, isApproving, rejectProposal, isRejecting, risks, risksLoading } = useAICoach();
   const { interventionHistory, historyLoading } = useAICoachEngine();
   const { data: score } = useTodayScore();
   const { data: habits } = useHabitsWithLogs();
@@ -440,10 +440,49 @@ export default function AICoachPage() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [isCreatingTasks, setIsCreatingTasks] = useState(false);
 
-  // Generate behavior analysis
+  // Generate behavior analysis - uses backend risks when available
   const behaviorInsights = useMemo(() => {
-    return analyzeBehavior(score, habits || [], tasks || []);
-  }, [score, habits, tasks]);
+    // Use risks from ai-coach backend instead of local function
+    if (!risks || !risks.risks || risks.risks.length === 0) {
+      // Fallback to basic analysis
+      const insights: Array<{
+        type: 'strength' | 'weakness' | 'drift';
+        title: string;
+        description: string;
+        severity: 'positive' | 'warning' | 'neutral';
+      }> = [];
+      
+      const activeHabits = habits?.filter(h => h.is_active) || [];
+      const completedToday = activeHabits.filter(h => h.todayLog?.completed).length;
+      const habitRate = activeHabits.length > 0 ? completedToday / activeHabits.length : 0;
+      
+      if (habitRate >= 0.8) {
+        insights.push({
+          type: 'strength',
+          title: 'Habitudes solides',
+          description: `${Math.round(habitRate * 100)}% complétées aujourd'hui.`,
+          severity: 'positive',
+        });
+      } else if (habitRate < 0.5 && activeHabits.length > 0) {
+        insights.push({
+          type: 'drift',
+          title: 'Habitudes en souffrance',
+          description: `Seulement ${Math.round(habitRate * 100)}% des habitudes faites.`,
+          severity: 'warning',
+        });
+      }
+      
+      return insights;
+    }
+    
+    // Transform backend risks to insights format
+    return risks.risks.map((risk: any) => ({
+      type: risk.severity === 'low' ? 'strength' as const : 'drift' as const,
+      title: risk.title || risk.type,
+      description: risk.description || risk.recommendation || '',
+      severity: risk.severity === 'low' ? 'positive' as const : 'warning' as const,
+    }));
+  }, [risks, habits]);
 
   const dailyIdentity = useMemo(() => {
     return generateDailyIdentity(score, habits || [], tasks || []);
