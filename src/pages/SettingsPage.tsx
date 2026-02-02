@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { SageCompanion } from '@/components/sage';
+import { PersonalizationSettings } from '@/components/settings/PersonalizationSettings';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useUserProfile';
 import { useUserPreferences } from '@/hooks/useOnboarding';
 import { useAuth, signOut } from '@/hooks/useAuth';
@@ -201,6 +202,9 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Personnalisation IA */}
+        <PersonalizationSettings />
 
         {/* Préférences */}
         <Card className="glass">

@@ -289,17 +289,18 @@ serve(async (req) => {
 // ============================================
 // CONTEXT BUILDER
 // ============================================
-async function buildContext(supabase: any, userId: string): Promise<UserContext> {
+async function buildContext(supabase: any, userId: string): Promise<UserContext & { personalization: { level: string; preferences: any } }> {
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
 
-  // Fetch data in parallel (including user preferences for goals)
-  const [habitsResult, tasksResult, scoresResult, dnaResult, prefsResult] = await Promise.all([
+  // Fetch data in parallel (including user preferences for goals and personalization level)
+  const [habitsResult, tasksResult, scoresResult, dnaResult, prefsResult, profileResult] = await Promise.all([
     supabase.from('habit_logs').select('completed').eq('user_id', userId).eq('date', today),
     supabase.from('tasks').select('status, due_date').eq('user_id', userId).is('deleted_at', null),
     supabase.from('daily_stats').select('*').eq('user_id', userId).eq('date', today).single(),
     supabase.from('behavioral_dna').select('dna_data').eq('user_id', userId).single(),
     supabase.from('user_preferences').select('goal_discipline, goal_financial_stability, goal_mental_balance').eq('user_id', userId).single(),
+    supabase.from('profiles').select('personalization_level, ai_preferences').eq('id', userId).single(),
   ]);
 
   const habits = habitsResult.data || [];
@@ -307,6 +308,15 @@ async function buildContext(supabase: any, userId: string): Promise<UserContext>
   const scores = scoresResult.data;
   const dna = dnaResult.data?.dna_data;
   const prefs = prefsResult.data;
+  const profile = profileResult.data;
+  
+  // Personalization settings
+  const personalizationLevel = profile?.personalization_level || 'balanced';
+  const aiPreferences = profile?.ai_preferences || {
+    suggestion_frequency: 'normal',
+    exploration_enabled: true,
+    explain_suggestions: true,
+  };
   
   // Extract goals with defaults
   const discipline = prefs?.goal_discipline ?? 50;
@@ -375,6 +385,10 @@ async function buildContext(supabase: any, userId: string): Promise<UserContext>
       financialStability,
       mentalBalance,
       priority,
+    },
+    personalization: {
+      level: personalizationLevel,
+      preferences: aiPreferences,
     },
   };
 }
@@ -694,6 +708,12 @@ function buildPrompt(params: {
 ${context.goals.mentalBalance >= 70 ? '→ IMPORTANT: Insiste sur le journal, la méditation, le bien-être' : ''}
 ${context.goals.discipline >= 70 ? '→ IMPORTANT: Focalise sur les habitudes et la productivité' : ''}
 ${context.goals.financialStability >= 70 ? '→ IMPORTANT: Priorise les conseils finance et budget' : ''}
+
+# NIVEAU DE PERSONNALISATION: ${(context as any).personalization?.level?.toUpperCase() || 'BALANCED'}
+${(context as any).personalization?.level === 'conservative' ? '→ STYLE: Sois général et non intrusif. Évite les suggestions trop personnelles. Respecte la vie privée.' : ''}
+${(context as any).personalization?.level === 'exploratory' ? '→ STYLE: Sois proactif et audacieux. Propose des idées nouvelles et des défis. Pousse hors de la zone de confort.' : ''}
+${(context as any).personalization?.level === 'balanced' ? '→ STYLE: Équilibre personnalisation et respect de la vie privée. Suggestions modérées.' : ''}
+${(context as any).personalization?.preferences?.explain_suggestions ? '→ IMPORTANT: Explique brièvement pourquoi tu fais chaque suggestion.' : ''}
 
 # PROFIL UTILISATEUR
 - Identité visée: ${memory.profile.northStarIdentity}

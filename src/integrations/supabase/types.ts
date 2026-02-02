@@ -2874,10 +2874,12 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_preferences: Json | null
           created_at: string
           email: string
           id: string
           name: string | null
+          personalization_level: string | null
           processing_limit_date: string | null
           processing_limit_scope: string | null
           processing_limited: boolean | null
@@ -2886,10 +2888,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_preferences?: Json | null
           created_at?: string
           email: string
           id?: string
           name?: string | null
+          personalization_level?: string | null
           processing_limit_date?: string | null
           processing_limit_scope?: string | null
           processing_limited?: boolean | null
@@ -2898,10 +2902,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ai_preferences?: Json | null
           created_at?: string
           email?: string
           id?: string
           name?: string | null
+          personalization_level?: string | null
           processing_limit_date?: string | null
           processing_limit_scope?: string | null
           processing_limited?: boolean | null
