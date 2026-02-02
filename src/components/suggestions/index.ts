@@ -1,0 +1,1 @@
+export { SmartSuggestionsCard } from './SmartSuggestionsCard';
