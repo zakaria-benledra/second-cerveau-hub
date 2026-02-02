@@ -6,6 +6,7 @@ import { PersonalizationSettings } from '@/components/settings/PersonalizationSe
 import { InterestsSettings } from '@/components/settings/InterestsSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { CalendarSettings } from '@/components/settings/CalendarSettings';
+import { ExportReportButton } from '@/components/settings/ExportReportButton';
 import { DemographicsForm } from '@/components/onboarding/DemographicsForm';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useUserProfile';
 import { useUserPreferences } from '@/hooks/useOnboarding';
@@ -221,6 +222,9 @@ export default function SettingsPage() {
 
         {/* Calendrier */}
         <CalendarSettings />
+
+        {/* Export PDF */}
+        <ExportReportButton />
 
         {/* Préférences */}
         <Card className="glass">
