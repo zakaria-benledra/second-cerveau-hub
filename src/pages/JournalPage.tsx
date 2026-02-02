@@ -347,22 +347,29 @@ export default function JournalPage() {
                 </CardDescription>
               </CardHeader>
               {aiSuggestions.length > 0 && (
-                <CardContent className="space-y-2">
-                  {aiSuggestions.map((suggestion, idx) => (
-                    <div 
-                      key={idx}
-                      className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-start justify-between gap-2"
-                    >
-                      <p className="text-sm">{suggestion}</p>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleUseSuggestion(suggestion)}
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span>{aiSuggestions.length} suggestions générées</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {aiSuggestions.map((suggestion, idx) => (
+                      <div 
+                        key={idx}
+                        className="p-3 rounded-lg bg-primary/5 border border-primary/10 flex items-start justify-between gap-2 hover:bg-primary/10 transition-colors"
                       >
-                        Utiliser
-                      </Button>
-                    </div>
-                  ))}
+                        <p className="text-sm line-clamp-3">{suggestion}</p>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="shrink-0"
+                          onClick={() => handleUseSuggestion(suggestion)}
+                        >
+                          Utiliser
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               )}
             </Card>
