@@ -8,6 +8,7 @@ import { Check, X, Clock, History, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { SuggestionFeedback } from '@/components/feedback/SuggestionFeedback';
 
 interface Proposal {
   id: string;
@@ -130,6 +131,13 @@ export function SageHistoryView() {
                         {proposal.type}
                       </Badge>
                     </div>
+                    {!proposal.status && (
+                      <SuggestionFeedback
+                        suggestionId={proposal.id}
+                        suggestionType="proposal"
+                        compact
+                      />
+                    )}
                   </div>
                   <div className="shrink-0">
                     {getStatusBadge(proposal.status)}

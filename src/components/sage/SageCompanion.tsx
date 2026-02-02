@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Brain, Sparkles, RefreshCw, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirstName } from '@/hooks/useUserProfile';
+import { SuggestionFeedback } from '@/components/feedback/SuggestionFeedback';
 
 export type SageContext = 
   | 'welcome'
@@ -42,6 +43,8 @@ interface SageCompanionProps {
   onRefresh?: () => void;
   isLoading?: boolean;
   className?: string;
+  showFeedback?: boolean;
+  suggestionId?: string;
 }
 
 type ContextMessageFn = (name: string, data?: SageCompanionProps['data']) => { message: string; emoji: string };
@@ -149,6 +152,8 @@ export function SageCompanion({
   onRefresh,
   isLoading,
   className,
+  showFeedback = false,
+  suggestionId,
 }: SageCompanionProps) {
   const firstName = useFirstName() || 'toi';
   const [displayedText, setDisplayedText] = useState('');
@@ -292,6 +297,16 @@ export function SageCompanion({
               <span className="mr-1">{emoji}</span>
               {message}
             </p>
+            
+            {showFeedback && suggestionId && (
+              <div className="pt-2">
+                <SuggestionFeedback
+                  suggestionId={suggestionId}
+                  suggestionType="insight"
+                  compact
+                />
+              </div>
+            )}
             
             {(primaryAction || secondaryAction) && (
               <div className="flex items-center gap-2 pt-1">

@@ -8,11 +8,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
+import { SuggestionFeedback } from '@/components/feedback/SuggestionFeedback';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  showFeedback?: boolean;
 }
 
 export function SageChatMode() {
@@ -54,7 +56,8 @@ export function SageChatMode() {
       setMessages(prev => [...prev, { 
         id: (Date.now() + 1).toString(), 
         role: 'assistant', 
-        content: response 
+        content: response,
+        showFeedback: true
       }]);
     } catch (err) {
       console.error('Chat error:', err);
@@ -138,18 +141,29 @@ export function SageChatMode() {
                     : <User className="h-4 w-4" />
                   }
                 </div>
-                <div className={cn(
-                  "max-w-[80%] px-4 py-3 rounded-2xl",
-                  msg.role === 'user'
-                    ? "bg-primary text-primary-foreground rounded-br-sm"
-                    : "bg-secondary/50 rounded-bl-sm"
-                )}>
-                  {msg.role === 'assistant' ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                <div className="flex flex-col gap-1">
+                  <div className={cn(
+                    "max-w-[80%] px-4 py-3 rounded-2xl",
+                    msg.role === 'user'
+                      ? "bg-primary text-primary-foreground rounded-br-sm"
+                      : "bg-secondary/50 rounded-bl-sm"
+                  )}>
+                    {msg.role === 'assistant' ? (
+                      <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-sm">{msg.content}</p>
+                    )}
+                  </div>
+                  {msg.role === 'assistant' && msg.showFeedback && (
+                    <div className="ml-1">
+                      <SuggestionFeedback
+                        suggestionId={msg.id}
+                        suggestionType="coach"
+                        compact
+                      />
                     </div>
-                  ) : (
-                    <p className="text-sm">{msg.content}</p>
                   )}
                 </div>
               </div>
