@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json()
-    const { entry_id, domain, mood_score, content, action } = body
+    const { entry_id, domain, mood_score, mood, energy, content, action, date, is_backfill } = body
 
     // Get workspace
     const { data: membership } = await supabase
@@ -106,6 +106,28 @@ Deno.serve(async (req) => {
       .single()
 
     const workspaceId = membership?.workspace_id
+
+    // Mood and energy descriptions for prompts
+    const moodDescriptions: Record<string, string> = {
+      great: "excellent, très positif",
+      good: "bien, positif",
+      okay: "moyen, neutre",
+      bad: "difficile, négatif"
+    }
+
+    const energyDescriptions: Record<string, string> = {
+      high: "élevée, plein d'énergie",
+      medium: "moyenne, correct",
+      low: "basse, fatigué"
+    }
+
+    const domainContexts: Record<string, string> = {
+      travail: "vie professionnelle, carrière, productivité",
+      santé: "bien-être physique, sport, alimentation, sommeil",
+      finance: "argent, budget, investissements, dépenses",
+      relation: "relations, famille, amis, vie sociale",
+      identité: "développement personnel, valeurs, objectifs de vie"
+    }
 
     if (action === 'get_suggestions') {
       // === ENRICHISSEMENT HISTORIQUE ===

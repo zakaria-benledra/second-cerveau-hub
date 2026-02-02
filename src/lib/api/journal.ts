@@ -30,17 +30,28 @@ export async function getTodayJournalEntry() {
   return data;
 }
 
-export async function saveJournalEntry(entry: Omit<JournalEntryInsert, 'user_id'>) {
+export async function saveJournalEntry(
+  entry: Omit<JournalEntryInsert, 'user_id'>, 
+  targetDate?: string
+) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const today = new Date().toISOString().split('T')[0];
+  // Use provided date or today by default
+  const entryDate = targetDate || new Date().toISOString().split('T')[0];
   
-  // Check if entry exists for today
+  // Validate that date is not in the future
+  const today = new Date().toISOString().split('T')[0];
+  if (entryDate > today) {
+    throw new Error('Impossible d\'écrire dans le futur');
+  }
+  
+  // Check if entry exists for this date
   const { data: existing } = await supabase
     .from('journal_entries')
     .select('id')
-    .eq('date', today)
+    .eq('date', entryDate)
+    .eq('user_id', user.id)
     .maybeSingle();
 
   if (existing) {
@@ -58,13 +69,29 @@ export async function saveJournalEntry(entry: Omit<JournalEntryInsert, 'user_id'
     // Create new
     const { data, error } = await supabase
       .from('journal_entries')
-      .insert({ ...entry, user_id: user.id, date: today })
+      .insert({ ...entry, user_id: user.id, date: entryDate })
       .select()
       .single();
     
     if (error) throw error;
     return data;
   }
+}
+
+// New function to get entry by specific date
+export async function getJournalEntryByDate(date: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('journal_entries')
+    .select('*')
+    .eq('date', date)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  
+  if (error) throw error;
+  return data;
 }
 
 // Notes
