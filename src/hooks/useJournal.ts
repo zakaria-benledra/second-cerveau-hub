@@ -1,7 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import {
   fetchJournalEntries,
   getTodayJournalEntry,
+  getJournalEntryByDate,
   saveJournalEntry,
   fetchNotes,
   createNote,
@@ -24,16 +27,31 @@ export function useTodayJournalEntry() {
   });
 }
 
+// New hook to get entry by specific date
+export function useJournalEntryByDate(date: string | null) {
+  return useQuery({
+    queryKey: ['journalEntry', date],
+    queryFn: () => date ? getJournalEntryByDate(date) : null,
+    enabled: !!date,
+  });
+}
+
 export function useSaveJournalEntry() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: saveJournalEntry,
-    onSuccess: () => {
+    mutationFn: ({ entry, targetDate }: { 
+      entry: Parameters<typeof saveJournalEntry>[0]; 
+      targetDate?: string 
+    }) => saveJournalEntry(entry, targetDate),
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['journalEntry'] });
       queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
-      toast({ title: 'Journal sauvegardé' });
+      const dateLabel = variables.targetDate 
+        ? `pour le ${format(new Date(variables.targetDate), 'd MMMM', { locale: fr })}` 
+        : '';
+      toast({ title: `Journal sauvegardé ${dateLabel}`.trim() });
     },
     onError: (error: Error) => {
       toast({ title: 'Erreur', description: error.message, variant: 'destructive' });

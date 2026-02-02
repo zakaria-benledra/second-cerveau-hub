@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { SageCompanion } from '@/components/sage';
@@ -10,7 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useTodayJournalEntry, useSaveJournalEntry, useNotes, useCreateNote, useDeleteNote, useJournalEntries } from '@/hooks/useJournal';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTodayJournalEntry, useSaveJournalEntry, useNotes, useCreateNote, useDeleteNote, useJournalEntries, useJournalEntryByDate } from '@/hooks/useJournal';
 import { useJournalAI, journalDomains, moodToScore } from '@/hooks/useJournalAI';
 import { GlobalTimeFilter, useTimeRangeDates, type TimeRange } from '@/components/filters/GlobalTimeFilter';
 import { JournalInsightsTab } from '@/components/journal/JournalInsightsTab';
@@ -18,7 +21,8 @@ import { JournalEvolutionTab } from '@/components/journal/JournalEvolutionTab';
 import { 
   BookHeart, Sparkles, Smile, Meh, Frown, Battery, BatteryMedium, BatteryLow, 
   Plus, Trash2, FileText, Brain, Lightbulb, Clock, Filter, Search, 
-  LayoutTemplate, RefreshCw, MessageSquare, Activity, Heart, BookOpen
+  LayoutTemplate, RefreshCw, Activity, Heart, BookOpen,
+  CalendarIcon, ChevronLeft, ChevronRight, AlertCircle
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -64,6 +68,19 @@ const REFLECTION_TEMPLATES = [
   }
 ];
 
+const moodOptions = [
+  { value: 'great', label: 'Super', icon: Smile, color: 'text-success' },
+  { value: 'good', label: 'Bien', icon: Smile, color: 'text-info' },
+  { value: 'okay', label: 'Moyen', icon: Meh, color: 'text-warning' },
+  { value: 'bad', label: 'Difficile', icon: Frown, color: 'text-destructive' },
+];
+
+const energyOptions = [
+  { value: 'high', label: 'Élevée', icon: Battery, color: 'text-success' },
+  { value: 'medium', label: 'Moyenne', icon: BatteryMedium, color: 'text-warning' },
+  { value: 'low', label: 'Basse', icon: BatteryLow, color: 'text-destructive' },
+];
+
 export default function JournalPage() {
   const { data: todayEntry, isLoading: loadingEntry } = useTodayJournalEntry();
   const { data: allEntries = [], isLoading: loadingEntries } = useJournalEntries();
@@ -74,10 +91,25 @@ export default function JournalPage() {
   const journalAI = useJournalAI();
   const { celebrate } = useCelebration();
 
-  const [mood, setMood] = useState(todayEntry?.mood || '');
-  const [energy, setEnergy] = useState(todayEntry?.energy_level || '');
+  // Date selection state
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  
+  const isToday = selectedDate.toISOString().split('T')[0] === new Date().toISOString().split('T')[0];
+  const formattedSelectedDate = selectedDate.toISOString().split('T')[0];
+  
+  // Fetch entry for selected date (only when not today)
+  const { data: entryForDate, isLoading: loadingEntryForDate } = useJournalEntryByDate(
+    isToday ? null : formattedSelectedDate
+  );
+  
+  // Current entry is today's or selected date's
+  const currentEntry = isToday ? todayEntry : entryForDate;
+
+  const [mood, setMood] = useState('');
+  const [energy, setEnergy] = useState('');
   const [domain, setDomain] = useState<string>('');
-  const [reflections, setReflections] = useState(todayEntry?.reflections || '');
+  const [reflections, setReflections] = useState('');
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -86,24 +118,99 @@ export default function JournalPage() {
   // Timeline filters
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const [moodFilter, setMoodFilter] = useState<string>('all');
-  const [domainFilter, setDomainFilter] = useState<string>('all');
   const { startDate, endDate } = useTimeRangeDates(timeRange);
 
-  // Update form when data loads
+  // Update form when data loads or date changes
   useEffect(() => {
-    if (todayEntry) {
-      setMood(todayEntry.mood || '');
-      setEnergy(todayEntry.energy_level || '');
-      setReflections(todayEntry.reflections || '');
+    if (currentEntry) {
+      setMood(currentEntry.mood || '');
+      setEnergy(currentEntry.energy_level || '');
+      setReflections(currentEntry.reflections || '');
+    } else {
+      // Reset for new entry
+      setMood('');
+      setEnergy('');
+      setReflections('');
     }
-  }, [todayEntry]);
+    // Clear AI suggestions when date changes
+    setAiSuggestions([]);
+  }, [currentEntry, formattedSelectedDate]);
+
+  // Dynamic templates based on context
+  const dynamicTemplates = useMemo(() => {
+    const templates = [];
+    
+    if (mood === 'bad' || mood === 'okay') {
+      templates.push({
+        id: 'processing-emotions',
+        label: '💭 Traiter mes émotions',
+        template: `**Ce que je ressens vraiment :**
+[Exprime tes émotions sans filtre]
+
+**D'où vient ce sentiment ?**
+[Identifie la source]
+
+**Ce dont j'ai besoin maintenant :**
+[Sois honnête avec toi-même]`
+      });
+    }
+    
+    if (domain === 'travail') {
+      templates.push({
+        id: 'work-reflection',
+        label: '💼 Réflexion travail',
+        template: `**Accomplissement du jour :**
+[Même petit, qu'as-tu accompli ?]
+
+**Défi rencontré :**
+[Qu'est-ce qui a été difficile ?]
+
+**Prochaine action :**
+[Une chose concrète pour demain]`
+      });
+    }
+    
+    if (domain === 'relation') {
+      templates.push({
+        id: 'relationship-reflection',
+        label: '❤️ Réflexion relations',
+        template: `**Interaction marquante :**
+[Avec qui ? Que s'est-il passé ?]
+
+**Ce que j'ai ressenti :**
+[Sois précis sur tes émotions]
+
+**Ce que j'aurais pu faire différemment :**
+[Ou ce que j'ai bien fait]`
+      });
+    }
+    
+    if (!isToday) {
+      templates.push({
+        id: 'retrospective',
+        label: '🔙 Rétrospective',
+        template: `**Ce jour-là, je me souviens :**
+[Qu'est-ce qui s'est passé ?]
+
+**Avec le recul, je comprends :**
+[Qu'est-ce que tu vois maintenant ?]
+
+**Ce que j'en retiens :**
+[Leçon ou insight]`
+      });
+    }
+    
+    return templates;
+  }, [mood, domain, isToday]);
 
   const handleSave = () => {
     saveJournal.mutate({
-      mood,
-      energy_level: energy,
-      reflections,
-      // Note: gratitude, wins, challenges removed - now in Habits behavioral section
+      entry: {
+        mood,
+        energy_level: energy,
+        reflections,
+      },
+      targetDate: isToday ? undefined : formattedSelectedDate,
     }, {
       onSuccess: () => celebrate('journal_entry')
     });
@@ -111,9 +218,13 @@ export default function JournalPage() {
 
   const handleGetAISuggestions = async () => {
     const suggestions = await journalAI.getSuggestions({
-      domain,
-      moodScore: moodToScore(mood),
-      content: reflections
+      domain: domain || undefined,
+      moodScore: mood ? moodToScore(mood) : undefined,
+      mood: mood || undefined,
+      energy: energy || undefined,
+      content: reflections || undefined,
+      date: formattedSelectedDate,
+      isBackfill: !isToday,
     });
     setAiSuggestions(suggestions);
   };
@@ -136,6 +247,20 @@ export default function JournalPage() {
     });
   };
 
+  const handlePreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  const handleNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    if (newDate <= new Date()) {
+      setSelectedDate(newDate);
+    }
+  };
+
   // Filter entries for timeline
   const filteredEntries = allEntries.filter(entry => {
     const entryDate = entry.date;
@@ -145,19 +270,6 @@ export default function JournalPage() {
       (entry.reflections?.toLowerCase().includes(searchQuery.toLowerCase()));
     return inDateRange && matchesMood && matchesSearch;
   });
-
-  const moodOptions = [
-    { value: 'great', label: 'Super', icon: Smile, color: 'text-success' },
-    { value: 'good', label: 'Bien', icon: Smile, color: 'text-info' },
-    { value: 'okay', label: 'Moyen', icon: Meh, color: 'text-warning' },
-    { value: 'bad', label: 'Difficile', icon: Frown, color: 'text-destructive' },
-  ];
-
-  const energyOptions = [
-    { value: 'high', label: 'Élevée', icon: Battery, color: 'text-success' },
-    { value: 'medium', label: 'Moyenne', icon: BatteryMedium, color: 'text-warning' },
-    { value: 'low', label: 'Basse', icon: BatteryLow, color: 'text-destructive' },
-  ];
 
   return (
     <AppLayout>
@@ -183,7 +295,7 @@ export default function JournalPage() {
           <TabsList className="glass flex-wrap">
             <TabsTrigger value="today" className="flex items-center gap-2">
               <BookHeart className="h-4 w-4" />
-              Aujourd'hui
+              {isToday ? "Aujourd'hui" : format(selectedDate, 'd MMM', { locale: fr })}
             </TabsTrigger>
             <TabsTrigger value="insights" className="flex items-center gap-2">
               <Heart className="h-4 w-4" />
@@ -214,6 +326,73 @@ export default function JournalPage() {
           </TabsContent>
 
           <TabsContent value="today" className="space-y-6">
+            {/* Date Selector */}
+            <Card className="glass">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handlePreviousDay}
+                      disabled={loadingEntryForDate}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    
+                    <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="min-w-[200px] justify-start text-left font-normal">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {isToday ? "Aujourd'hui" : format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr })}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={(date) => {
+                            if (date) {
+                              setSelectedDate(date);
+                              setIsDatePickerOpen(false);
+                            }
+                          }}
+                          disabled={(date) => date > new Date()}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleNextDay}
+                      disabled={loadingEntryForDate || isToday}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {!isToday && (
+                    <Button variant="outline" size="sm" onClick={() => setSelectedDate(new Date())}>
+                      Retour à aujourd'hui
+                    </Button>
+                  )}
+                </div>
+                
+                {!isToday && (
+                  <Alert className="mt-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Tu rédiges une entrée pour le {format(selectedDate, 'd MMMM', { locale: fr })}
+                      {currentEntry && " (une entrée existe déjà, elle sera mise à jour)"}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Mood, Energy & Domain */}
             <div className="grid gap-6 md:grid-cols-3">
               <Card className="glass">
@@ -301,7 +480,7 @@ export default function JournalPage() {
                   Utilisez un modèle pour organiser votre réflexion
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
                   {REFLECTION_TEMPLATES.map((template) => (
                     <Button
@@ -315,6 +494,28 @@ export default function JournalPage() {
                     </Button>
                   ))}
                 </div>
+                
+                {/* Dynamic templates based on context */}
+                {dynamicTemplates.length > 0 && (
+                  <div className="pt-2 border-t">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Suggestions basées sur ton contexte :
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {dynamicTemplates.map((template) => (
+                        <Button
+                          key={template.id}
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleApplyTemplate(template.template)}
+                          className="text-xs"
+                        >
+                          {template.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -343,9 +544,44 @@ export default function JournalPage() {
                   </Button>
                 </div>
                 <CardDescription>
-                  Des questions pour guider ta réflexion
+                  Des questions adaptées à ton {mood && `humeur (${moodOptions.find(m => m.value === mood)?.label})`}
+                  {mood && domain && ' et '}
+                  {domain && `domaine (${journalDomains.find(d => d.value === domain)?.label})`}
+                  {!mood && !domain && 'contexte'}
                 </CardDescription>
               </CardHeader>
+              
+              {/* Context indicators before getting suggestions */}
+              {(mood || energy || domain) && aiSuggestions.length === 0 && (
+                <CardContent className="pt-0">
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {mood && (
+                      <Badge variant="outline">
+                        {moodOptions.find(m => m.value === mood)?.label}
+                      </Badge>
+                    )}
+                    {energy && (
+                      <Badge variant="outline">
+                        {energy === 'high' ? '⚡' : energy === 'medium' ? '🔋' : '🪫'} Énergie {energyOptions.find(e => e.value === energy)?.label}
+                      </Badge>
+                    )}
+                    {domain && (
+                      <Badge variant="outline">
+                        {journalDomains.find(d => d.value === domain)?.icon} {journalDomains.find(d => d.value === domain)?.label}
+                      </Badge>
+                    )}
+                    {!isToday && (
+                      <Badge variant="secondary">
+                        📅 Rétrospective
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Les suggestions seront personnalisées selon ce contexte
+                  </p>
+                </CardContent>
+              )}
+              
               {aiSuggestions.length > 0 && (
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -393,7 +629,7 @@ export default function JournalPage() {
             </Card>
 
             <Button onClick={handleSave} className="w-full" disabled={saveJournal.isPending}>
-              {saveJournal.isPending ? 'Sauvegarde...' : 'Sauvegarder le journal'}
+              {saveJournal.isPending ? 'Sauvegarde...' : `Sauvegarder ${!isToday ? `(${format(selectedDate, 'd MMM', { locale: fr })})` : 'le journal'}`}
             </Button>
 
             {/* Info about behavioral section */}
@@ -460,7 +696,15 @@ export default function JournalPage() {
                   const MoodIcon = moodOption?.icon || Meh;
                   
                   return (
-                    <Card key={entry.id} className="glass hover:shadow-md transition-shadow">
+                    <Card 
+                      key={entry.id} 
+                      className="glass hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => {
+                        setSelectedDate(parseISO(entry.date));
+                        const todayTab = document.querySelector('[data-state="inactive"][value="today"]') as HTMLElement;
+                        if (todayTab) todayTab.click();
+                      }}
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-start gap-4">
                           <div className={cn(

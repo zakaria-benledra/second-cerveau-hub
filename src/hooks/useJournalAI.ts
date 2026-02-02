@@ -16,13 +16,21 @@ export function useJournalAI() {
     mutationFn: async ({ 
       entryId, 
       domain, 
-      moodScore, 
-      content 
+      moodScore,
+      mood,
+      energy,
+      content,
+      date,
+      isBackfill
     }: { 
       entryId?: string; 
       domain?: string; 
-      moodScore?: number; 
+      moodScore?: number;
+      mood?: string;
+      energy?: string;
       content?: string;
+      date?: string;
+      isBackfill?: boolean;
     }): Promise<string[]> => {
       const { data, error } = await supabase.functions.invoke('journal-ai-assist', {
         body: {
@@ -30,7 +38,11 @@ export function useJournalAI() {
           entry_id: entryId,
           domain,
           mood_score: moodScore,
-          content
+          mood,
+          energy,
+          content,
+          date,
+          is_backfill: isBackfill
         }
       });
 
