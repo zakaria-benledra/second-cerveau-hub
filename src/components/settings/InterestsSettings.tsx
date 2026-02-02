@@ -204,6 +204,8 @@ export function InterestsSettings() {
                 <button
                   key={cat.key}
                   type="button"
+                  data-testid="interest-category"
+                  data-category={cat.key}
                   onClick={() => toggleCategory(cat.key)}
                   className={cn(
                     "flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all text-center",
@@ -245,6 +247,8 @@ export function InterestsSettings() {
                     <button
                       key={interest.id}
                       type="button"
+                      data-testid="interest-item"
+                      data-interest={interest.id}
                       onClick={() => toggleInterest(interest.id)}
                       className={cn(
                         "flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all text-sm",
@@ -271,6 +275,7 @@ export function InterestsSettings() {
             <span>{selectedInterests.size} intérêt{selectedInterests.size > 1 ? 's' : ''} sélectionné{selectedInterests.size > 1 ? 's' : ''}</span>
           </div>
           <Button
+            data-testid="save-interests"
             onClick={handleSave}
             disabled={!hasChanges || saveMutation.isPending}
             size="sm"

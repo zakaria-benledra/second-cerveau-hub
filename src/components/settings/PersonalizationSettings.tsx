@@ -112,6 +112,8 @@ export function PersonalizationSettings() {
                 <button
                   key={l.value}
                   type="button"
+                  data-testid="personalization-level"
+                  data-level={l.value}
                   onClick={() => handleLevelChange(l.value)}
                   className={cn(
                     "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all",
@@ -148,6 +150,7 @@ export function PersonalizationSettings() {
               </p>
             </div>
             <Switch
+              data-testid="explain-suggestions-switch"
               checked={explainSuggestions}
               onCheckedChange={(v) => handlePreferenceChange('explain_suggestions', v)}
             />

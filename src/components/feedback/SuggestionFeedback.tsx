@@ -46,7 +46,7 @@ export function SuggestionFeedback({
 
   if (submitted) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground animate-in fade-in">
+      <div data-testid="feedback-success" className="flex items-center gap-1.5 text-xs text-muted-foreground animate-in fade-in">
         <Check className="h-3.5 w-3.5 text-success" />
         <span>Merci !</span>
       </div>
@@ -61,6 +61,7 @@ export function SuggestionFeedback({
     <div className="flex items-center gap-1">
       {!compact && <span className="text-xs text-muted-foreground mr-1">Utile ?</span>}
       <Button 
+        data-testid="feedback-positive"
         variant="ghost" 
         size="sm" 
         onClick={() => handleFeedback(1)} 
@@ -71,6 +72,7 @@ export function SuggestionFeedback({
         {!compact && <span className="ml-1">Oui</span>}
       </Button>
       <Button 
+        data-testid="feedback-neutral"
         variant="ghost" 
         size="sm" 
         onClick={() => handleFeedback(0)} 
@@ -81,6 +83,7 @@ export function SuggestionFeedback({
         {!compact && <span className="ml-1">Moyen</span>}
       </Button>
       <Button 
+        data-testid="feedback-negative"
         variant="ghost" 
         size="sm" 
         onClick={() => handleFeedback(-1)} 
