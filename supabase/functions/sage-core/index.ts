@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { sanitizeInput, validateSkill, logSecurityEvent, ALLOWED_SKILLS } from '../_shared/prompt-security.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -83,6 +84,58 @@ serve(async (req) => {
 
     const { skill, additionalContext } = await req.json();
 
+    // ===== SECURITY: Validate skill parameter =====
+    const skillValidation = sanitizeInput(skill);
+    
+    if (!skillValidation.isValid) {
+      logSecurityEvent('INJECTION_ATTEMPT', user.id, {
+        input: String(skill).slice(0, 100),
+        reason: skillValidation.blockedReason,
+        riskScore: skillValidation.riskScore,
+      });
+      
+      return new Response(JSON.stringify({ 
+        error: 'Invalid request',
+        code: 'SECURITY_BLOCK',
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!validateSkill(skillValidation.sanitizedValue)) {
+      logSecurityEvent('INVALID_SKILL', user.id, {
+        providedSkill: skillValidation.sanitizedValue,
+        allowedSkills: ALLOWED_SKILLS,
+      });
+      
+      return new Response(JSON.stringify({ 
+        error: 'Unknown skill type',
+        code: 'INVALID_SKILL',
+        allowed: [...ALLOWED_SKILLS],
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Use validated skill from here
+    const validatedSkill = skillValidation.sanitizedValue;
+
+    // Sanitize additionalContext if present
+    if (additionalContext && typeof additionalContext === 'object') {
+      const contextStr = JSON.stringify(additionalContext);
+      const contextValidation = sanitizeInput(contextStr, 2000);
+      if (!contextValidation.isValid) {
+        logSecurityEvent('SUSPICIOUS_INPUT', user.id, {
+          field: 'additionalContext',
+          reason: contextValidation.blockedReason,
+        });
+        // Don't block, just log
+      }
+    }
+    // ===== END SECURITY BLOCK =====
+
     // 1. Build Context
     const context = await buildContext(supabase, user.id);
 
@@ -97,7 +150,7 @@ serve(async (req) => {
     const safetyCheck = checkSafety(context, memory);
     if (!safetyCheck.allowed) {
       await logRun(supabase, user.id, {
-        skill,
+        skill: validatedSkill,
         action_type: 'blocked',
         safety_blocked: true,
         safety_reason: safetyCheck.reason,
@@ -122,7 +175,7 @@ serve(async (req) => {
 
     // 6. Call LLM via Lovable AI Gateway
     const llmResponse = await callLovableAI({
-      skill,
+      skill: validatedSkill,
       action: decision.action,
       context,
       memory,
@@ -148,7 +201,7 @@ serve(async (req) => {
 
     // 8. Log Run with consent and context vector for learning loop
     const runId = await logRun(supabase, user.id, {
-      skill,
+      skill: validatedSkill,
       model_engine: 'lovable-ai',
       json_valid: validatedResponse.valid,
       retry_count: validatedResponse.retries,
