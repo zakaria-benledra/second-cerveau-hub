@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sanitizeInput, validateSkill, logSecurityEvent, ALLOWED_SKILLS } from '../_shared/prompt-security.ts';
 import { createLogger, getOrCreateTraceId, generateSpanId } from '../_shared/logger.ts';
+import { alertManager } from '../_shared/alerts.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -61,6 +62,8 @@ serve(async (req) => {
   const logger = createLogger('sage-core')
     .setContext({ traceId, spanId })
     .startTimer();
+  
+  let userId: string | undefined;
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -89,7 +92,8 @@ serve(async (req) => {
       });
     }
 
-    logger.setContext({ userId: user.id });
+    userId = user.id;
+    logger.setContext({ userId });
 
     const { skill, additionalContext } = await req.json();
 
@@ -103,6 +107,12 @@ serve(async (req) => {
         input: String(skill).slice(0, 100),
         reason: skillValidation.blockedReason,
         riskScore: skillValidation.riskScore,
+      });
+      
+      // Send security alert for injection attempts
+      await alertManager.securityIncident('sage-core', `Prompt injection attempt detected: ${skillValidation.blockedReason}`, {
+        userId: user.id,
+        traceId,
       });
       
       return new Response(JSON.stringify({ 
@@ -249,11 +259,19 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    logger.error('SageCore failed', error instanceof Error ? error : new Error(String(error)), {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('SageCore failed', err, {
       event: 'REQUEST_FAILED',
     });
+    
+    // Send alert for AI service errors
+    await alertManager.aiError('sage-core', err, {
+      userId,
+      traceId,
+    });
+    
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: err.message,
       trace_id: traceId,
     }), {
       status: 500,
