@@ -51,7 +51,7 @@ export function CalendarSettings() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Google Calendar */}
-        <div className="flex items-center justify-between p-4 rounded-lg border border-border/50 bg-card/50">
+        <div className={`flex items-center justify-between p-4 rounded-lg border border-border/50 ${!isConfigured ? 'bg-card/30 opacity-70' : 'bg-card/50'}`}>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-background">
               <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
@@ -71,7 +71,7 @@ export function CalendarSettings() {
               {!isConfigured && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
-                  Configuration requise
+                  Nécessite une configuration admin
                 </p>
               )}
             </div>
@@ -80,7 +80,7 @@ export function CalendarSettings() {
           {isLoading ? (
             <Badge variant="outline">Chargement...</Badge>
           ) : !isConfigured ? (
-            <Badge variant="secondary">Non configuré</Badge>
+            <Badge variant="secondary">Non disponible</Badge>
           ) : isConnected ? (
             <div className="flex items-center gap-2">
               <Badge variant="default" className="bg-success/20 text-success border-success/30">
