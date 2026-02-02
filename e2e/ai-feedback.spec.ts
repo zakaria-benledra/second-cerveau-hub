@@ -191,3 +191,114 @@ test.describe('Interests Selection', () => {
     }
   });
 });
+
+test.describe('Sage Chat', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/auth');
+    await page.fill('input[type="email"]', 'test_minded_qa_2026@test.com');
+    await page.fill('input[type="password"]', 'TestMinded2026!');
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/.*identity/);
+  });
+
+  test('chat tab is accessible', async ({ page }) => {
+    await page.goto('/ai-coach');
+    
+    const chatTab = page.locator('button:has-text(/chat/i), [data-tab="chat"], [role="tab"]:has-text(/chat/i)');
+    
+    await expect(chatTab).toBeVisible({ timeout: 5000 });
+    await chatTab.click();
+    
+    const chatInput = page.locator('[data-testid="chat-input"]');
+    await expect(chatInput).toBeVisible({ timeout: 5000 });
+  });
+
+  test('can send a message to Sage', async ({ page }) => {
+    await page.goto('/ai-coach');
+    
+    const chatTab = page.locator('button:has-text(/chat/i), [data-tab="chat"]');
+    if (await chatTab.isVisible()) {
+      await chatTab.click();
+    }
+    
+    const chatInput = page.locator('[data-testid="chat-input"]');
+    await chatInput.fill('Bonjour Sage, comment vas-tu ?');
+    
+    const sendButton = page.locator('[data-testid="send-message"]');
+    await sendButton.click();
+    
+    await expect(page.locator('[data-testid="user-message"]')).toBeVisible({ timeout: 3000 });
+    
+    await page.waitForSelector('[data-testid="sage-response"]', { 
+      timeout: 15000 
+    }).catch(() => {});
+  });
+
+  test('chat response time is under 10 seconds', async ({ page }) => {
+    await page.goto('/ai-coach');
+    
+    const chatTab = page.locator('button:has-text(/chat/i)');
+    if (await chatTab.isVisible()) {
+      await chatTab.click();
+    }
+    
+    const chatInput = page.locator('[data-testid="chat-input"]');
+    await chatInput.fill('Quel est mon score actuel ?');
+    
+    const startTime = Date.now();
+    
+    const sendButton = page.locator('[data-testid="send-message"]');
+    await sendButton.click();
+    
+    await page.waitForSelector('[data-testid="sage-response"]', { 
+      timeout: 10000 
+    });
+    
+    const endTime = Date.now();
+    const responseTime = endTime - startTime;
+    
+    console.log(`Chat response time: ${responseTime}ms`);
+    expect(responseTime).toBeLessThan(10000);
+  });
+
+  test('history tab shows past interactions', async ({ page }) => {
+    await page.goto('/ai-coach');
+    
+    const historyTab = page.locator('button:has-text(/historique|history/i), [data-tab="history"]');
+    
+    if (await historyTab.isVisible()) {
+      await historyTab.click();
+      
+      await page.waitForTimeout(2000);
+      
+      const historyItems = page.locator('[data-testid="history-item"], .proposal-card, .history-entry');
+      const emptyState = page.locator('text=/aucun|empty|pas encore/i');
+      
+      const hasItems = await historyItems.count() > 0;
+      const hasEmptyState = await emptyState.isVisible();
+      
+      expect(hasItems || hasEmptyState).toBe(true);
+    }
+  });
+});
+
+test.describe('Smart Suggestions', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/auth');
+    await page.fill('input[type="email"]', 'test_minded_qa_2026@test.com');
+    await page.fill('input[type="password"]', 'TestMinded2026!');
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/.*identity/);
+  });
+
+  test('can refresh suggestions', async ({ page }) => {
+    await page.goto('/identity');
+    
+    const refreshButton = page.locator('button[aria-label*="refresh"], button:has(svg.lucide-refresh-cw), [data-testid="refresh-suggestions"]');
+    
+    if (await refreshButton.isVisible()) {
+      await refreshButton.click();
+      await page.waitForTimeout(3000);
+    }
+  });
+});

@@ -125,6 +125,7 @@ export function SageChatMode() {
             {messages.map((msg) => (
               <div
                 key={msg.id}
+                data-testid={msg.role === 'user' ? 'user-message' : 'sage-response'}
                 className={cn(
                   "flex gap-3",
                   msg.role === 'user' ? "flex-row-reverse" : "flex-row"
@@ -186,10 +187,10 @@ export function SageChatMode() {
         )}
       </ScrollArea>
 
-      {/* Input */}
       <CardContent className="border-t border-border/50 p-4 shrink-0">
         <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex gap-2">
           <Input
+            data-testid="chat-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -197,7 +198,12 @@ export function SageChatMode() {
             disabled={isLoading}
             className="flex-1"
           />
-          <Button type="submit" disabled={isLoading || !input.trim()} className="gradient-primary">
+          <Button 
+            type="submit" 
+            data-testid="send-message"
+            disabled={isLoading || !input.trim()} 
+            className="gradient-primary"
+          >
             <Send className="h-4 w-4" />
           </Button>
         </form>
