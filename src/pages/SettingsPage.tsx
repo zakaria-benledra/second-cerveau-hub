@@ -4,6 +4,7 @@ import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { SageCompanion } from '@/components/sage';
 import { PersonalizationSettings } from '@/components/settings/PersonalizationSettings';
 import { InterestsSettings } from '@/components/settings/InterestsSettings';
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { DemographicsForm } from '@/components/onboarding/DemographicsForm';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useUserProfile';
 import { useUserPreferences } from '@/hooks/useOnboarding';
@@ -213,6 +214,9 @@ export default function SettingsPage() {
 
         {/* Personnalisation IA */}
         <PersonalizationSettings />
+
+        {/* Notifications Push */}
+        <NotificationSettings />
 
         {/* Préférences */}
         <Card className="glass">
