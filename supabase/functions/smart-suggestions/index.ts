@@ -51,6 +51,10 @@ serve(async (req) => {
       });
     }
 
+    // Parse request body for weather inclusion
+    const body = await req.json().catch(() => ({}));
+    const { includeWeather, weather } = body;
+
     // Récupérer les intérêts de l'utilisateur
     const { data: userInterests } = await supabase
       .from('user_interests')
@@ -175,6 +179,25 @@ serve(async (req) => {
     else if (goals.discipline > 70) focusPrincipal = 'productivité et discipline';
     else if (goals.finance > 70) focusPrincipal = 'gestion financière';
 
+    // === BUILD WEATHER CONTEXT ===
+    let weatherContext = '';
+    if (includeWeather && weather) {
+      weatherContext = `
+
+MÉTÉO ACTUELLE :
+- Condition : ${weather.condition}
+- Température : ${weather.temperature}°C
+- Description : ${weather.description}
+
+RÈGLES D'ADAPTATION MÉTÉO :
+- Si pluie/orage : privilégier activités indoor (lecture, méditation, jeux de société, cuisine)
+- Si beau temps (clear/sunny) : suggérer activités outdoor (randonnée, sport extérieur, pique-nique)
+- Si froid (<10°C) : activités indoor ou sport indoor (yoga, musculation)
+- Si chaud (>25°C) : activités aquatiques, sorties matinales, activités à l'ombre
+- Si nuageux : activités polyvalentes (visites culturelles, balades légères)
+`;
+    }
+
     // === PROMPT ENRICHI AVEC HISTORIQUE ===
     const prompt = `Tu es un assistant qui crée des suggestions d'activités personnalisées et originales.
 
@@ -191,15 +214,16 @@ HISTORIQUE RÉCENT (7 jours) :
 - Habitudes actives : ${activeHabits.length > 0 ? activeHabits.slice(0, 5).join(', ') : 'aucune'}
 - Dernière réflexion : "${recentReflections[0] || 'aucune'}"
 - Catégories de victoires : ${winCategories.length > 0 ? winCategories.join(', ') : 'aucune récente'}
-
+${weatherContext}
 STYLE : ${toneInstruction}
 
 MISSION :
-Génère exactement 3 suggestions d'activités qui COMBINENT au moins 2 intérêts de l'utilisateur.
+${includeWeather ? `Génère exactement 3 suggestions d'activités ADAPTÉES À LA MÉTÉO qui combinent au moins 2 intérêts de l'utilisateur.` : `Génère exactement 3 suggestions d'activités qui COMBINENT au moins 2 intérêts de l'utilisateur.`}
 Chaque suggestion doit :
 - Être originale et actionnable
 - Tenir compte de l'historique récent (humeur, momentum, habitudes)
 - Être adaptée à la localisation si possible
+${includeWeather ? '- TENIR COMPTE DE LA MÉTÉO pour proposer des activités indoor/outdoor adaptées' : ''}
 - Proposer quelque chose de cohérent avec les victoires récentes si applicables
 
 Réponds UNIQUEMENT avec un JSON valide, sans markdown :
@@ -210,9 +234,19 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown :
       "description": "Description de 2-3 phrases expliquant l'activité et POURQUOI elle est pertinente pour l'utilisateur",
       "interests_combined": ["intérêt1", "intérêt2"],
       "difficulty": "facile|moyen|challengeant",
-      "duration": "30min|1h|2h|demi-journée"
+      "duration": "30min|1h|2h|demi-journée"${includeWeather ? `,
+      "indoor": true ou false,
+      "weather_reason": "Pourquoi cette activité est adaptée à la météo actuelle"` : ''}
     }
-  ]
+  ]${includeWeather ? `,
+  "weatherSuggestions": [
+    {
+      "activity": "Nom de l'activité adaptée à la météo",
+      "reason": "Explication courte de pourquoi c'est adapté",
+      "indoor": true ou false,
+      "interests": ["intérêt1", "intérêt2"]
+    }
+  ]` : ''}
 }`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

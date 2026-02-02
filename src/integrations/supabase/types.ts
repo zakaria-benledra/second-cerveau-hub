@@ -5279,6 +5279,30 @@ export type Database = {
           },
         ]
       }
+      weather_cache: {
+        Row: {
+          expires_at: string | null
+          fetched_at: string | null
+          id: string
+          location_key: string
+          weather_data: Json
+        }
+        Insert: {
+          expires_at?: string | null
+          fetched_at?: string | null
+          id?: string
+          location_key: string
+          weather_data: Json
+        }
+        Update: {
+          expires_at?: string | null
+          fetched_at?: string | null
+          id?: string
+          location_key?: string
+          weather_data?: Json
+        }
+        Relationships: []
+      }
       weather_snapshots: {
         Row: {
           created_at: string
