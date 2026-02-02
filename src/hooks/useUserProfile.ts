@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface AIPreferences {
+  suggestion_frequency?: string;
+  exploration_enabled?: boolean;
+  explain_suggestions?: boolean;
+}
+
 export interface UserProfile {
   id: string;
   first_name: string | null;
@@ -12,6 +18,13 @@ export interface UserProfile {
   onboarding_completed: boolean;
   onboarding_step: number;
   preferred_sage_tone: 'encouraging' | 'direct' | 'gentle';
+  personalization_level: 'conservative' | 'balanced' | 'exploratory';
+  ai_preferences: AIPreferences;
+  interests: string[];
+  location_city: string | null;
+  location_country: string | null;
+  birth_year: number | null;
+  gender: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -56,9 +69,16 @@ export function useUpdateProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
+      // Convert AIPreferences to Json type for Supabase
+      const dbUpdates = {
+        ...updates,
+        updated_at: new Date().toISOString(),
+        ai_preferences: updates.ai_preferences ? JSON.parse(JSON.stringify(updates.ai_preferences)) : undefined,
+      };
+      
       const { data, error } = await supabase
         .from('user_profiles')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update(dbUpdates)
         .eq('id', user.id)
         .select()
         .single();

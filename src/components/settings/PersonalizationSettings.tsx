@@ -4,15 +4,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Brain, Shield, Sparkles, Zap } from 'lucide-react';
-import { useUserProfile, useUpdateProfile } from '@/hooks/useUserProfile';
+import { useUserProfile, useUpdateProfile, type AIPreferences, type UserProfile } from '@/hooks/useUserProfile';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-interface AIPreferences {
-  suggestion_frequency?: string;
-  exploration_enabled?: boolean;
-  explain_suggestions?: boolean;
-}
+type PersonalizationLevel = UserProfile['personalization_level'];
 
 const LEVELS = [
   { 
@@ -49,8 +45,8 @@ export function PersonalizationSettings() {
 
   useEffect(() => {
     if (profile) {
-      setLevel((profile as any).personalization_level || 'balanced');
-      const prefs = (profile as any).ai_preferences as AIPreferences | undefined;
+      setLevel(profile.personalization_level || 'balanced');
+      const prefs = profile.ai_preferences;
       setExplainSuggestions(prefs?.explain_suggestions ?? true);
       setExplorationEnabled(prefs?.exploration_enabled ?? true);
     }
@@ -60,17 +56,17 @@ export function PersonalizationSettings() {
     setLevel(newLevel);
     try {
       await updateProfile.mutateAsync({
-        personalization_level: newLevel,
-      } as any);
+        personalization_level: newLevel as PersonalizationLevel,
+      });
       toast({ title: `Mode ${LEVELS.find(l => l.value === newLevel)?.label} activé` });
     } catch (error) {
       toast({ title: 'Erreur', variant: 'destructive' });
     }
   };
 
-  const handlePreferenceChange = async (key: string, value: boolean) => {
-    const currentPrefs = ((profile as any)?.ai_preferences || {}) as AIPreferences;
-    const newPrefs = {
+  const handlePreferenceChange = async (key: keyof AIPreferences, value: boolean) => {
+    const currentPrefs = profile?.ai_preferences || {};
+    const newPrefs: AIPreferences = {
       ...currentPrefs,
       [key]: value,
     };
@@ -81,7 +77,7 @@ export function PersonalizationSettings() {
     try {
       await updateProfile.mutateAsync({
         ai_preferences: newPrefs,
-      } as any);
+      });
     } catch (error) {
       console.error(error);
     }
