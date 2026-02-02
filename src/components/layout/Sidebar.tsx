@@ -88,8 +88,7 @@ const bottomItems = [
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-    Insights: true,
-    Système: false,
+    Plus: true, // Ouvert par défaut
   });
 
   const toggleGroup = (label: string) => {
