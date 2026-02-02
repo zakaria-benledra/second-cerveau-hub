@@ -4011,6 +4011,62 @@ export type Database = {
           },
         ]
       }
+      system_alerts: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          message: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          service: string
+          severity: string
+          title: string
+          trace_id: string | null
+          user_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          service: string
+          severity: string
+          title: string
+          trace_id?: string | null
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          service?: string
+          severity?: string
+          title?: string
+          trace_id?: string | null
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_alerts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_events: {
         Row: {
           created_at: string
