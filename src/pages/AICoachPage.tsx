@@ -10,6 +10,7 @@ import { useTodayScore } from '@/hooks/useScores';
 import { useHabitsWithLogs } from '@/hooks/useHabits';
 import { useTodayTasks } from '@/hooks/useTasks';
 import { InterventionHistoryCard } from '@/components/ai';
+import { SmartSuggestionsCard } from '@/components/suggestions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -732,6 +733,9 @@ export default function AICoachPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Smart Suggestions */}
+        <SmartSuggestionsCard />
 
         {/* Intervention History */}
         <InterventionHistoryCard

@@ -2373,6 +2373,33 @@ export type Database = {
           },
         ]
       }
+      interests: {
+        Row: {
+          category: string
+          created_at: string | null
+          icon: string | null
+          id: string
+          keywords: string[] | null
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          keywords?: string[] | null
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          keywords?: string[] | null
+          name?: string
+        }
+        Relationships: []
+      }
       job_runs: {
         Row: {
           completed_at: string | null
@@ -4767,6 +4794,48 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_consents_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_interests: {
+        Row: {
+          created_at: string | null
+          id: string
+          intensity: number | null
+          interest_id: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          intensity?: number | null
+          interest_id: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          intensity?: number | null
+          interest_id?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_interests_interest_id_fkey"
+            columns: ["interest_id"]
+            isOneToOne: false
+            referencedRelation: "interests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_interests_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
