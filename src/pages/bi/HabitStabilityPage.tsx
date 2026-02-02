@@ -29,6 +29,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { BIBreadcrumb } from '@/components/bi/BIBreadcrumb';
+import { EmptyChart } from '@/components/charts/EmptyChart';
 
 export default function HabitStabilityPage() {
   const { stats: habitStats, isLoading: statsLoading } = useHabitStatsBI(14);
@@ -213,31 +214,35 @@ export default function HabitStabilityPage() {
           <CardDescription>Données issues de daily_stats</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip
-                  formatter={(value: number) => `${value}%`}
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Bar dataKey="rate" name="Taux de complétion" radius={[4, 4, 0, 0]}>
-                  {weeklyData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.rate >= 80 ? 'hsl(var(--chart-2))' : entry.rate >= 50 ? 'hsl(var(--chart-4))' : 'hsl(var(--destructive))'}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {weeklyData.length === 0 ? (
+            <EmptyChart height={250} message="Aucune donnée d'habitude" />
+          ) : (
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                  <Tooltip
+                    formatter={(value: number) => `${value}%`}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Bar dataKey="rate" name="Taux de complétion" radius={[4, 4, 0, 0]}>
+                    {weeklyData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.rate >= 80 ? 'hsl(var(--chart-2))' : entry.rate >= 50 ? 'hsl(var(--chart-4))' : 'hsl(var(--destructive))'}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -248,31 +253,35 @@ export default function HabitStabilityPage() {
           <CardDescription>Données issues de scores_daily (14 jours)</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={habitScoreData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip
-                  formatter={(value: number) => `${value}%`}
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="score"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  dot={{ r: 3, strokeWidth: 2 }}
-                  name="Score habitudes"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {habitScoreData.length === 0 ? (
+            <EmptyChart height={250} message="Aucun score habitudes" />
+          ) : (
+            <div className="h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={habitScoreData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                  <Tooltip
+                    formatter={(value: number) => `${value}%`}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="score"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={{ r: 3, strokeWidth: 2 }}
+                    name="Score habitudes"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
 

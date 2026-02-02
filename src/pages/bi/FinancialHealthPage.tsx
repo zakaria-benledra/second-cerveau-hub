@@ -29,6 +29,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { BIBreadcrumb } from '@/components/bi/BIBreadcrumb';
+import { EmptyChart } from '@/components/charts/EmptyChart';
 
 export default function FinancialHealthPage() {
   const { financeScores, avgFinanceScore, financeTrend, isLoading } = useFinanceStatsBI(6);
@@ -171,9 +172,7 @@ export default function FinancialHealthPage() {
         </CardHeader>
         <CardContent>
           {chartData.length === 0 ? (
-            <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-              Aucune donnée de score disponible
-            </div>
+            <EmptyChart height={300} message="Aucune donnée de score disponible" />
           ) : (
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -223,24 +222,28 @@ export default function FinancialHealthPage() {
             <CardTitle>Comparaison hebdomadaire</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weeklyAverages}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="week" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="score"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ r: 4, strokeWidth: 2 }}
-                    name="Score moyen"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {weeklyAverages.length === 0 ? (
+              <EmptyChart height={200} message="Pas assez de données hebdomadaires" />
+            ) : (
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={weeklyAverages}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="week" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={{ r: 4, strokeWidth: 2 }}
+                      name="Score moyen"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

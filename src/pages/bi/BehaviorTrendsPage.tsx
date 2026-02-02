@@ -19,6 +19,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { BIBreadcrumb } from '@/components/bi/BIBreadcrumb';
+import { EmptyChart } from '@/components/charts/EmptyChart';
 
 export default function BehaviorTrendsPage() {
   const { data: scoreHistory = [], isLoading } = useScoreHistory(14);
@@ -148,27 +149,31 @@ export default function BehaviorTrendsPage() {
           <CardDescription>Tous les indicateurs sur 14 jours</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[350px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                />
-                <Legend />
-                <Line type="monotone" dataKey="habits" name="Habitudes" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="tasks" name="Tâches" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="finance" name="Finance" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="health" name="Santé" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          {chartData.length === 0 ? (
+            <EmptyChart height={350} message="Aucune donnée de score" />
+          ) : (
+            <div className="h-[350px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                  />
+                  <Legend />
+                  <Line type="monotone" dataKey="habits" name="Habitudes" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="tasks" name="Tâches" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="finance" name="Finance" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="health" name="Santé" stroke="hsl(var(--chart-4))" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -180,23 +185,27 @@ export default function BehaviorTrendsPage() {
             <CardDescription>Tendance positive = amélioration</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                  <Tooltip />
-                  <Area
-                    type="monotone"
-                    dataKey="momentum"
-                    stroke="hsl(var(--chart-2))"
-                    fill="hsl(var(--chart-2))"
-                    fillOpacity={0.3}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            {chartData.length === 0 ? (
+              <EmptyChart height={250} message="Aucune donnée de momentum" />
+            ) : (
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <Tooltip />
+                    <Area
+                      type="monotone"
+                      dataKey="momentum"
+                      stroke="hsl(var(--chart-2))"
+                      fill="hsl(var(--chart-2))"
+                      fillOpacity={0.3}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -206,23 +215,27 @@ export default function BehaviorTrendsPage() {
             <CardDescription>À surveiller si supérieur à 60%</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                  <Tooltip />
-                  <Area
-                    type="monotone"
-                    dataKey="burnout"
-                    stroke="hsl(var(--destructive))"
-                    fill="hsl(var(--destructive))"
-                    fillOpacity={0.3}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            {chartData.length === 0 ? (
+              <EmptyChart height={250} message="Aucune donnée de burnout" />
+            ) : (
+              <div className="h-[250px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <Tooltip />
+                    <Area
+                      type="monotone"
+                      dataKey="burnout"
+                      stroke="hsl(var(--destructive))"
+                      fill="hsl(var(--destructive))"
+                      fillOpacity={0.3}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -233,18 +246,22 @@ export default function BehaviorTrendsPage() {
           <CardTitle>Comparaison quotidienne</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="global" name="Score Global" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {chartData.length === 0 ? (
+            <EmptyChart height={300} message="Aucune donnée quotidienne" />
+          ) : (
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                  <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="global" name="Score Global" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
