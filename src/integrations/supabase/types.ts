@@ -1990,6 +1990,48 @@ export type Database = {
           },
         ]
       }
+      gamification_challenges: {
+        Row: {
+          challenge_type: string | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          start_date: string | null
+          target_type: string | null
+          target_value: number | null
+          title: string
+          xp_reward: number | null
+        }
+        Insert: {
+          challenge_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          start_date?: string | null
+          target_type?: string | null
+          target_value?: number | null
+          title: string
+          xp_reward?: number | null
+        }
+        Update: {
+          challenge_type?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          start_date?: string | null
+          target_type?: string | null
+          target_value?: number | null
+          title?: string
+          xp_reward?: number | null
+        }
+        Relationships: []
+      }
       gamification_profiles: {
         Row: {
           created_at: string | null
@@ -4906,6 +4948,54 @@ export type Database = {
           },
         ]
       }
+      user_challenges: {
+        Row: {
+          challenge_id: string
+          completed: boolean | null
+          completed_at: string | null
+          current_progress: number | null
+          id: string
+          joined_at: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          challenge_id: string
+          completed?: boolean | null
+          completed_at?: string | null
+          current_progress?: number | null
+          id?: string
+          joined_at?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          challenge_id?: string
+          completed?: boolean | null
+          completed_at?: string | null
+          current_progress?: number | null
+          id?: string
+          joined_at?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_challenges_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_consents: {
         Row: {
           consent_version: string
@@ -5094,6 +5184,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_learning_profile_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_levels: {
+        Row: {
+          created_at: string | null
+          current_level: number | null
+          current_xp: number | null
+          last_level_up_at: string | null
+          total_xp_earned: number | null
+          updated_at: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_level?: number | null
+          current_xp?: number | null
+          last_level_up_at?: string | null
+          total_xp_earned?: number | null
+          updated_at?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_level?: number | null
+          current_xp?: number | null
+          last_level_up_at?: string | null
+          total_xp_earned?: number | null
+          updated_at?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_levels_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
