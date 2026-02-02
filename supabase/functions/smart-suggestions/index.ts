@@ -62,6 +62,50 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
+    // === ENRICHISSEMENT HISTORIQUE ===
+    // Récupérer les 5 dernières entrées journal
+    const { data: recentJournal } = await supabase
+      .from('journal_entries')
+      .select('mood, reflections, energy, date')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // Récupérer les habitudes les plus complétées (10 dernières)
+    const { data: topHabits } = await supabase
+      .from('habit_logs')
+      .select('habits(name)')
+      .eq('user_id', user.id)
+      .eq('completed', true)
+      .order('date', { ascending: false })
+      .limit(10);
+
+    // Récupérer les scores récents pour le contexte
+    const { data: recentScores } = await supabase
+      .from('scores_daily')
+      .select('global_score, momentum_index, date')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(7);
+
+    // Récupérer les victoires récentes
+    const { data: recentWins } = await supabase
+      .from('wins')
+      .select('title, category')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    // Construire le contexte enrichi
+    const recentMoods = recentJournal?.map(j => j.mood).filter(Boolean) || [];
+    const recentReflections = recentJournal?.map(j => j.reflections?.slice(0, 100)).filter(Boolean) || [];
+    const activeHabits = [...new Set(topHabits?.map((h: any) => h.habits?.name).filter(Boolean))] as string[];
+    const avgScore = recentScores?.length 
+      ? Math.round(recentScores.reduce((a, s) => a + (s.global_score || 0), 0) / recentScores.length)
+      : null;
+    const momentum = recentScores?.[0]?.momentum_index;
+    const winCategories = [...new Set(recentWins?.map(w => w.category).filter(Boolean))];
+
     if (!userInterests || userInterests.length < 2) {
       return new Response(JSON.stringify({ 
         suggestions: [],
@@ -90,6 +134,7 @@ serve(async (req) => {
     else if (goals.discipline > 70) focusPrincipal = 'productivité et discipline';
     else if (goals.finance > 70) focusPrincipal = 'gestion financière';
 
+    // === PROMPT ENRICHI AVEC HISTORIQUE ===
     const prompt = `Tu es un assistant qui crée des suggestions d'activités personnalisées et originales.
 
 UTILISATEUR :
@@ -98,18 +143,30 @@ UTILISATEUR :
 - Intérêts : ${interestNames.join(', ')}
 - Focus principal : ${focusPrincipal}
 
+HISTORIQUE RÉCENT (7 jours) :
+- Humeurs récentes : ${recentMoods.length > 0 ? recentMoods.join(', ') : 'non disponible'}
+- Score moyen : ${avgScore !== null ? avgScore + '/100' : 'non disponible'}
+- Momentum : ${momentum !== undefined ? (momentum > 50 ? 'positif (' + momentum + ')' : 'en baisse (' + momentum + ')') : 'non disponible'}
+- Habitudes actives : ${activeHabits.length > 0 ? activeHabits.slice(0, 5).join(', ') : 'aucune'}
+- Dernière réflexion : "${recentReflections[0] || 'aucune'}"
+- Catégories de victoires : ${winCategories.length > 0 ? winCategories.join(', ') : 'aucune récente'}
+
 STYLE : ${toneInstruction}
 
 MISSION :
 Génère exactement 3 suggestions d'activités qui COMBINENT au moins 2 intérêts de l'utilisateur.
-Chaque suggestion doit être originale, actionnable et adaptée à la localisation si possible.
+Chaque suggestion doit :
+- Être originale et actionnable
+- Tenir compte de l'historique récent (humeur, momentum, habitudes)
+- Être adaptée à la localisation si possible
+- Proposer quelque chose de cohérent avec les victoires récentes si applicables
 
 Réponds UNIQUEMENT avec un JSON valide, sans markdown :
 {
   "suggestions": [
     {
       "title": "Titre court et accrocheur",
-      "description": "Description de 2-3 phrases expliquant l'activité",
+      "description": "Description de 2-3 phrases expliquant l'activité et POURQUOI elle est pertinente pour l'utilisateur",
       "interests_combined": ["intérêt1", "intérêt2"],
       "difficulty": "facile|moyen|challengeant",
       "duration": "30min|1h|2h|demi-journée"

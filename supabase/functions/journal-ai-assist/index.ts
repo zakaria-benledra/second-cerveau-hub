@@ -108,19 +108,54 @@ Deno.serve(async (req) => {
     const workspaceId = membership?.workspace_id
 
     if (action === 'get_suggestions') {
-      // Generate 4 contextual suggestions
+      // === ENRICHISSEMENT HISTORIQUE ===
+      // Récupérer les 5 dernières entrées journal
+      const { data: recentJournal } = await supabase
+        .from('journal_entries')
+        .select('mood, reflections, energy, date')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      // Récupérer les habitudes actives
+      const { data: topHabits } = await supabase
+        .from('habit_logs')
+        .select('habits(name)')
+        .eq('user_id', user.id)
+        .eq('completed', true)
+        .order('date', { ascending: false })
+        .limit(10)
+
+      // Récupérer les intérêts utilisateur
+      const { data: userInterests } = await supabase
+        .from('user_interests')
+        .select('interests(name)')
+        .eq('user_id', user.id)
+
+      // Construire le contexte enrichi
+      const recentMoods = recentJournal?.map(j => j.mood).filter(Boolean) || []
+      const recentReflections = recentJournal?.map(j => j.reflections?.slice(0, 100)).filter(Boolean) || []
+      const activeHabits = [...new Set(topHabits?.map((h: any) => h.habits?.name).filter(Boolean))]
+      const interests = userInterests?.map((i: any) => i.interests?.name).filter(Boolean) || []
+
+      // Generate 4 contextual suggestions with enriched context
       const suggestions: string[] = []
 
-      // 1. Add domain-specific prompt (introspection)
+      // 1. Add domain-specific prompt (introspection) - personalized with history
       if (domain && reflectionPrompts[domain]) {
         const domainPrompts = reflectionPrompts[domain]
-        suggestions.push(domainPrompts[Math.floor(Math.random() * domainPrompts.length)])
+        let selectedPrompt = domainPrompts[Math.floor(Math.random() * domainPrompts.length)]
+        
+        // Enrich with habits context if available
+        if (activeHabits.length > 0 && domain === 'santé') {
+          selectedPrompt = `Avec tes habitudes (${activeHabits.slice(0, 2).join(', ')}), ${selectedPrompt.toLowerCase()}`
+        }
+        suggestions.push(selectedPrompt)
       } else {
-        // Fallback if no domain selected
         suggestions.push("Qu'est-ce qui t'a le plus marqué aujourd'hui ?")
       }
 
-      // 2. Add mood-based prompt (emotional)
+      // 2. Add mood-based prompt (emotional) - consider mood trend
       const moodKey = mood_score >= 80 ? 'great' 
         : mood_score >= 60 ? 'good'
         : mood_score >= 40 ? 'neutral'
@@ -128,27 +163,54 @@ Deno.serve(async (req) => {
         : 'bad'
       
       const moodPrompts = moodBasedPrompts[moodKey]
-      suggestions.push(moodPrompts[Math.floor(Math.random() * moodPrompts.length)])
+      let moodPrompt = moodPrompts[Math.floor(Math.random() * moodPrompts.length)]
+      
+      // Add trend awareness
+      if (recentMoods.length >= 3) {
+        const moodTrend = recentMoods.slice(0, 3)
+        const allSame = moodTrend.every(m => m === moodTrend[0])
+        if (allSame && moodKey === 'good') {
+          moodPrompt = "Tu sembles en bonne forme ces derniers jours. Qu'est-ce qui maintient cette énergie positive ?"
+        } else if (allSame && (moodKey === 'low' || moodKey === 'bad')) {
+          moodPrompt = "Cette période semble difficile. Quel petit changement pourrait faire une différence ?"
+        }
+      }
+      suggestions.push(moodPrompt)
 
-      // 3. Add action-oriented prompt
-      const actionPrompts = [
-        "Quelle action concrète pourrais-tu faire demain suite à cette réflexion ?",
-        "Quel petit pas pourrais-tu faire dès maintenant ?",
-        "Comment pourrais-tu transformer cette pensée en action ?",
-        "Quel engagement prends-tu avec toi-même pour demain ?"
-      ]
-      suggestions.push(actionPrompts[Math.floor(Math.random() * actionPrompts.length)])
+      // 3. Add action-oriented prompt - connected to interests
+      let actionPrompt: string
+      if (interests.length > 0) {
+        const randomInterest = interests[Math.floor(Math.random() * interests.length)]
+        actionPrompt = `Comment pourrais-tu intégrer ${randomInterest} dans ton plan pour demain ?`
+      } else {
+        const actionPrompts = [
+          "Quelle action concrète pourrais-tu faire demain suite à cette réflexion ?",
+          "Quel petit pas pourrais-tu faire dès maintenant ?",
+          "Comment pourrais-tu transformer cette pensée en action ?",
+          "Quel engagement prends-tu avec toi-même pour demain ?"
+        ]
+        actionPrompt = actionPrompts[Math.floor(Math.random() * actionPrompts.length)]
+      }
+      suggestions.push(actionPrompt)
 
-      // 4. Add goal/habit connection prompt
-      const connectionPrompts = [
-        "Comment cette réflexion se connecte-t-elle à tes objectifs de vie ?",
-        "Quelle habitude cette pensée pourrait-elle renforcer ?",
-        "En quoi cela te rapproche de la personne que tu veux devenir ?",
-        "Quel pattern ou schéma récurrent observes-tu ?"
-      ]
-      suggestions.push(connectionPrompts[Math.floor(Math.random() * connectionPrompts.length)])
+      // 4. Add pattern recognition prompt - based on recent reflections
+      let connectionPrompt: string
+      if (recentReflections.length >= 2) {
+        connectionPrompt = "En relisant tes dernières réflexions, quel pattern ou thème récurrent observes-tu ?"
+      } else if (activeHabits.length > 0) {
+        connectionPrompt = `Comment tes habitudes (${activeHabits.slice(0, 2).join(', ')}) influencent-elles ton état d'esprit ?`
+      } else {
+        const connectionPrompts = [
+          "Comment cette réflexion se connecte-t-elle à tes objectifs de vie ?",
+          "Quelle habitude cette pensée pourrait-elle renforcer ?",
+          "En quoi cela te rapproche de la personne que tu veux devenir ?",
+          "Quel pattern ou schéma récurrent observes-tu ?"
+        ]
+        connectionPrompt = connectionPrompts[Math.floor(Math.random() * connectionPrompts.length)]
+      }
+      suggestions.push(connectionPrompt)
 
-      // Store suggestions
+      // Store suggestions with enriched context
       for (const suggestion of suggestions) {
         await supabase.from('journal_ai_assists').insert({
           entry_id: entry_id || null,
@@ -162,7 +224,12 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({
         success: true,
-        suggestions
+        suggestions,
+        context: {
+          recentMoods: recentMoods.slice(0, 3),
+          activeHabits: activeHabits.slice(0, 3),
+          interests: interests.slice(0, 3)
+        }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
