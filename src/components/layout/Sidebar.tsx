@@ -70,18 +70,20 @@ const navGroups = [
     icon: MoreHorizontal,
     collapsible: true,
     items: [
-      { icon: Heart, label: 'Behavior Hub', path: '/behavior-hub' },
-      { icon: ListTodo, label: 'Kanban', path: '/kanban' },
       { icon: Timer, label: 'Focus', path: '/focus' },
       { icon: Brain, label: 'Coach IA', path: '/ai-coach' },
       { icon: BarChart3, label: 'Analyses', path: '/bi/executive' },
-      { icon: Settings, label: 'Paramètres', path: '/settings' },
       { icon: BarChart3, label: 'Admin', path: '/admin/dashboard' },
     ],
   },
 ];
 
-const bottomItems: { icon: typeof Home; label: string; path: string }[] = [];
+// Items toujours visibles en bas de la sidebar
+const bottomItems = [
+  { icon: Settings, label: 'Paramètres', path: '/settings' },
+];
+
+
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
