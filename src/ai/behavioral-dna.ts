@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ExperienceStore } from './experience-store';
+import { getConsentSnapshot, isLearningEnabled } from './learning-loop';
 
 export interface BehavioralDNA {
   id: string;
@@ -79,7 +80,14 @@ export class BehavioralDNAEngine {
     this.experienceStore = new ExperienceStore(userId);
   }
 
-  async generateDNA(): Promise<BehavioralDNA> {
+  async generateDNA(): Promise<BehavioralDNA | null> {
+    // Vérifier consentement avant profilage
+    const consent = await getConsentSnapshot(this.userId);
+    if (!isLearningEnabled(consent)) {
+      console.log('[BehavioralDNA] Profiling disabled by consent');
+      return null;
+    }
+
     // Collecter toutes les données historiques
     const [
       activityHistory,
@@ -352,6 +360,13 @@ export class BehavioralDNAEngine {
   }
 
   private async saveDNA(dna: BehavioralDNA): Promise<void> {
+    // Vérifier consentement avant sauvegarde
+    const consent = await getConsentSnapshot(this.userId);
+    if (!isLearningEnabled(consent)) {
+      console.log('[BehavioralDNA] Saving disabled by consent');
+      return;
+    }
+
     // Check if exists first
     const { data: existing } = await supabase
       .from('behavioral_dna')
