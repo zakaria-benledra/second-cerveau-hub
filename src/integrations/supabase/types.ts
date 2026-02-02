@@ -5293,7 +5293,7 @@ export type Database = {
       }
       user_profiles: {
         Row: {
-          ai_preferences: Json | null
+          ai_preferences: Json
           avatar_url: string | null
           birth_year: number | null
           created_at: string | null
@@ -5301,12 +5301,12 @@ export type Database = {
           first_name: string | null
           gender: string | null
           id: string
-          interests: string[] | null
+          interests: string[]
           location_city: string | null
           location_country: string | null
           onboarding_completed: boolean | null
           onboarding_step: number | null
-          personalization_level: string | null
+          personalization_level: string
           preferred_sage_tone: string | null
           sound_enabled: boolean | null
           theme: string | null
@@ -5314,7 +5314,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          ai_preferences?: Json | null
+          ai_preferences?: Json
           avatar_url?: string | null
           birth_year?: number | null
           created_at?: string | null
@@ -5322,12 +5322,12 @@ export type Database = {
           first_name?: string | null
           gender?: string | null
           id: string
-          interests?: string[] | null
+          interests?: string[]
           location_city?: string | null
           location_country?: string | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
-          personalization_level?: string | null
+          personalization_level?: string
           preferred_sage_tone?: string | null
           sound_enabled?: boolean | null
           theme?: string | null
@@ -5335,7 +5335,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          ai_preferences?: Json | null
+          ai_preferences?: Json
           avatar_url?: string | null
           birth_year?: number | null
           created_at?: string | null
@@ -5343,12 +5343,12 @@ export type Database = {
           first_name?: string | null
           gender?: string | null
           id?: string
-          interests?: string[] | null
+          interests?: string[]
           location_city?: string | null
           location_country?: string | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
-          personalization_level?: string | null
+          personalization_level?: string
           preferred_sage_tone?: string | null
           sound_enabled?: boolean | null
           theme?: string | null
