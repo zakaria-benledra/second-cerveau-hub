@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, Play, Sparkles, TrendingUp, Brain, Zap, Shield, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Play, Sparkles, TrendingUp, Brain, Zap, Shield, CheckCircle2, WifiOff, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const containerVariants = {
@@ -47,9 +47,9 @@ export function HeroSection() {
   };
 
   const stats = [
-    { icon: TrendingUp, label: '+35% discipline en 3 mois', color: 'text-success' },
-    { icon: Shield, label: '12+ décrochages évités/an', color: 'text-primary' },
-    { icon: Zap, label: '2x plus de cohérence', color: 'text-warning' },
+    { icon: Zap, label: 'IA ultra-rapide (<50ms)', color: 'text-warning' },
+    { icon: WifiOff, label: 'Mode offline', color: 'text-info' },
+    { icon: Bell, label: 'Notifications intelligentes', color: 'text-primary' },
   ];
 
   const trustItems = [
@@ -125,10 +125,10 @@ export function HeroSection() {
             variants={itemVariants}
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.1] tracking-tight"
           >
-            Tu ne gères pas des tâches.
+            Ton copilote IA pour
             <br />
             <span className="text-gradient-primary">
-              Tu deviens quelqu'un.
+              une vie équilibrée
             </span>
           </motion.h1>
 
@@ -137,10 +137,9 @@ export function HeroSection() {
             variants={itemVariants}
             className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed"
           >
-            Minded n'est pas une app de productivité.
+            Minded combine productivité, bien-être et finances dans une app intelligente
             <br className="hidden sm:block" />
-            C'est un système d'intelligence comportementale qui transforme tes actions en{' '}
-            <span className="text-foreground font-medium">trajectoire de vie mesurable</span>.
+            qui <span className="text-foreground font-medium">apprend de toi</span> — même hors-ligne.
           </motion.p>
 
           {/* Stats */}

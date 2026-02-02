@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   Brain, 
   Target, 
@@ -39,19 +40,21 @@ export function FeaturesSection() {
   const features = [
     {
       icon: Brain,
-      title: 'Minded',
-      description: 'Un système intelligent qui apprend de tes comportements et te guide vers ta meilleure version.',
-      highlight: true
+      title: 'IA Sage Personnalisée',
+      description: 'Un coach IA qui apprend de tes habitudes et s\'adapte à ton style. Réponses <50ms grâce au cache intelligent.',
+      highlight: true,
+      badge: 'V40'
     },
     {
       icon: Target,
-      title: 'Suivi d\'Identité',
-      description: 'Définis qui tu veux devenir. Mesure ton évolution quotidienne vers cette vision.'
+      title: 'Scoring Comportemental',
+      description: 'Score en temps réel sur 3 axes : Discipline, Mental, Finance. Visualise ta progression quotidienne.'
     },
     {
-      icon: TrendingUp,
-      title: 'Analytics Comportementaux',
-      description: 'Comprends tes patterns, identifie tes dérives et corrige ta trajectoire en temps réel.'
+      icon: Calendar,
+      title: 'Journal Intelligent',
+      description: 'Écris pour n\'importe quelle date passée. Suggestions IA adaptées à ton humeur et domaine de réflexion.',
+      badge: 'V40'
     },
     {
       icon: Wallet,
@@ -69,29 +72,31 @@ export function FeaturesSection() {
       description: 'Anticipe les risques de dérive avant qu\'ils ne deviennent des problèmes.'
     },
     {
-      icon: Calendar,
-      title: 'Calendrier Unifié',
-      description: 'Synchronise Google Calendar. Vois tes engagements et tes disponibilités réelles.'
-    },
-    {
       icon: Bell,
-      title: 'Notifications Smart',
-      description: 'Alertes proactives au bon moment. Pas de spam, que des interventions utiles.'
+      title: 'Notifications Push',
+      description: 'Alertes comportementales intelligentes : risque de burnout, streak en danger, victoires à célébrer.',
+      badge: 'V40'
     },
     {
       icon: BookOpen,
-      title: 'Journal Intelligent',
-      description: 'Capture tes pensées. L\'IA détecte tes émotions et tes patterns mentaux.'
+      title: 'Mode Hors-ligne',
+      description: 'Tes données sont accessibles même sans connexion. Synchronisation automatique au retour.',
+      badge: 'V40'
     },
     {
       icon: Shield,
-      title: 'Anti-Dérive',
-      description: 'Système de détection précoce qui te rattrape avant que tu ne décroches.'
+      title: 'Confidentialité RGPD',
+      description: 'Tes données restent les tiennes. Export complet, suppression sur demande, zéro revente.'
     },
     {
       icon: Sparkles,
       title: 'IA Coach',
       description: 'Un coach disponible 24/7 qui connaît ton historique et tes objectifs.'
+    },
+    {
+      icon: TrendingUp,
+      title: 'Analytics Comportementaux',
+      description: 'Comprends tes patterns, identifie tes dérives et corrige ta trajectoire en temps réel.'
     },
     {
       icon: Users,
@@ -139,12 +144,19 @@ export function FeaturesSection() {
                   }`}
                 >
                   <CardContent className="p-5">
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform ${
-                      feature.highlight ? 'gradient-primary' : 'bg-primary/10'
-                    }`}>
-                      <feature.icon className={`h-5 w-5 ${
-                        feature.highlight ? 'text-primary-foreground' : 'text-primary'
-                      }`} />
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform ${
+                        feature.highlight ? 'gradient-primary' : 'bg-primary/10'
+                      }`}>
+                        <feature.icon className={`h-5 w-5 ${
+                          feature.highlight ? 'text-primary-foreground' : 'text-primary'
+                        }`} />
+                      </div>
+                      {'badge' in feature && feature.badge && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-primary/50 bg-primary/10 text-primary">
+                          {feature.badge}
+                        </Badge>
+                      )}
                     </div>
                     <h3 className="font-semibold mb-1.5">{feature.title}</h3>
                     <p className="text-sm text-muted-foreground">{feature.description}</p>

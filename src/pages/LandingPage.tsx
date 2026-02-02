@@ -8,6 +8,7 @@ import {
   SolutionSection,
   HowItWorksSection,
   FeaturesSection,
+  WhatsNewSection,
   AIShowcaseSection,
   TransformationSection,
   PricingSection,
@@ -44,6 +45,7 @@ export default function LandingPage() {
       <SolutionSection />
       <HowItWorksSection />
       <FeaturesSection />
+      <WhatsNewSection />
       <AIShowcaseSection />
       <TransformationSection />
       <PricingSection />

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Eye, Brain, Rocket } from 'lucide-react';
+import { UserPlus, Activity, Lightbulb, TrendingUp } from 'lucide-react';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -25,38 +25,50 @@ export function HowItWorksSection() {
   const steps = [
     {
       number: 1,
-      icon: Eye,
-      title: 'Observation',
-      duration: '7 jours',
-      description: 'Le système t\'observe sans juger. Il établit ta baseline comportementale : tes patterns, tes forces, tes zones de fragilité.',
+      icon: UserPlus,
+      title: 'Connecte-toi',
+      duration: '30 secondes',
+      description: 'Crée ton compte en quelques clics. L\'onboarding configure Sage selon tes objectifs personnels.',
       details: [
-        'Analyse de tes habitudes actuelles',
-        'Détection de tes cycles de motivation',
-        'Identification de tes déclencheurs de dérive'
+        'Inscription rapide et gratuite',
+        'Configuration de ton profil IA',
+        'Choix de tes priorités de vie'
       ]
     },
     {
       number: 2,
-      icon: Brain,
-      title: 'Analyse',
-      duration: 'En continu',
-      description: 'L\'IA croise toutes tes données pour révéler des patterns invisibles et prédire tes risques de décrochage.',
+      icon: Activity,
+      title: 'Vis ta vie',
+      duration: 'Au quotidien',
+      description: 'Ajoute tes tâches, habitudes et réflexions. Minded apprend de chaque interaction pour mieux te comprendre.',
       details: [
-        'Corrélations entre comportements',
-        'Prédiction des moments de vulnérabilité',
-        'Score de cohérence identitaire'
+        'Tracking automatique d\'habitudes',
+        'Journal avec suggestions IA',
+        'Gestion de tâches intelligente'
       ]
     },
     {
       number: 3,
-      icon: Rocket,
-      title: 'Transformation',
-      duration: 'Permanent',
-      description: 'Reçois des interventions personnalisées au bon moment. L\'IA te rattrape avant que tu ne dérives.',
+      icon: Lightbulb,
+      title: 'Reçois des insights',
+      duration: 'En temps réel',
+      description: 'Sage analyse tes patterns et te suggère des améliorations personnalisées. Push notifications intelligentes.',
       details: [
-        'Alertes proactives de dérive',
-        'Suggestions d\'actions correctives',
-        'Célébration des victoires'
+        'Détection de patterns cachés',
+        'Alertes de dérive proactives',
+        'Recommandations contextuelles'
+      ]
+    },
+    {
+      number: 4,
+      icon: TrendingUp,
+      title: 'Progresse visiblement',
+      duration: 'Permanent',
+      description: 'Visualise ton score global, débloque des badges et célèbre tes victoires. Ta transformation devient mesurable.',
+      details: [
+        'Score comportemental en 3 axes',
+        'Système de gamification',
+        'Rapports de progression'
       ]
     }
   ];

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, TrendingDown, Zap, Brain, CheckCircle2, ArrowRight } from 'lucide-react';
+import { AlertTriangle, TrendingDown, Zap, Brain, CheckCircle2, ArrowRight, WifiOff, Sliders, Lightbulb, MessageSquare, User } from 'lucide-react';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -22,6 +22,13 @@ const itemVariants = {
     transition: { duration: 0.5, ease: 'easeOut' as const }
   }
 };
+
+const AI_STATS = [
+  { value: "<50ms", label: "Temps de réponse IA", icon: Zap },
+  { value: "24h", label: "Cache offline", icon: WifiOff },
+  { value: "3", label: "Niveaux personnalisation", icon: Sliders },
+  { value: "∞", label: "Suggestions par jour", icon: Lightbulb },
+];
 
 export function AIShowcaseSection() {
   const interventions = [
@@ -77,7 +84,7 @@ export function AIShowcaseSection() {
           viewport={{ once: true, margin: "-100px" }}
         >
           {/* Header */}
-          <motion.div variants={itemVariants} className="text-center mb-16">
+          <motion.div variants={itemVariants} className="text-center mb-12">
             <span className="text-primary font-semibold text-sm uppercase tracking-wider">
               IA en Action
             </span>
@@ -90,6 +97,49 @@ export function AIShowcaseSection() {
               Voici des exemples réels d'interventions que Minded 
               peut déclencher pour te garder sur la bonne trajectoire.
             </p>
+          </motion.div>
+
+          {/* AI Stats */}
+          <motion.div variants={itemVariants} className="flex flex-wrap justify-center gap-6 mb-12">
+            {AI_STATS.map((stat, index) => (
+              <div key={index} className="flex items-center gap-3 px-5 py-3 rounded-xl bg-card/80 backdrop-blur-sm border border-border/50">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <stat.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Demo Conversation */}
+          <motion.div variants={itemVariants} className="max-w-2xl mx-auto mb-12">
+            <Card className="p-6 bg-card/80 backdrop-blur-sm border-primary/20">
+              <div className="flex items-center gap-2 mb-4">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                <span className="font-semibold">Exemple de conversation Sage</span>
+              </div>
+              <div className="space-y-4">
+                <div className="flex gap-3">
+                  <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="bg-secondary rounded-xl px-4 py-2">
+                    <p className="text-sm">Comment améliorer ma productivité ?</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center flex-shrink-0">
+                    <Brain className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <div className="bg-primary/10 rounded-xl px-4 py-2 border border-primary/20">
+                    <p className="text-sm">Basé sur ton historique, tu es plus productif le matin. Je suggère de bloquer 2h sans interruption avant 10h pour tes tâches prioritaires. Tu veux que je crée une routine "Focus matinal" ?</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
           </motion.div>
 
           {/* Interventions */}

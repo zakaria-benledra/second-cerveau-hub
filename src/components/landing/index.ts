@@ -4,6 +4,7 @@ export { ProblemSection } from './ProblemSection';
 export { SolutionSection } from './SolutionSection';
 export { HowItWorksSection } from './HowItWorksSection';
 export { FeaturesSection } from './FeaturesSection';
+export { WhatsNewSection } from './WhatsNewSection';
 export { AIShowcaseSection } from './AIShowcaseSection';
 export { TransformationSection } from './TransformationSection';
 export { PricingSection } from './PricingSection';
