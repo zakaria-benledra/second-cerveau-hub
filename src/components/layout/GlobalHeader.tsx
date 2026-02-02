@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { useFirstName } from '@/hooks/useUserProfile';
 import { useStreak } from '@/hooks/useStreak';
 import { StreakBadge } from '@/components/gamification/StreakBadge';
+import { GlobalScoreBadge } from '@/components/layout/GlobalScoreBadge';
 import { PlanBadge } from '@/components/PlanBadge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -94,6 +95,7 @@ export function GlobalHeader({
       </div>
       
       <div className="flex items-center gap-3">
+        <GlobalScoreBadge />
         <PlanBadge />
         {showStreak && streakData && streakData.currentStreak > 0 && (
           <StreakBadge days={streakData.currentStreak} />

@@ -8,6 +8,7 @@ import {
   type CreateHabitInput,
 } from '@/lib/api/habits';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useHabitsWithLogs() {
   return useQuery({
@@ -47,6 +48,14 @@ export function useToggleHabitLog() {
     mutationFn: (habitId: string) => toggleHabitLog(habitId),
     onSuccess: (log) => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+      
+      // Trigger real-time score recalculation
+      supabase.functions.invoke('compute-score-realtime').then(() => {
+        queryClient.invalidateQueries({ queryKey: ['global-score'] });
+        queryClient.invalidateQueries({ queryKey: ['scores'] });
+      }).catch(() => {});
+      
       if (log.completed) {
         toast({
           title: 'Bien joué ! ✨',
