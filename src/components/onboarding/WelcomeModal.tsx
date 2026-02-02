@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,20 +12,28 @@ import { Sparkles, ArrowRight, Brain } from 'lucide-react';
 interface WelcomeModalProps {
   open: boolean;
   onComplete: () => void;
+  onSkip?: () => void;
 }
 
-export function WelcomeModal({ open, onComplete }: WelcomeModalProps) {
+// Routes où le modal ne doit pas bloquer
+const BYPASS_ROUTES = ['/settings', '/auth'];
+
+export function WelcomeModal({ open, onComplete, onSkip }: WelcomeModalProps) {
   const [firstName, setFirstName] = useState('');
   const [step, setStep] = useState(1);
   const updateProfile = useUpdateProfile();
   const { fire } = useConfetti();
   const { trackConversion, trackEngagement } = useAnalytics();
+  const location = useLocation();
+
+  // Ne pas afficher sur certaines routes
+  const shouldBypass = BYPASS_ROUTES.some(route => location.pathname.startsWith(route));
 
   useEffect(() => {
-    if (open) {
+    if (open && !shouldBypass) {
       trackEngagement('onboarding_started');
     }
-  }, [open, trackEngagement]);
+  }, [open, shouldBypass, trackEngagement]);
 
   const handleSubmit = async () => {
     if (!firstName.trim()) return;
@@ -40,6 +49,15 @@ export function WelcomeModal({ open, onComplete }: WelcomeModalProps) {
     fire('fireworks');
     setTimeout(onComplete, 2500);
   };
+
+  const handleSkip = () => {
+    trackEngagement('onboarding_skipped');
+    onSkip?.();
+    onComplete();
+  };
+
+  // Ne pas afficher si bypass
+  if (shouldBypass) return null;
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
@@ -85,6 +103,15 @@ export function WelcomeModal({ open, onComplete }: WelcomeModalProps) {
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
+              </Button>
+
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                className="w-full text-muted-foreground"
+                size="sm"
+              >
+                Plus tard
               </Button>
             </div>
           </>
