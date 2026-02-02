@@ -1993,11 +1993,15 @@ export type Database = {
       gamification_challenges: {
         Row: {
           challenge_type: string | null
+          cooldown_days: number | null
           created_at: string | null
           description: string | null
+          difficulty: string | null
           end_date: string | null
+          icon: string | null
           id: string
           is_active: boolean | null
+          repeatable: boolean | null
           start_date: string | null
           target_type: string | null
           target_value: number | null
@@ -2006,11 +2010,15 @@ export type Database = {
         }
         Insert: {
           challenge_type?: string | null
+          cooldown_days?: number | null
           created_at?: string | null
           description?: string | null
+          difficulty?: string | null
           end_date?: string | null
+          icon?: string | null
           id?: string
           is_active?: boolean | null
+          repeatable?: boolean | null
           start_date?: string | null
           target_type?: string | null
           target_value?: number | null
@@ -2019,11 +2027,15 @@ export type Database = {
         }
         Update: {
           challenge_type?: string | null
+          cooldown_days?: number | null
           created_at?: string | null
           description?: string | null
+          difficulty?: string | null
           end_date?: string | null
+          icon?: string | null
           id?: string
           is_active?: boolean | null
+          repeatable?: boolean | null
           start_date?: string | null
           target_type?: string | null
           target_value?: number | null

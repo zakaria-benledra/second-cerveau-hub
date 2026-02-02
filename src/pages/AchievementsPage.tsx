@@ -2,10 +2,11 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { XPProgressBar } from '@/components/gamification/XPProgressBar';
 import { BadgesGrid } from '@/components/gamification/BadgesGrid';
+import { ChallengesCard } from '@/components/gamification/ChallengesCard';
 import { useGamification } from '@/hooks/useGamification';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Flame, Target, ListTodo, Star, Sparkles } from 'lucide-react';
+import { Trophy, Flame, Target, ListTodo } from 'lucide-react';
 
 export default function AchievementsPage() {
   const { profile, badges } = useGamification();
@@ -46,6 +47,9 @@ export default function AchievementsPage() {
             </Card>
           ))}
         </div>
+
+        {/* Défis Gamification */}
+        <ChallengesCard />
 
         {/* Badges par catégorie */}
         <Tabs defaultValue="all" className="space-y-4">
