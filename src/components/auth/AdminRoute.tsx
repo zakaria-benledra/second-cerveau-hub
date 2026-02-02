@@ -17,19 +17,27 @@ export function AdminRoute({ children }: AdminRouteProps) {
     queryKey: ['user-role', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
       
-      if (error) {
-        console.error('Error fetching user role:', error);
+      try {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (error) {
+          console.warn('User role fetch:', error.code);
+          return null;
+        }
+        
+        return data?.role || null;
+      } catch (err) {
         return null;
       }
-      return data?.role;
     },
     enabled: !!user?.id && isAuthenticated,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const isLoading = authLoading || roleLoading;
