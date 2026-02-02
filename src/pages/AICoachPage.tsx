@@ -275,7 +275,7 @@ export default function AICoachPage() {
     const currentScore = score?.global_score || 50;
     const activeHabits = habits?.filter(h => h.is_active).length || 0;
     
-    // Simulate adding one habit
+    // Simulate adding one habit - project score improvement
     const projectedScore = Math.min(100, currentScore + 5);
     const projectedConsistency = Math.min(100, (score?.consistency_factor || 0.5) * 100 + 8);
     
@@ -287,18 +287,22 @@ export default function AICoachPage() {
           current: currentScore,
           projected: projectedScore,
           change: projectedScore - currentScore,
+          unit: "%",
         },
         {
           metric: "Cohérence",
           current: Math.round((score?.consistency_factor || 0.5) * 100),
           projected: Math.round(projectedConsistency),
           change: Math.round(projectedConsistency - (score?.consistency_factor || 0.5) * 100),
+          unit: "%",
         },
         {
-          metric: "Habitudes actives",
+          metric: "Habitudes",
           current: activeHabits,
           projected: activeHabits + 1,
           change: 1,
+          unit: "",
+          note: "(projection)",
         },
       ],
       recommendation: projectedScore > 70 
@@ -602,11 +606,20 @@ export default function AICoachPage() {
                 <div className="grid grid-cols-3 gap-3">
                   {simulationScenario.impact.map((item, i) => (
                     <div key={i} className="text-center p-3 rounded-xl bg-background/50 border border-border/50">
-                      <div className="text-xs text-muted-foreground mb-1">{item.metric}</div>
+                      <div className="text-xs text-muted-foreground mb-1">
+                        {item.metric}
+                        {(item as any).note && (
+                          <span className="text-accent ml-1">{(item as any).note}</span>
+                        )}
+                      </div>
                       <div className="flex items-center justify-center gap-2">
-                        <span className="text-lg font-bold text-muted-foreground">{item.current}</span>
+                        <span className="text-lg font-bold text-muted-foreground">
+                          {item.current}{(item as any).unit}
+                        </span>
                         <ArrowRight className="h-3 w-3 text-accent" />
-                        <span className="text-lg font-bold text-accent">{item.projected}</span>
+                        <span className="text-lg font-bold text-accent">
+                          {item.projected}{(item as any).unit}
+                        </span>
                       </div>
                       <Badge 
                         variant="outline" 
