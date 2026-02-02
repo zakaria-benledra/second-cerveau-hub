@@ -4818,6 +4818,68 @@ export type Database = {
           },
         ]
       }
+      user_learning_profile: {
+        Row: {
+          best_engagement_time: string | null
+          last_updated: string | null
+          learning_data: Json | null
+          positive_feedback_rate: number | null
+          pref_coach_analytical: number | null
+          pref_coach_motivation: number | null
+          pref_coach_practical: number | null
+          pref_journal_goals: number | null
+          pref_journal_gratitude: number | null
+          pref_journal_introspection: number | null
+          preferred_tone: string | null
+          response_length_pref: string | null
+          total_interactions: number | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          best_engagement_time?: string | null
+          last_updated?: string | null
+          learning_data?: Json | null
+          positive_feedback_rate?: number | null
+          pref_coach_analytical?: number | null
+          pref_coach_motivation?: number | null
+          pref_coach_practical?: number | null
+          pref_journal_goals?: number | null
+          pref_journal_gratitude?: number | null
+          pref_journal_introspection?: number | null
+          preferred_tone?: string | null
+          response_length_pref?: string | null
+          total_interactions?: number | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          best_engagement_time?: string | null
+          last_updated?: string | null
+          learning_data?: Json | null
+          positive_feedback_rate?: number | null
+          pref_coach_analytical?: number | null
+          pref_coach_motivation?: number | null
+          pref_coach_practical?: number | null
+          pref_journal_goals?: number | null
+          pref_journal_gratitude?: number | null
+          pref_journal_introspection?: number | null
+          preferred_tone?: string | null
+          response_length_pref?: string | null
+          total_interactions?: number | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_learning_profile_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_preferences: {
         Row: {
           created_at: string

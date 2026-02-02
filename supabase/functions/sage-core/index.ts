@@ -168,6 +168,9 @@ serve(async (req) => {
     const consentSnapshot = await getConsentSnapshot(supabase, user.id);
     const learningEnabled = consentSnapshot.ai_profiling && consentSnapshot.policy_learning;
 
+    // 3b. Fetch learning profile for adaptive AI
+    const learningProfile = await loadLearningProfile(supabase, user.id);
+
     // 4. Check Safety
     const safetyCheck = checkSafety(context, memory);
     if (!safetyCheck.allowed) {
@@ -201,6 +204,7 @@ serve(async (req) => {
       action: decision.action,
       context,
       memory,
+      learningProfile,
       additionalContext,
     });
 
@@ -506,6 +510,33 @@ async function getConsentSnapshot(supabase: any, userId: string): Promise<Consen
 }
 
 // ============================================
+// LEARNING PROFILE LOADER
+// ============================================
+interface LearningProfileData {
+  feedbackRate: number;
+  preferredTone: string;
+  responseLengthPref: string;
+  totalInteractions: number;
+  bestEngagementTime: string | null;
+}
+
+async function loadLearningProfile(supabase: any, userId: string): Promise<LearningProfileData> {
+  const { data } = await supabase
+    .from('user_learning_profile')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  return {
+    feedbackRate: data?.positive_feedback_rate ?? 0.5,
+    preferredTone: data?.preferred_tone ?? 'balanced',
+    responseLengthPref: data?.response_length_pref ?? 'medium',
+    totalInteractions: data?.total_interactions ?? 0,
+    bestEngagementTime: data?.best_engagement_time ?? null,
+  };
+}
+
+// ============================================
 // CONTEXT TO VECTOR
 // ============================================
 function contextToVector(context: UserContext): number[] {
@@ -623,6 +654,7 @@ async function callLovableAI(params: {
   action: ActionType;
   context: UserContext;
   memory: SageMemory;
+  learningProfile?: LearningProfileData;
   additionalContext?: any;
 }): Promise<{ content?: string; error?: string; status?: number }> {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -688,9 +720,37 @@ function buildPrompt(params: {
   action: ActionType;
   context: UserContext;
   memory: SageMemory;
+  learningProfile?: LearningProfileData;
   additionalContext?: any;
 }): string {
-  const { skill, action, context, memory, additionalContext } = params;
+  const { skill, action, context, memory, learningProfile, additionalContext } = params;
+
+  // Build adaptive tone instruction based on learning profile
+  let toneInstruction = '';
+  const feedbackRate = learningProfile?.feedbackRate ?? 0.5;
+  const preferredTone = learningProfile?.preferredTone ?? 'balanced';
+  const interactions = learningProfile?.totalInteractions ?? 0;
+  const responseLengthPref = learningProfile?.responseLengthPref ?? 'medium';
+
+  if (feedbackRate < 0.3 && interactions >= 5) {
+    toneInstruction = 'L\'utilisateur est souvent insatisfait. Sois concis, prudent, et pose des questions de clarification avant de suggérer.';
+  } else if (feedbackRate > 0.7 && interactions >= 10) {
+    toneInstruction = 'L\'utilisateur apprécie beaucoup tes suggestions. Sois proactif, détaillé et confiant.';
+  } else {
+    toneInstruction = 'Approche équilibrée.';
+  }
+
+  if (preferredTone === 'supportive') {
+    toneInstruction += ' Adopte un ton chaleureux, encourageant et bienveillant.';
+  } else if (preferredTone === 'challenging') {
+    toneInstruction += ' Challenge l\'utilisateur avec des questions profondes et des objectifs ambitieux.';
+  }
+
+  if (responseLengthPref === 'short') {
+    toneInstruction += ' Sois très concis (2-3 phrases max).';
+  } else if (responseLengthPref === 'detailed') {
+    toneInstruction += ' Fournis des explications détaillées et des exemples.';
+  }
 
   return `
 # CONTEXTE ACTUEL
@@ -714,6 +774,11 @@ ${(context as any).personalization?.level === 'conservative' ? '→ STYLE: Sois 
 ${(context as any).personalization?.level === 'exploratory' ? '→ STYLE: Sois proactif et audacieux. Propose des idées nouvelles et des défis. Pousse hors de la zone de confort.' : ''}
 ${(context as any).personalization?.level === 'balanced' ? '→ STYLE: Équilibre personnalisation et respect de la vie privée. Suggestions modérées.' : ''}
 ${(context as any).personalization?.preferences?.explain_suggestions ? '→ IMPORTANT: Explique brièvement pourquoi tu fais chaque suggestion.' : ''}
+
+# APPRENTISSAGE UTILISATEUR (basé sur ${interactions} interactions)
+- Taux de satisfaction: ${Math.round(feedbackRate * 100)}%
+- Meilleur moment d'engagement: ${learningProfile?.bestEngagementTime || 'non déterminé'}
+- Instruction adaptative: ${toneInstruction}
 
 # PROFIL UTILISATEUR
 - Identité visée: ${memory.profile.northStarIdentity}
