@@ -14,6 +14,7 @@ import {
   Heart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { useCompleteOnboarding } from '@/hooks/useOnboarding';
@@ -246,6 +247,11 @@ function GoalSlider({ icon, label, description, value, onChange, color, bgColor 
     return 'Haute priorité';
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const parsed = parseInt(e.target.value) || 0;
+    onChange(Math.min(100, Math.max(0, parsed)));
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -258,13 +264,23 @@ function GoalSlider({ icon, label, description, value, onChange, color, bgColor 
             <p className="text-xs text-muted-foreground">{description}</p>
           </div>
         </div>
-        <span className={cn("text-sm font-medium", color)}>{getLevel(value)}</span>
+        <div className="flex items-center gap-2">
+          <span className={cn("text-xs font-medium hidden sm:inline", color)}>{getLevel(value)}</span>
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            value={value}
+            onChange={handleInputChange}
+            className="w-14 h-7 text-center text-sm px-1"
+          />
+        </div>
       </div>
       <Slider
         value={[value]}
         onValueChange={([v]) => onChange(v)}
         max={100}
-        step={1}
+        step={5}
         className="py-2"
       />
     </div>
