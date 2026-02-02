@@ -108,16 +108,19 @@ Deno.serve(async (req) => {
     const workspaceId = membership?.workspace_id
 
     if (action === 'get_suggestions') {
-      // Generate contextual suggestions
+      // Generate 4 contextual suggestions
       const suggestions: string[] = []
 
-      // Add domain-specific prompts
+      // 1. Add domain-specific prompt (introspection)
       if (domain && reflectionPrompts[domain]) {
         const domainPrompts = reflectionPrompts[domain]
         suggestions.push(domainPrompts[Math.floor(Math.random() * domainPrompts.length)])
+      } else {
+        // Fallback if no domain selected
+        suggestions.push("Qu'est-ce qui t'a le plus marqué aujourd'hui ?")
       }
 
-      // Add mood-based prompts
+      // 2. Add mood-based prompt (emotional)
       const moodKey = mood_score >= 80 ? 'great' 
         : mood_score >= 60 ? 'good'
         : mood_score >= 40 ? 'neutral'
@@ -127,13 +130,23 @@ Deno.serve(async (req) => {
       const moodPrompts = moodBasedPrompts[moodKey]
       suggestions.push(moodPrompts[Math.floor(Math.random() * moodPrompts.length)])
 
-      // Add a generic reflection
-      const genericPrompts = [
-        "Qu'est-ce que tu veux te rappeler de cette journée ?",
-        "Si tu devais donner un titre à cette journée, ce serait quoi ?",
-        "Quelle intention poses-tu pour demain ?"
+      // 3. Add action-oriented prompt
+      const actionPrompts = [
+        "Quelle action concrète pourrais-tu faire demain suite à cette réflexion ?",
+        "Quel petit pas pourrais-tu faire dès maintenant ?",
+        "Comment pourrais-tu transformer cette pensée en action ?",
+        "Quel engagement prends-tu avec toi-même pour demain ?"
       ]
-      suggestions.push(genericPrompts[Math.floor(Math.random() * genericPrompts.length)])
+      suggestions.push(actionPrompts[Math.floor(Math.random() * actionPrompts.length)])
+
+      // 4. Add goal/habit connection prompt
+      const connectionPrompts = [
+        "Comment cette réflexion se connecte-t-elle à tes objectifs de vie ?",
+        "Quelle habitude cette pensée pourrait-elle renforcer ?",
+        "En quoi cela te rapproche de la personne que tu veux devenir ?",
+        "Quel pattern ou schéma récurrent observes-tu ?"
+      ]
+      suggestions.push(connectionPrompts[Math.floor(Math.random() * connectionPrompts.length)])
 
       // Store suggestions
       for (const suggestion of suggestions) {
