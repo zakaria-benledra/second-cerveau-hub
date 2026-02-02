@@ -26,35 +26,35 @@ const itemVariants = {
 export function TestimonialsSection() {
   const testimonials = [
     {
-      name: 'Thomas M.',
-      role: 'Entrepreneur',
-      avatar: 'TM',
-      quote: 'En 3 mois, je suis passé de 2 habitudes maintenues à 7. L\'IA m\'a rattrapé plusieurs fois avant que je ne décroche. C\'est comme avoir un coach qui te connaît vraiment.',
+      name: 'Marie L.',
+      role: 'Product Manager',
+      avatar: 'ML',
+      quote: 'Sage m\'a aidé à identifier que je suis plus productive le matin. J\'ai réorganisé mes journées et gagné 2h par jour. L\'IA comprend vraiment mes patterns.',
       stats: [
-        { icon: TrendingUp, label: 'Discipline', value: '+67%' },
-        { icon: Flame, label: 'Streak max', value: '47 jours' }
+        { icon: TrendingUp, label: 'Productivité', value: '+67%' },
+        { icon: Flame, label: 'Streak max', value: '52 jours' }
       ],
       rating: 5
     },
     {
-      name: 'Marie L.',
-      role: 'Designer Freelance',
-      avatar: 'ML',
-      quote: 'J\'ai enfin compris pourquoi je sabotais mes objectifs financiers. Les patterns révélés par Minded m\'ont permis d\'économiser plus en 2 mois qu\'en toute l\'année précédente.',
+      name: 'Thomas B.',
+      role: 'Développeur',
+      avatar: 'TB',
+      quote: 'Le mode offline est un game-changer. Je peux consulter mes habitudes dans le métro sans connexion. Et le cache IA rend tout instantané !',
       stats: [
-        { icon: Target, label: 'Économies', value: '+2 400€' },
+        { icon: Target, label: 'Habitudes', value: '12 actives' },
         { icon: TrendingUp, label: 'Cohérence', value: '+89%' }
       ],
       rating: 5
     },
     {
-      name: 'Alexandre D.',
-      role: 'Manager Tech',
-      avatar: 'AD',
-      quote: 'Les alertes de dérive sont incroyables. L\'IA a détecté que je décrochais toujours après les vacances et m\'a proposé un plan de reprise. Depuis, plus de spirale post-vacances.',
+      name: 'Sophie K.',
+      role: 'Freelance',
+      avatar: 'SK',
+      quote: 'Les notifications push m\'ont prévenu que j\'étais en surcharge. J\'ai pris une pause avant le burnout. Minded m\'a littéralement sauvée.',
       stats: [
         { icon: Flame, label: 'Décrochages', value: '-81%' },
-        { icon: Target, label: 'Objectifs atteints', value: '12/12' }
+        { icon: Target, label: 'Objectifs', value: '9/10' }
       ],
       rating: 5
     }
