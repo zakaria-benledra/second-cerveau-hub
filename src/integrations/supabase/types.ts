@@ -1022,6 +1022,67 @@ export type Database = {
           },
         ]
       }
+      calendar_events_sync: {
+        Row: {
+          created_at: string | null
+          external_event_id: string
+          id: string
+          last_synced_at: string | null
+          minded_habit_id: string | null
+          minded_task_id: string | null
+          provider: string
+          sync_direction: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          external_event_id: string
+          id?: string
+          last_synced_at?: string | null
+          minded_habit_id?: string | null
+          minded_task_id?: string | null
+          provider: string
+          sync_direction?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          external_event_id?: string
+          id?: string
+          last_synced_at?: string | null
+          minded_habit_id?: string | null
+          minded_task_id?: string | null
+          provider?: string
+          sync_direction?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_sync_minded_habit_id_fkey"
+            columns: ["minded_habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_sync_minded_task_id_fkey"
+            columns: ["minded_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_sync_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       challenge_logs: {
         Row: {
           challenge_id: string
@@ -1180,12 +1241,14 @@ export type Database = {
           encryption_version: number | null
           expires_at: string | null
           id: string
+          last_sync_at: string | null
           metadata: Json | null
           provider: string
           provider_account_id: string | null
           refresh_token: string | null
           refresh_token_encrypted: string | null
           scopes: string[] | null
+          sync_enabled: boolean | null
           token_migrated_at: string | null
           updated_at: string
           user_id: string
@@ -1197,12 +1260,14 @@ export type Database = {
           encryption_version?: number | null
           expires_at?: string | null
           id?: string
+          last_sync_at?: string | null
           metadata?: Json | null
           provider: string
           provider_account_id?: string | null
           refresh_token?: string | null
           refresh_token_encrypted?: string | null
           scopes?: string[] | null
+          sync_enabled?: boolean | null
           token_migrated_at?: string | null
           updated_at?: string
           user_id: string
@@ -1214,12 +1279,14 @@ export type Database = {
           encryption_version?: number | null
           expires_at?: string | null
           id?: string
+          last_sync_at?: string | null
           metadata?: Json | null
           provider?: string
           provider_account_id?: string | null
           refresh_token?: string | null
           refresh_token_encrypted?: string | null
           scopes?: string[] | null
+          sync_enabled?: boolean | null
           token_migrated_at?: string | null
           updated_at?: string
           user_id?: string

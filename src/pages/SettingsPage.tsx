@@ -5,6 +5,7 @@ import { SageCompanion } from '@/components/sage';
 import { PersonalizationSettings } from '@/components/settings/PersonalizationSettings';
 import { InterestsSettings } from '@/components/settings/InterestsSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
+import { CalendarSettings } from '@/components/settings/CalendarSettings';
 import { DemographicsForm } from '@/components/onboarding/DemographicsForm';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useUserProfile';
 import { useUserPreferences } from '@/hooks/useOnboarding';
@@ -217,6 +218,9 @@ export default function SettingsPage() {
 
         {/* Notifications Push */}
         <NotificationSettings />
+
+        {/* Calendrier */}
+        <CalendarSettings />
 
         {/* Préférences */}
         <Card className="glass">
