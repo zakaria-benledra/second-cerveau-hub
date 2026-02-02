@@ -1,7 +1,8 @@
+import { forwardRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Brain } from 'lucide-react';
 
-export function FooterSection() {
+export const FooterSection = forwardRef<HTMLElement>(function FooterSection(_props, ref) {
   const footerLinks = {
     product: {
       title: 'Produit',
@@ -51,7 +52,7 @@ export function FooterSection() {
   };
 
   return (
-    <footer className="py-16 px-4 border-t border-border/40 bg-card/30">
+    <footer ref={ref} className="py-16 px-4 border-t border-border/40 bg-card/30">
       <div className="container mx-auto max-w-7xl">
         {/* Main Footer */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
@@ -134,4 +135,6 @@ export function FooterSection() {
       </div>
     </footer>
   );
-}
+});
+
+FooterSection.displayName = 'FooterSection';

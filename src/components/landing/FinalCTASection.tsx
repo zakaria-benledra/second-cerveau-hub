@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Brain, CheckCircle2, Shield, Zap } from 'lucide-react';
@@ -23,7 +24,7 @@ const itemVariants = {
   }
 };
 
-export function FinalCTASection() {
+export const FinalCTASection = forwardRef<HTMLElement>(function FinalCTASection(_props, ref) {
   const navigate = useNavigate();
 
   const trustItems = [
@@ -33,7 +34,7 @@ export function FinalCTASection() {
   ];
 
   return (
-    <section className="py-24 px-4 relative overflow-hidden">
+    <section ref={ref} className="py-24 px-4 relative overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent pointer-events-none" />
       
@@ -127,4 +128,6 @@ export function FinalCTASection() {
       </div>
     </section>
   );
-}
+});
+
+FinalCTASection.displayName = 'FinalCTASection';
