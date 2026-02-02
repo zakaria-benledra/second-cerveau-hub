@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sanitizeInput, validateSkill, logSecurityEvent, ALLOWED_SKILLS } from '../_shared/prompt-security.ts';
+import { createLogger, getOrCreateTraceId, generateSpanId } from '../_shared/logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -55,6 +56,11 @@ serve(async (req) => {
   }
 
   const startTime = Date.now();
+  const traceId = getOrCreateTraceId(req);
+  const spanId = generateSpanId();
+  const logger = createLogger('sage-core')
+    .setContext({ traceId, spanId })
+    .startTimer();
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -76,13 +82,18 @@ serve(async (req) => {
     );
 
     if (authError || !user) {
+      logger.warn('Authentication failed', { error: authError?.message });
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    logger.setContext({ userId: user.id });
+
     const { skill, additionalContext } = await req.json();
+
+    logger.info('Request received', { skill, event: 'REQUEST_START' });
 
     // ===== SECURITY: Validate skill parameter =====
     const skillValidation = sanitizeInput(skill);
@@ -214,23 +225,44 @@ serve(async (req) => {
       context_vector: contextVector,
     });
 
+    logger.info('Request completed', { 
+      skill: validatedSkill, 
+      action: decision.action,
+      confidence: decision.confidence,
+      event: 'REQUEST_COMPLETE',
+    });
+
     return new Response(JSON.stringify({
       run_id: runId,
       action: decision.action,
       confidence: decision.confidence,
       response: validatedResponse.data,
       latency_ms: Date.now() - startTime,
+      trace_id: traceId,
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'x-trace-id': traceId,
+        'x-span-id': spanId,
+      },
     });
 
   } catch (error) {
-    console.error('SageCore error:', error);
+    logger.error('SageCore failed', error instanceof Error ? error : new Error(String(error)), {
+      event: 'REQUEST_FAILED',
+    });
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      trace_id: traceId,
     }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'x-trace-id': traceId,
+        'x-span-id': spanId,
+      },
     });
   }
 });
