@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ActionType, PolicyWeights } from './policy-engine';
+import { getConsentSnapshot, isLearningEnabled } from './learning-loop';
 
 export interface Experience {
   id: string;
@@ -20,6 +21,13 @@ export class ExperienceStore {
   }
 
   async saveExperience(exp: Omit<Experience, 'id' | 'userId' | 'timestamp'>): Promise<void> {
+    // Vérifier consentement avant sauvegarde
+    const consent = await getConsentSnapshot(this.userId);
+    if (!isLearningEnabled(consent)) {
+      console.log('[ExperienceStore] Learning disabled by consent, skipping save');
+      return;
+    }
+
     await supabase.from('sage_experiences').insert({
       user_id: this.userId,
       context_vector: exp.contextVector,
@@ -66,6 +74,13 @@ export class ExperienceStore {
   }
 
   async saveWeights(weights: PolicyWeights): Promise<void> {
+    // Vérifier consentement
+    const consent = await getConsentSnapshot(this.userId);
+    if (!isLearningEnabled(consent)) {
+      console.log('[ExperienceStore] Learning disabled, weights not saved');
+      return;
+    }
+
     for (const [action, w] of Object.entries(weights)) {
       await supabase
         .from('sage_policy_weights')
