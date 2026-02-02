@@ -164,6 +164,12 @@ serve(async (req) => {
     // 2. Load Memory
     const memory = await loadMemory(supabase, user.id);
 
+    // 2b. Enrich with recent history for chat mode
+    let enrichedHistory = null;
+    if (validatedSkill === 'chat') {
+      enrichedHistory = await fetchEnrichedHistory(supabase, user.id);
+    }
+
     // 3. Fetch consent snapshot for audit
     const consentSnapshot = await getConsentSnapshot(supabase, user.id);
     const learningEnabled = consentSnapshot.ai_profiling && consentSnapshot.policy_learning;
@@ -206,6 +212,7 @@ serve(async (req) => {
       memory,
       learningProfile,
       additionalContext,
+      enrichedHistory,
     });
 
     if (llmResponse.error) {
@@ -443,6 +450,64 @@ async function loadMemory(supabase: any, userId: string): Promise<SageMemory> {
 }
 
 // ============================================
+// ENRICHED HISTORY FOR CHAT MODE
+// ============================================
+interface EnrichedHistory {
+  recentMoods: string[];
+  recentReflections: string[];
+  activeHabits: string[];
+  avgScore: number | null;
+  momentum: number | null;
+  recentWins: string[];
+}
+
+async function fetchEnrichedHistory(supabase: any, userId: string): Promise<EnrichedHistory> {
+  const [journalResult, habitsResult, scoresResult, winsResult] = await Promise.all([
+    supabase
+      .from('journal_entries')
+      .select('mood, reflections, date')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('habit_logs')
+      .select('habits(name)')
+      .eq('user_id', userId)
+      .eq('completed', true)
+      .order('date', { ascending: false })
+      .limit(10),
+    supabase
+      .from('scores_daily')
+      .select('global_score, momentum_index, date')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(7),
+    supabase
+      .from('wins')
+      .select('title, category')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(3),
+  ]);
+
+  const journal = journalResult.data || [];
+  const habits = habitsResult.data || [];
+  const scores = scoresResult.data || [];
+  const wins = winsResult.data || [];
+
+  return {
+    recentMoods: journal.map((j: any) => j.mood).filter(Boolean),
+    recentReflections: journal.map((j: any) => j.reflections?.slice(0, 100)).filter(Boolean),
+    activeHabits: [...new Set(habits.map((h: any) => h.habits?.name).filter(Boolean))] as string[],
+    avgScore: scores.length > 0 
+      ? Math.round(scores.reduce((a: number, s: any) => a + (s.global_score || 0), 0) / scores.length)
+      : null,
+    momentum: scores[0]?.momentum_index ?? null,
+    recentWins: wins.map((w: any) => w.title).filter(Boolean),
+  };
+}
+
+// ============================================
 // SAFETY ENGINE
 // ============================================
 function checkSafety(context: UserContext, memory: SageMemory): SafetyCheck {
@@ -656,6 +721,7 @@ async function callLovableAI(params: {
   memory: SageMemory;
   learningProfile?: LearningProfileData;
   additionalContext?: any;
+  enrichedHistory?: EnrichedHistory | null;
 }): Promise<{ content?: string; error?: string; status?: number }> {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   
@@ -722,8 +788,9 @@ function buildPrompt(params: {
   memory: SageMemory;
   learningProfile?: LearningProfileData;
   additionalContext?: any;
+  enrichedHistory?: EnrichedHistory | null;
 }): string {
-  const { skill, action, context, memory, learningProfile, additionalContext } = params;
+  const { skill, action, context, memory, learningProfile, additionalContext, enrichedHistory } = params;
 
   // Build adaptive tone instruction based on learning profile
   let toneInstruction = '';
@@ -750,6 +817,65 @@ function buildPrompt(params: {
     toneInstruction += ' Sois très concis (2-3 phrases max).';
   } else if (responseLengthPref === 'detailed') {
     toneInstruction += ' Fournis des explications détaillées et des exemples.';
+  }
+
+  // === CHAT MODE: Free conversation with history ===
+  if (skill === 'chat') {
+    const chatHistory = additionalContext?.history || [];
+    const userMessage = additionalContext?.message || '';
+    
+    // Build enriched history section
+    const historySection = enrichedHistory ? `
+# HISTORIQUE RÉCENT (7 jours)
+- Humeurs récentes: ${enrichedHistory.recentMoods.length > 0 ? enrichedHistory.recentMoods.join(', ') : 'non disponible'}
+- Score moyen: ${enrichedHistory.avgScore !== null ? enrichedHistory.avgScore + '/100' : 'non disponible'}
+- Momentum: ${enrichedHistory.momentum !== null ? (enrichedHistory.momentum > 50 ? 'positif (' + enrichedHistory.momentum + ')' : 'en baisse (' + enrichedHistory.momentum + ')') : 'non disponible'}
+- Habitudes actives: ${enrichedHistory.activeHabits.length > 0 ? enrichedHistory.activeHabits.slice(0, 5).join(', ') : 'aucune'}
+- Dernière réflexion: "${enrichedHistory.recentReflections[0] || 'aucune'}"
+- Victoires récentes: ${enrichedHistory.recentWins.length > 0 ? enrichedHistory.recentWins.join(', ') : 'aucune récente'}` : '';
+    
+    return `
+# MODE CONVERSATION
+
+Tu es Sage, le coach IA de l'application Minded. Tu discutes avec l'utilisateur de manière naturelle et bienveillante.
+IMPORTANT: Utilise les données concrètes ci-dessous pour personnaliser tes réponses. Mentionne des chiffres, habitudes ou événements spécifiques quand pertinent.
+
+# CONTEXTE UTILISATEUR
+- Habitudes: ${context.habits.completed}/${context.habits.total} complétées (streak: ${context.habits.streak}j)
+- Tâches: ${context.tasks.done} faites, ${context.tasks.pending} en cours, ${context.tasks.overdue} en retard
+- Score momentum: ${context.scores.momentum}%
+- Priorité: ${context.goals.priority}
+${historySection}
+
+# PROFIL
+- Identité visée: ${memory.profile.northStarIdentity}
+- Valeurs: ${memory.profile.values.join(', ')}
+
+# PATTERNS DÉTECTÉS
+${memory.patterns.slice(0, 3).map(p => `- ${p.pattern}`).join('\n') || '(aucun)'}
+
+# FAITS CONNUS
+${memory.facts.slice(0, 3).map(f => `- ${f.fact}`).join('\n') || '(aucun)'}
+
+# STYLE
+${toneInstruction}
+
+# HISTORIQUE DE CONVERSATION
+${chatHistory.map((m: any) => `${m.role === 'user' ? 'Utilisateur' : 'Sage'}: ${m.content}`).join('\n') || '(début de conversation)'}
+
+# MESSAGE DE L'UTILISATEUR
+${userMessage}
+
+# FORMAT DE RÉPONSE (JSON)
+{
+  "observation": "Ce que tu comprends de la demande",
+  "micro_action": {
+    "type": "nudge",
+    "message": "Ta réponse conversationnelle (2-4 phrases, naturelle, chaleureuse, avec des données spécifiques)"
+  }
+}
+
+Réponds maintenant de manière naturelle et personnalisée avec des données concrètes:`;
   }
 
   return `
@@ -832,8 +958,24 @@ function validateResponse(response: string): { valid: boolean; data: any; retrie
   try {
     const parsed = JSON.parse(jsonString);
     
-    // Validate required fields
-    const requiredFields = ['observation', 'interpretation', 'micro_action'];
+    // For chat mode: just need micro_action with message
+    if (parsed.micro_action?.message) {
+      // Add defaults for missing optional fields
+      return { 
+        valid: true, 
+        data: {
+          observation: parsed.observation || 'Chat response',
+          interpretation: parsed.interpretation || '',
+          hypothesis: parsed.hypothesis || '',
+          micro_action: parsed.micro_action,
+          limit: parsed.limit || '',
+        }, 
+        retries: 0 
+      };
+    }
+    
+    // For standard mode: validate required fields
+    const requiredFields = ['observation', 'micro_action'];
     const hasRequired = requiredFields.every(field => field in parsed);
     
     if (!hasRequired) {

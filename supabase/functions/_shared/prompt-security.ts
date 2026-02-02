@@ -43,6 +43,7 @@ export const ALLOWED_SKILLS = [
   'protection',
   'focus_mode',
   'stress_check',
+  'chat', // Mode conversation libre avec l'utilisateur
 ] as const;
 
 export type AllowedSkill = typeof ALLOWED_SKILLS[number];
