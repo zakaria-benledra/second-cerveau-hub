@@ -652,11 +652,26 @@ async function approveProposal(supabase: any, userId: string, payload: any): Pro
     source: "ai"
   });
 
+  // Créer un sage_run pour le tracking learning
+  const { data: sageRun } = await supabase
+    .from('sage_runs')
+    .insert({
+      user_id: userId,
+      skill: 'approve_proposal',
+      action_type: proposal.type,
+      confidence: proposal.confidence_score,
+      reasoning: 'User approved proposal',
+      learning_enabled: true,
+    })
+    .select('id')
+    .single();
+
   return {
     success: true,
     data: {
       action,
-      message: "Proposition approuvée et action exécutée"
+      message: "Proposition approuvée et action exécutée",
+      run_id: sageRun?.id
     }
   };
 }
@@ -686,9 +701,25 @@ async function rejectProposal(supabase: any, userId: string, payload: any): Prom
     payload: { reason }
   });
 
+  // Créer un sage_run pour le tracking learning
+  const { data: sageRun } = await supabase
+    .from('sage_runs')
+    .insert({
+      user_id: userId,
+      skill: 'reject_proposal',
+      action_type: 'rejected',
+      reasoning: reason || 'User rejected proposal',
+      learning_enabled: true,
+    })
+    .select('id')
+    .single();
+
   return {
     success: true,
-    data: { message: "Proposition rejetée" }
+    data: { 
+      message: "Proposition rejetée",
+      run_id: sageRun?.id
+    }
   };
 }
 
