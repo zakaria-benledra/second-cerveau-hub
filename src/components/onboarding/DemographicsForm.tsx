@@ -25,10 +25,10 @@ export function DemographicsForm({ onComplete, mode = 'settings' }: Demographics
 
   useEffect(() => {
     if (profile) {
-      setBirthYear((profile as any).birth_year?.toString() || '');
-      setCountry((profile as any).location_country || '');
-      setCity((profile as any).location_city || '');
-      setGender((profile as any).gender || 'prefer_not_to_say');
+      setBirthYear(profile.birth_year?.toString() || '');
+      setCountry(profile.location_country || '');
+      setCity(profile.location_city || '');
+      setGender(profile.gender || 'prefer_not_to_say');
     }
   }, [profile]);
 
@@ -39,7 +39,7 @@ export function DemographicsForm({ onComplete, mode = 'settings' }: Demographics
         location_country: country || null,
         location_city: city || null,
         gender: gender,
-      } as any);
+      });
       toast({ title: 'Profil mis à jour ✅' });
       onComplete?.();
     } catch (error) {

@@ -5293,13 +5293,20 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          ai_preferences: Json | null
           avatar_url: string | null
+          birth_year: number | null
           created_at: string | null
           display_name: string | null
           first_name: string | null
+          gender: string | null
           id: string
+          interests: string[] | null
+          location_city: string | null
+          location_country: string | null
           onboarding_completed: boolean | null
           onboarding_step: number | null
+          personalization_level: string | null
           preferred_sage_tone: string | null
           sound_enabled: boolean | null
           theme: string | null
@@ -5307,13 +5314,20 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_preferences?: Json | null
           avatar_url?: string | null
+          birth_year?: number | null
           created_at?: string | null
           display_name?: string | null
           first_name?: string | null
+          gender?: string | null
           id: string
+          interests?: string[] | null
+          location_city?: string | null
+          location_country?: string | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
+          personalization_level?: string | null
           preferred_sage_tone?: string | null
           sound_enabled?: boolean | null
           theme?: string | null
@@ -5321,13 +5335,20 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_preferences?: Json | null
           avatar_url?: string | null
+          birth_year?: number | null
           created_at?: string | null
           display_name?: string | null
           first_name?: string | null
+          gender?: string | null
           id?: string
+          interests?: string[] | null
+          location_city?: string | null
+          location_country?: string | null
           onboarding_completed?: boolean | null
           onboarding_step?: number | null
+          personalization_level?: string | null
           preferred_sage_tone?: string | null
           sound_enabled?: boolean | null
           theme?: string | null
