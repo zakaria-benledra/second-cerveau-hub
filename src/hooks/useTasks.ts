@@ -12,6 +12,7 @@ import {
   type UpdateTaskInput,
 } from '@/lib/api/tasks';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useTodayTasks() {
   return useQuery({
@@ -88,6 +89,13 @@ export function useCompleteTask() {
     mutationFn: (id: string) => completeTask(id),
     onSuccess: (task: Task) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      
+      // Trigger real-time score recalculation
+      supabase.functions.invoke('compute-score-realtime').then(() => {
+        queryClient.invalidateQueries({ queryKey: ['global-score'] });
+        queryClient.invalidateQueries({ queryKey: ['scores'] });
+      }).catch(() => {});
+      
       toast({
         title: 'Bravo ! 🎉',
         description: `"${task.title}" terminée.`,
