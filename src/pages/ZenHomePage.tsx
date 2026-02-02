@@ -169,10 +169,10 @@ export default function ZenHomePage() {
           data={sageData}
           variant="hero"
           primaryAction={primaryAction}
-          secondaryAction={{
-            label: 'Voir mon évolution',
-            onClick: () => navigate('/progress')
-          }}
+        secondaryAction={{
+          label: 'Voir mon évolution',
+          onClick: () => navigate('/scores')
+        }}
         />
 
         {/* Score du jour */}
