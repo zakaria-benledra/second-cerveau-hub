@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { useTodayScore, useScoreHistory, useRecomputeScore } from '@/hooks/useScores';
+import { useTodayScore, useScoreHistory } from '@/hooks/useScores';
+import { useRealtimeScore } from '@/hooks/useRealtimeScore';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -42,10 +43,15 @@ const scoreColors = {
 };
 
 export default function ScoresPage() {
-  const { data: todayScore, isLoading: scoreLoading } = useTodayScore();
+  const { data: todayScore, isLoading: scoreLoading, refetch } = useTodayScore();
   const { data: history, isLoading: historyLoading } = useScoreHistory(14);
-  const recompute = useRecomputeScore();
+  const realtimeScore = useRealtimeScore();
   const { mood, data: sageData } = usePageSage('progress');
+  
+  const handleRecalculate = async () => {
+    await realtimeScore.mutateAsync();
+    refetch();
+  };
 
   const getMomentumIcon = (momentum: number) => {
     if (momentum > 55) return <TrendingUp className="h-4 w-4 text-success" />;
@@ -94,15 +100,12 @@ export default function ScoresPage() {
         <div className="flex justify-end">
           <Button 
             variant="outline" 
-            onClick={() => recompute.mutate(undefined)}
-            disabled={recompute.isPending}
+            size="sm"
+            onClick={handleRecalculate}
+            disabled={realtimeScore.isPending}
           >
-            {recompute.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            Recalculer
+            <RefreshCw className={cn("h-4 w-4 mr-2", realtimeScore.isPending && "animate-spin")} />
+            {realtimeScore.isPending ? 'Calcul en cours...' : 'Recalculer mes scores'}
           </Button>
         </div>
 
@@ -118,13 +121,9 @@ export default function ScoresPage() {
               <p className="text-muted-foreground text-sm text-center mb-4">
                 Commencez à utiliser l'application pour générer vos scores
               </p>
-              <Button onClick={() => recompute.mutate(undefined)} disabled={recompute.isPending}>
-                {recompute.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                Calculer mes scores
+              <Button onClick={handleRecalculate} disabled={realtimeScore.isPending}>
+                <RefreshCw className={cn("h-4 w-4 mr-2", realtimeScore.isPending && "animate-spin")} />
+                {realtimeScore.isPending ? 'Calcul en cours...' : 'Calculer mes scores'}
               </Button>
             </CardContent>
           </Card>
