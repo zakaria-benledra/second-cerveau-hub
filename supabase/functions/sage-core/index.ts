@@ -27,6 +27,7 @@ interface UserContext {
   scores: { daily: number; weekly: number; momentum: number };
   temporal: { hour: number; dayOfWeek: number; isWeekend: boolean };
   behavioral: { dropoutRisk: number; lastActive: string | null };
+  goals: { discipline: number; financialStability: number; mentalBalance: number; priority: string };
 }
 
 interface SageMemory {
@@ -292,18 +293,35 @@ async function buildContext(supabase: any, userId: string): Promise<UserContext>
   const today = new Date().toISOString().split('T')[0];
   const now = new Date();
 
-  // Fetch data in parallel
-  const [habitsResult, tasksResult, scoresResult, dnaResult] = await Promise.all([
+  // Fetch data in parallel (including user preferences for goals)
+  const [habitsResult, tasksResult, scoresResult, dnaResult, prefsResult] = await Promise.all([
     supabase.from('habit_logs').select('completed').eq('user_id', userId).eq('date', today),
     supabase.from('tasks').select('status, due_date').eq('user_id', userId).is('deleted_at', null),
     supabase.from('daily_stats').select('*').eq('user_id', userId).eq('date', today).single(),
     supabase.from('behavioral_dna').select('dna_data').eq('user_id', userId).single(),
+    supabase.from('user_preferences').select('goal_discipline, goal_financial_stability, goal_mental_balance').eq('user_id', userId).single(),
   ]);
 
   const habits = habitsResult.data || [];
   const tasks = tasksResult.data || [];
   const scores = scoresResult.data;
   const dna = dnaResult.data?.dna_data;
+  const prefs = prefsResult.data;
+  
+  // Extract goals with defaults
+  const discipline = prefs?.goal_discipline ?? 50;
+  const financialStability = prefs?.goal_financial_stability ?? 50;
+  const mentalBalance = prefs?.goal_mental_balance ?? 50;
+  
+  // Determine user's priority based on their goals
+  let priority = 'équilibre général';
+  if (mentalBalance > discipline && mentalBalance > financialStability) {
+    priority = 'bien-être et équilibre mental';
+  } else if (discipline > financialStability && discipline > 60) {
+    priority = 'discipline et productivité';
+  } else if (financialStability > 60) {
+    priority = 'stabilité financière';
+  }
 
   // Calculate habit metrics
   const habitsCompleted = habits.filter((h: any) => h.completed).length;
@@ -351,6 +369,12 @@ async function buildContext(supabase: any, userId: string): Promise<UserContext>
     behavioral: {
       dropoutRisk: dna?.predictions?.dropoutRisk72h || 0,
       lastActive: scores?.updated_at || null,
+    },
+    goals: {
+      discipline,
+      financialStability,
+      mentalBalance,
+      priority,
     },
   };
 }
@@ -661,6 +685,15 @@ function buildPrompt(params: {
 - Score momentum: ${context.scores.momentum}%
 - Risque décrochage: ${context.behavioral.dropoutRisk}%
 - Heure: ${context.temporal.hour}h (${context.temporal.isWeekend ? 'weekend' : 'semaine'})
+
+# OBJECTIFS DE TRANSFORMATION (définis à l'inscription)
+- Priorité principale: ${context.goals.priority}
+- Focus discipline: ${context.goals.discipline}%
+- Focus bien-être mental: ${context.goals.mentalBalance}%
+- Focus stabilité financière: ${context.goals.financialStability}%
+${context.goals.mentalBalance >= 70 ? '→ IMPORTANT: Insiste sur le journal, la méditation, le bien-être' : ''}
+${context.goals.discipline >= 70 ? '→ IMPORTANT: Focalise sur les habitudes et la productivité' : ''}
+${context.goals.financialStability >= 70 ? '→ IMPORTANT: Priorise les conseils finance et budget' : ''}
 
 # PROFIL UTILISATEUR
 - Identité visée: ${memory.profile.northStarIdentity}

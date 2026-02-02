@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { SageCompanion } from '@/components/sage';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useUserProfile';
+import { useUserPreferences } from '@/hooks/useOnboarding';
 import { useAuth, signOut } from '@/hooks/useAuth';
 import { useConsents, useUpdateConsent, useExportUserData, CONSENT_PURPOSES } from '@/hooks/useConsents';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,8 +12,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, User, Volume2, LogOut, Shield, Download, Trash2 } from 'lucide-react';
+import { Settings, User, Volume2, LogOut, Shield, Download, Trash2, Target, Brain, Wallet, Flame } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   AlertDialog,
@@ -29,6 +32,7 @@ import {
 export default function SettingsPage() {
   const { user } = useAuth();
   const { data: profile } = useUserProfile();
+  const { data: preferences } = useUserPreferences();
   const updateProfile = useUpdateProfile();
   const { toast } = useToast();
   
@@ -135,6 +139,68 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Profil de Transformation */}
+        {preferences && (preferences.goal_discipline > 0 || preferences.goal_mental_balance > 0 || preferences.goal_financial_stability > 0) && (
+          <Card className="glass border-primary/20">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                Mon profil de transformation
+              </CardTitle>
+              <CardDescription>
+                Défini lors de ton inscription, utilisé par Sage pour personnaliser tes conseils
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Discipline */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-warning" />
+                    <span className="font-medium">Discipline</span>
+                  </div>
+                  <Badge variant={preferences.goal_discipline >= 70 ? 'default' : 'secondary'}>
+                    {preferences.goal_discipline}%
+                  </Badge>
+                </div>
+                <Progress value={preferences.goal_discipline} className="h-2" />
+              </div>
+              
+              {/* Équilibre mental */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Brain className="h-4 w-4 text-accent" />
+                    <span className="font-medium">Équilibre mental</span>
+                  </div>
+                  <Badge variant={preferences.goal_mental_balance >= 70 ? 'default' : 'secondary'}>
+                    {preferences.goal_mental_balance}%
+                  </Badge>
+                </div>
+                <Progress value={preferences.goal_mental_balance} className="h-2" />
+              </div>
+              
+              {/* Stabilité financière */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-success" />
+                    <span className="font-medium">Stabilité financière</span>
+                  </div>
+                  <Badge variant={preferences.goal_financial_stability >= 70 ? 'default' : 'secondary'}>
+                    {preferences.goal_financial_stability}%
+                  </Badge>
+                </div>
+                <Progress value={preferences.goal_financial_stability} className="h-2" />
+              </div>
+              
+              <p className="text-xs text-muted-foreground pt-2">
+                Ces objectifs influencent les recommandations de Sage. Ils ne peuvent pas être modifiés pour le moment.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Préférences */}
         <Card className="glass">
