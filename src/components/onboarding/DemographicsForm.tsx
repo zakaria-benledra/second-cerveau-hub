@@ -65,7 +65,7 @@ export function DemographicsForm({ onComplete, mode = 'settings' }: Demographics
               <SelectValue placeholder="Sélectionner" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Non précisé</SelectItem>
+              <SelectItem value="unspecified">Non précisé</SelectItem>
               {years.map(year => (
                 <SelectItem key={year} value={year}>{year}</SelectItem>
               ))}
