@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { SageCompanion } from '@/components/sage';
 import { PersonalizationSettings } from '@/components/settings/PersonalizationSettings';
+import { DemographicsForm } from '@/components/onboarding/DemographicsForm';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useUserProfile';
 import { useUserPreferences } from '@/hooks/useOnboarding';
 import { useAuth, signOut } from '@/hooks/useAuth';
@@ -140,6 +141,9 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Informations démographiques */}
+        <DemographicsForm mode="settings" />
 
         {/* Profil de Transformation */}
         {preferences && (preferences.goal_discipline > 0 || preferences.goal_mental_balance > 0 || preferences.goal_financial_stability > 0) && (
