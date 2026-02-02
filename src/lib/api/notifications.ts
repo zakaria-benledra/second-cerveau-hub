@@ -21,13 +21,22 @@ export async function fetchNotifications(unreadOnly = false) {
 }
 
 export async function fetchUnreadCount() {
-  const { count, error } = await supabase
-    .from('notifications')
-    .select('*', { count: 'exact', head: true })
-    .eq('read', false);
-  
-  if (error) throw error;
-  return count || 0;
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('read', false);
+    
+    if (error) {
+      console.warn('Notifications count error:', error.message);
+      return 0;
+    }
+    
+    return data?.length || 0;
+  } catch (err) {
+    console.warn('Failed to fetch notification count');
+    return 0;
+  }
 }
 
 export async function markAsRead(id: string) {
