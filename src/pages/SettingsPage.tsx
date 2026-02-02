@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { SageCompanion } from '@/components/sage';
 import { PersonalizationSettings } from '@/components/settings/PersonalizationSettings';
+import { InterestsSettings } from '@/components/settings/InterestsSettings';
 import { DemographicsForm } from '@/components/onboarding/DemographicsForm';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useUserProfile';
 import { useUserPreferences } from '@/hooks/useOnboarding';
@@ -206,6 +207,9 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Centres d'intérêt */}
+        <InterestsSettings />
 
         {/* Personnalisation IA */}
         <PersonalizationSettings />
