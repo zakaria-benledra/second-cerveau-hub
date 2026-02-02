@@ -6,10 +6,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// Simple hash function for context comparison
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
+
+  const startTime = Date.now();
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -54,6 +67,34 @@ serve(async (req) => {
       .select('first_name, location_city, location_country, onboarding_goals')
       .eq('id', user.id)
       .single();
+
+    // === CACHE CHECK ===
+    const cacheKey = 'smart_suggestions';
+    const contextHash = simpleHash(JSON.stringify({
+      interests: userInterests?.map((i: any) => i.interest_id).sort(),
+      goals: profile?.onboarding_goals,
+    }));
+
+    const { data: cached } = await supabase
+      .from('ai_suggestions_cache')
+      .select('suggestions')
+      .eq('user_id', user.id)
+      .eq('cache_key', cacheKey)
+      .eq('context_hash', contextHash)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+
+    if (cached) {
+      const cacheTime = Date.now() - startTime;
+      console.log(`Cache HIT - ${cacheTime}ms`);
+      return new Response(JSON.stringify({
+        ...cached.suggestions,
+        cached: true,
+        responseTime: cacheTime,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Récupérer le learning profile pour personnalisation
     const { data: learningProfile } = await supabase
@@ -232,10 +273,36 @@ Réponds UNIQUEMENT avec un JSON valide, sans markdown :
       suggestions = [];
     }
 
-    return new Response(JSON.stringify({ 
+    const responsePayload = { 
       suggestions,
       interests: interestNames,
       location 
+    };
+
+    // === CACHE WRITE ===
+    // Get user's workspace for cache entry
+    const { data: membership } = await supabase
+      .from('memberships')
+      .select('workspace_id')
+      .eq('user_id', user.id)
+      .single();
+
+    await supabase.from('ai_suggestions_cache').upsert({
+      user_id: user.id,
+      workspace_id: membership?.workspace_id,
+      cache_key: cacheKey,
+      suggestions: responsePayload,
+      context_hash: contextHash,
+      expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour TTL
+    }, { onConflict: 'user_id,cache_key' });
+
+    const totalTime = Date.now() - startTime;
+    console.log(`Cache MISS - Generated in ${totalTime}ms`);
+
+    return new Response(JSON.stringify({
+      ...responsePayload,
+      cached: false,
+      responseTime: totalTime,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

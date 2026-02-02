@@ -313,6 +313,47 @@ export type Database = {
           },
         ]
       }
+      ai_suggestions_cache: {
+        Row: {
+          cache_key: string
+          context_hash: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          suggestions: Json
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          cache_key: string
+          context_hash: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          suggestions: Json
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          cache_key?: string
+          context_hash?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          suggestions?: Json
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_suggestions_cache_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_events: {
         Row: {
           created_at: string | null
