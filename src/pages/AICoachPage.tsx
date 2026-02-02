@@ -2,6 +2,8 @@ import { useState, useMemo, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { SageCompanion } from '@/components/sage';
+import { SageChatMode } from '@/components/sage/SageChatMode';
+import { SageHistoryView } from '@/components/sage/SageHistoryView';
 import { useAICoach } from '@/hooks/useAICoach';
 import { useAICoachEngine } from '@/hooks/useAIBehavior';
 import { useTodayScore } from '@/hooks/useScores';
@@ -12,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSound } from '@/hooks/useSound';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,7 +38,10 @@ import {
   X,
   Zap,
   Play,
-  ListTodo
+  ListTodo,
+  MessageCircle,
+  History,
+  LayoutDashboard
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -335,14 +341,31 @@ export default function AICoachPage() {
         icon={<Brain className="h-5 w-5 text-white" />}
       />
 
-      <SageCompanion
-        context="welcome"
-        mood="supportive"
-        variant="card"
-        className="mb-6"
-      />
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <LayoutDashboard className="h-4 w-4" />
+            <span className="hidden sm:inline">Tableau de bord</span>
+          </TabsTrigger>
+          <TabsTrigger value="chat" className="flex items-center gap-2">
+            <MessageCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">Chat</span>
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            <span className="hidden sm:inline">Historique</span>
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="max-w-3xl mx-auto space-y-8">
+        <TabsContent value="dashboard" className="mt-0">
+          <SageCompanion
+            context="welcome"
+            mood="supportive"
+            variant="card"
+            className="mb-6"
+          />
+
+          <div className="max-w-3xl mx-auto space-y-8">
 
         {/* SECTION 1: Who You Were Today */}
         <Card className="glass-strong overflow-hidden">
@@ -715,7 +738,17 @@ export default function AICoachPage() {
           interventions={interventionHistory}
           isLoading={historyLoading}
         />
-      </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="chat" className="mt-0">
+          <SageChatMode />
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-0">
+          <SageHistoryView />
+        </TabsContent>
+      </Tabs>
     </AppLayout>
   );
 }
