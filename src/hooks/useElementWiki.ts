@@ -28,16 +28,26 @@ export function useElementWiki(elementId: string | undefined) {
     queryFn: async () => {
       if (!elementId) return null;
 
+      console.log('[useElementWiki] Fetching wiki for:', elementId);
+
       const { data, error } = await supabase
         .from('program_elements_wiki')
         .select('*')
         .eq('linked_item_id', elementId)
         .maybeSingle();
 
-      if (error || !data) return null;
+      if (error) {
+        console.error('[useElementWiki] Error:', error);
+        return null;
+      }
+
+      console.log('[useElementWiki] Found:', data ? 'YES' : 'NO');
+      
+      if (!data) return null;
       return data as unknown as ElementWiki;
     },
     enabled: !!elementId,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
 }
 
