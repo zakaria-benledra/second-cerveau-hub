@@ -25,10 +25,9 @@ import {
 import { Label } from '@/components/ui/label';
 import { useHabitsWithLogs, useCreateHabit, useToggleHabitLog, useDeleteHabit } from '@/hooks/useHabits';
 import { useHabitHistory } from '@/hooks/useHabitsKPI';
-import { useElementWiki } from '@/hooks/useElementWiki';
-import { ElementWikiModal } from '@/components/wiki/ElementWikiModal';
 import { ScoreRing } from '@/components/today/ScoreRing';
 import { BehavioralSection } from '@/components/habits/BehavioralSection';
+import { HabitDetailModal } from '@/components/habits/HabitDetailModal';
 import { 
   Plus, 
   Flame, 
@@ -43,7 +42,7 @@ import {
   History,
   Heart,
   Snowflake,
-  Info
+  BookOpen
 } from 'lucide-react';
 import { HabitTimeline } from '@/components/habits/HabitTimeline';
 import type { CreateHabitInput } from '@/lib/api/habits';
@@ -71,8 +70,7 @@ export default function HabitsPage() {
     target_frequency: 'daily',
   });
   const [activeTab, setActiveTab] = useState('today');
-  const [selectedWikiId, setSelectedWikiId] = useState<string | null>(null);
-  const { data: selectedWiki } = useElementWiki(selectedWikiId || undefined);
+  const [selectedHabit, setSelectedHabit] = useState<typeof activeHabits[0] | null>(null);
 
   const { canAddHabit, limits } = usePlanLimits();
   const { showPaywall, PaywallComponent } = usePaywall();
@@ -394,9 +392,7 @@ export default function HabitsPage() {
                     "group glass-hover cursor-pointer transition-all",
                     "hover:border-primary/30 hover:-translate-y-0.5"
                   )}
-                  onClick={() => toggleHabit.mutate(habit.id, {
-                    onSuccess: () => celebrate('habit_complete', habit.name)
-                  })}
+                  onClick={() => setSelectedHabit(habit)}
                 >
                   <CardContent className="py-4">
                     <div className="flex items-center gap-4">
@@ -404,6 +400,12 @@ export default function HabitsPage() {
                         checked={false}
                         disabled={toggleHabit.isPending}
                         className="h-6 w-6 rounded-lg"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleHabit.mutate(habit.id, {
+                            onSuccess: () => celebrate('habit_complete', habit.name)
+                          });
+                        }}
                       />
                       <span className="text-2xl">{habit.icon || '✨'}</span>
                       <div className="flex-1">
@@ -416,42 +418,24 @@ export default function HabitsPage() {
                             </Badge>
                           )}
                           {(habit.streak_freezes_available ?? 0) > 0 && (
-                            <Badge className="bg-primary/15 text-primary border-0 text-xs" title="Freeze disponible - protège votre streak si vous manquez un jour">
+                            <Badge className="bg-primary/15 text-primary border-0 text-xs" title="Freeze disponible">
                               <Snowflake className="h-3 w-3 mr-1" />
                               {habit.streak_freezes_available} freeze
                             </Badge>
                           )}
+                          {(habit as { created_from_program?: string }).created_from_program && (
+                            <Badge className="bg-accent/15 text-accent border-0 text-xs">
+                              <BookOpen className="h-3 w-3 mr-1" />
+                              Wiki
+                            </Badge>
+                          )}
                         </div>
                       </div>
-                        {(habit as { created_from_program?: string }).created_from_program && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedWikiId(habit.id);
-                            }}
-                            title="Voir les explications scientifiques"
-                          >
-                            <Info className="h-4 w-4 text-primary" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteHabit.mutate(habit.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                      <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
             )}
 
             {/* Completed habits */}
@@ -530,13 +514,23 @@ export default function HabitsPage() {
         </Tabs>
       </div>
       <PaywallComponent />
-      {selectedWiki && (
-        <ElementWikiModal
-          wiki={selectedWiki}
-          open={!!selectedWikiId}
-          onOpenChange={(open) => !open && setSelectedWikiId(null)}
-        />
-      )}
+      {/* Modal de détail d'habitude */}
+      <HabitDetailModal
+        habit={selectedHabit}
+        open={!!selectedHabit}
+        onOpenChange={(open) => !open && setSelectedHabit(null)}
+        onComplete={() => {
+          if (selectedHabit) {
+            toggleHabit.mutate(selectedHabit.id, {
+              onSuccess: () => {
+                celebrate('habit_complete', selectedHabit.name);
+                setSelectedHabit(null);
+              }
+            });
+          }
+        }}
+        isCompleting={toggleHabit.isPending}
+      />
     </AppLayout>
   );
 }
