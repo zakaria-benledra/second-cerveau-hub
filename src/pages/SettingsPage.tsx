@@ -8,6 +8,7 @@ import { NotificationSettings } from '@/components/settings/NotificationSettings
 import { CalendarSettings } from '@/components/settings/CalendarSettings';
 import { ExportReportButton } from '@/components/settings/ExportReportButton';
 import { DemographicsForm } from '@/components/onboarding/DemographicsForm';
+import { ResetDataButton } from '@/components/settings/ResetDataButton';
 import { useUserProfile, useUpdateProfile } from '@/hooks/useUserProfile';
 import { useUserPreferences } from '@/hooks/useOnboarding';
 import { useAuth, signOut } from '@/hooks/useAuth';
@@ -374,8 +375,26 @@ export default function SettingsPage() {
               <LogOut className="h-5 w-5" />
               Zone sensible
             </CardTitle>
+            <CardDescription>
+              Actions irréversibles sur ton compte
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {/* Reset Data */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="font-medium">Réinitialiser mes données</p>
+                <p className="text-sm text-muted-foreground">
+                  Efface toutes tes habitudes, tâches, scores et repart à zéro.
+                  L'apprentissage AI est conservé.
+                </p>
+              </div>
+              <ResetDataButton />
+            </div>
+            
+            <Separator />
+            
+            {/* Logout */}
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <p className="font-medium">Déconnexion</p>
