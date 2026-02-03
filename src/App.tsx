@@ -22,6 +22,8 @@ import ProgramPage from "./pages/ProgramPage";
 import FinancePage from "./pages/FinancePageSimplified";
 import AchievementsPage from "./pages/AchievementsPage";
 import SettingsPage from "./pages/SettingsPage";
+import AICoachPage from "./pages/AICoachPage";
+import IntelligenceHubPage from "./pages/IntelligenceHubPage";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 
@@ -66,6 +68,8 @@ function AppContent() {
           <Route path="/finance" element={<ProtectedRoute><FinancePage /></ProtectedRoute>} />
           <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/coach" element={<ProtectedRoute><AICoachPage /></ProtectedRoute>} />
+          <Route path="/intelligence" element={<ProtectedRoute><IntelligenceHubPage /></ProtectedRoute>} />
           
           {/* Redirections pour anciennes URLs */}
           <Route path="/identity" element={<Navigate to="/dashboard" replace />} />
@@ -73,7 +77,7 @@ function AppContent() {
           <Route path="/today" element={<Navigate to="/dashboard" replace />} />
           <Route path="/kanban" element={<Navigate to="/tasks" replace />} />
           <Route path="/goals" element={<Navigate to="/program" replace />} />
-          <Route path="/ai-coach" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/ai-coach" element={<Navigate to="/coach" replace />} />
           <Route path="/scores" element={<Navigate to="/achievements" replace />} />
           
           <Route path="*" element={<NotFound />} />
