@@ -97,7 +97,9 @@ export function HabitDetailModal({ habit, open, onOpenChange, onComplete, isComp
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="why" className="space-y-4 mt-0">
+              <TabsContent value="why" className="mt-0">
+                <ScrollArea className="h-[300px] pr-3">
+                <div className="space-y-4">
                 {/* Pourquoi */}
                 {wiki.why_this_practice && (
                   <div className="space-y-2">
@@ -176,9 +178,13 @@ export function HabitDetailModal({ habit, open, onOpenChange, onComplete, isComp
                     </div>
                   </div>
                 )}
+                </div>
+                </ScrollArea>
               </TabsContent>
 
-              <TabsContent value="how" className="space-y-4 mt-0">
+              <TabsContent value="how" className="mt-0">
+                <ScrollArea className="h-[300px] pr-3">
+                <div className="space-y-4">
                 {/* Guide pas à pas */}
                 {wiki.how_to_guide && wiki.how_to_guide.length > 0 && (
                   <div className="space-y-3">
@@ -234,6 +240,8 @@ export function HabitDetailModal({ habit, open, onOpenChange, onComplete, isComp
                     </div>
                   </div>
                 )}
+                </div>
+                </ScrollArea>
               </TabsContent>
             </Tabs>
           ) : wikiLoading ? (
