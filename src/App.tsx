@@ -17,7 +17,7 @@ import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
 import TasksPage from "./pages/TasksPage";
 import HabitsPage from "./pages/HabitsPage";
-import JournalPage from "./pages/JournalPage";
+import JournalPage from "./pages/JournalPageSimplified";
 import ProgramPage from "./pages/ProgramPage";
 import FinancePage from "./pages/FinancePage";
 import AchievementsPage from "./pages/AchievementsPage";
