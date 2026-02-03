@@ -1,738 +1,332 @@
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useQuery } from '@tanstack/react-query';
-import { fetchWeekStats, fetchTodayStats } from '@/lib/api/stats';
-import { useTodayScore } from '@/hooks/useScores';
-import { ActiveProgramCard } from '@/components/program/ActiveProgramCard';
+import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
-  Loader2, 
-  TrendingUp, 
-  TrendingDown,
-  Minus,
-  Target, 
-  Flame, 
-  Clock, 
-  AlertTriangle,
-  CheckCircle2,
-  BarChart3,
-  Zap,
-  ArrowRight,
-  Brain,
-  Activity,
-  Sparkles,
-  Eye
+  CheckCircle2, Circle, Target, Sparkles, BookOpen, 
+  ChevronRight, TrendingUp, Flame, Brain, Calendar
 } from 'lucide-react';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { useActiveProgram, useCompleteMission } from '@/hooks/useActiveProgram';
+import { useTasks, useCompleteTask } from '@/hooks/useTasks';
+import { useHabitsWithLogs, useToggleHabitLog } from '@/hooks/useHabits';
+import { useJournalEntries } from '@/hooks/useJournal';
+import { useTodayScore } from '@/hooks/useScores';
+import { useGamificationProfile } from '@/hooks/useGamification';
 import { cn } from '@/lib/utils';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
-} from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, isToday, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export default function DashboardPage() {
-  const navigate = useNavigate();
+  const { data: profile, isLoading: loadingProfile } = useUserProfile();
+  const { data: program, isLoading: loadingProgram } = useActiveProgram();
+  const { data: tasks = [], isLoading: loadingTasks } = useTasks();
+  const { data: habits = [], isLoading: loadingHabits } = useHabitsWithLogs();
+  const { data: journalEntries = [] } = useJournalEntries();
+  const { data: scores } = useTodayScore();
+  const { data: gamification } = useGamificationProfile();
   
-  const { data: todayStats, isLoading: loadingToday } = useQuery({
-    queryKey: ['stats', 'today'],
-    queryFn: fetchTodayStats,
-  });
+  const completeTask = useCompleteTask();
+  const toggleHabit = useToggleHabitLog();
+  const completeMission = useCompleteMission();
 
-  const { data: weekStats, isLoading: loadingWeek } = useQuery({
-    queryKey: ['stats', 'week'],
-    queryFn: fetchWeekStats,
-  });
+  const firstName = profile?.first_name || profile?.display_name?.split(' ')[0] || 'toi';
 
-  const { data: todayScore } = useTodayScore();
+  // Tâches du jour
+  const todayTasks = useMemo(() => {
+    return tasks.filter(t => 
+      t.status !== 'done' && 
+      t.due_date && 
+      isToday(parseISO(t.due_date))
+    ).slice(0, 5);
+  }, [tasks]);
 
-  const isLoading = loadingToday || loadingWeek;
+  // Habitudes non complétées
+  const pendingHabits = useMemo(() => {
+    return habits.filter(h => !h.todayLog?.completed).slice(0, 5);
+  }, [habits]);
 
-  // Calculate week averages
-  const weekAvg = weekStats && weekStats.length > 0
-    ? {
-        completionRate: weekStats.reduce((sum, d) => sum + (d.tasks_planned > 0 ? d.tasks_completed / d.tasks_planned : 0), 0) / weekStats.length,
-        habitAdherence: weekStats.reduce((sum, d) => sum + (d.habits_total > 0 ? d.habits_completed / d.habits_total : 0), 0) / weekStats.length,
-        avgFocusMinutes: weekStats.reduce((sum, d) => sum + d.focus_minutes, 0) / weekStats.length,
-        avgOverload: weekStats.reduce((sum, d) => sum + (d.overload_index || 0), 0) / weekStats.length,
-      }
-    : null;
+  // Dernière entrée journal
+  const lastJournalEntry = journalEntries[0];
 
-  // Chart data
-  const chartData = weekStats?.map(stat => ({
-    date: format(parseISO(stat.date), 'EEE', { locale: fr }),
-    fullDate: format(parseISO(stat.date), 'dd MMM', { locale: fr }),
-    completion: stat.tasks_planned > 0 ? Math.round((stat.tasks_completed / stat.tasks_planned) * 100) : 0,
-    habits: stat.habits_total > 0 ? Math.round((stat.habits_completed / stat.habits_total) * 100) : 0,
-    focus: stat.focus_minutes,
-    overload: Math.round((stat.overload_index || 0) * 100),
-  })) || [];
+  // Score global
+  const globalScore = scores?.global_score || 50;
 
-  // Radar data for breakdown
-  const radarData = todayStats ? [
-    { 
-      subject: 'Tâches', 
-      value: todayStats.tasks_planned > 0 
-        ? Math.round((todayStats.tasks_completed / todayStats.tasks_planned) * 100) 
-        : 0, 
-      fullMark: 100 
-    },
-    { 
-      subject: 'Habitudes', 
-      value: todayStats.habits_total > 0 
-        ? Math.round((todayStats.habits_completed / todayStats.habits_total) * 100) 
-        : 0, 
-      fullMark: 100 
-    },
-    { 
-      subject: 'Focus', 
-      value: Math.min(100, Math.round((todayStats.focus_minutes / 240) * 100)), 
-      fullMark: 100 
-    },
-    { 
-      subject: 'Clarté', 
-      value: Math.round((todayStats.clarity_score || 0) * 100), 
-      fullMark: 100 
-    },
-  ] : [];
+  // Message de bienvenue basé sur l'heure
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return `Bonjour ${firstName} !`;
+    if (hour < 18) return `Bon après-midi ${firstName} !`;
+    return `Bonsoir ${firstName} !`;
+  }, [firstName]);
 
-  // Calculate global performance score
-  const globalPerformance = todayStats && radarData.length > 0
-    ? Math.round(radarData.reduce((sum, d) => sum + d.value, 0) / radarData.length)
-    : 0;
-
-  // Trend icon
-  const getTrendIcon = () => {
-    if (!todayScore) return <Minus className="h-5 w-5" />;
-    const momentum = todayScore.momentum_index || 50;
-    if (momentum > 55) return <TrendingUp className="h-5 w-5 text-chart-2" />;
-    if (momentum < 45) return <TrendingDown className="h-5 w-5 text-destructive" />;
-    return <Minus className="h-5 w-5 text-muted-foreground" />;
-  };
+  const isLoading = loadingProfile || loadingProgram || loadingTasks || loadingHabits;
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AppLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-48 w-full" />
+          <div className="grid md:grid-cols-3 gap-4">
+            <Skeleton className="h-64" />
+            <Skeleton className="h-64" />
+            <Skeleton className="h-64" />
+          </div>
+        </div>
+      </AppLayout>
     );
   }
 
-  const completionRate = todayStats && todayStats.tasks_planned > 0
-    ? Math.round((todayStats.tasks_completed / todayStats.tasks_planned) * 100)
-    : 0;
-
-  const habitRate = todayStats && todayStats.habits_total > 0
-    ? Math.round((todayStats.habits_completed / todayStats.habits_total) * 100)
-    : 0;
-
-  // Premium KPI Card Component
-  const PremiumKPI = ({ 
-    title, 
-    value, 
-    subtitle, 
-    icon: Icon, 
-    progress, 
-    trend,
-    link,
-    gradient = 'from-primary/10 via-primary/5 to-background'
-  }: {
-    title: string;
-    value: string | number;
-    subtitle: string;
-    icon: React.ElementType;
-    progress: number;
-    trend?: 'up' | 'down' | 'stable';
-    link: string;
-    gradient?: string;
-  }) => (
-    <Card 
-      className={cn(
-        "cursor-pointer hover:border-primary/50 transition-all duration-300 hover:shadow-lg bg-gradient-to-br",
-        gradient
-      )}
-      onClick={() => navigate(link)}
-    >
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Icon className="h-5 w-5 text-primary" />
-            </div>
-            <span className="font-medium text-sm">{title}</span>
-          </div>
-          {trend && (
-            <div className="flex items-center gap-1">
-              {trend === 'up' && <TrendingUp className="h-4 w-4 text-chart-2" />}
-              {trend === 'down' && <TrendingDown className="h-4 w-4 text-destructive" />}
-              {trend === 'stable' && <Minus className="h-4 w-4 text-muted-foreground" />}
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold">{value}</span>
-            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <Progress value={progress} className="h-1.5" />
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   return (
-    <div className="space-y-6">
-      {/* PROGRAMME ACTIF - Compact */}
-      <ActiveProgramCard variant="compact" />
-
-      {/* HEADER PREMIUM */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-primary/10">
-            <BarChart3 className="h-8 w-8 text-primary" />
-          </div>
+    <AppLayout>
+      <div className="space-y-6">
+        {/* Header avec score */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold">Dashboard Intelligence</h1>
-              <Badge variant="secondary" className="gap-1">
-                <Sparkles className="h-3 w-3" />
-                BI Mode
-              </Badge>
-            </div>
-            <p className="text-muted-foreground">
-              Vue d'ensemble de votre performance — Cliquez sur les cartes pour explorer
+            <h1 className="text-3xl font-bold">{greeting}</h1>
+            <p className="text-muted-foreground capitalize">
+              {format(new Date(), "EEEE d MMMM yyyy", { locale: fr })}
             </p>
           </div>
-        </div>
-        <Button 
-          variant="outline" 
-          onClick={() => navigate('/bi/executive')}
-          className="gap-2"
-        >
-          <Eye className="h-4 w-4" />
-          Vue Exécutive
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* GLOBAL SCORE HERO SECTION */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Score Card */}
-        <Card className="bg-gradient-to-br from-primary/10 via-primary/5 to-background">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-primary" />
-              Performance Globale
-            </CardTitle>
-            <CardDescription>Score du jour</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center py-6">
+          
+          <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+            <div className="flex items-center gap-4">
               <div className="relative">
-                <div className="text-7xl font-bold text-primary">
-                  {globalPerformance}
+                <div className="text-4xl font-bold text-primary">
+                  {globalScore}
                 </div>
-                <div className="absolute -right-8 top-0">
-                  {getTrendIcon()}
+                <TrendingUp className="absolute -top-1 -right-4 h-4 w-4 text-success" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Score global</p>
+                <Progress value={globalScore} className="h-1.5 w-24 mt-1" />
+              </div>
+              {gamification && (
+                <div className="hidden sm:block border-l pl-4 ml-2">
+                  <p className="text-sm font-medium">Niveau {gamification.current_level}</p>
+                  <p className="text-xs text-muted-foreground">{gamification.total_xp} XP</p>
                 </div>
-              </div>
-            </div>
-            
-            {/* Mini metrics */}
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="text-center p-3 rounded-lg bg-muted/50">
-                <div className="text-xl font-bold">
-                  {todayScore?.momentum_index?.toFixed(0) || 50}%
-                </div>
-                <p className="text-xs text-muted-foreground">Momentum</p>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-muted/50">
-                <div className="text-xl font-bold">
-                  {todayScore?.burnout_index?.toFixed(0) || 0}%
-                </div>
-                <p className="text-xs text-muted-foreground">Burnout</p>
-              </div>
-            </div>
-
-            <Button 
-              variant="ghost" 
-              className="w-full mt-4"
-              onClick={() => navigate('/')}
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Voir Identity Dashboard
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Radar Chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              Breakdown Performance
-            </CardTitle>
-            <CardDescription>Répartition détaillée par dimension</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {radarData.length > 0 ? (
-              <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radarData}>
-                    <PolarGrid stroke="hsl(var(--border))" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <Radar
-                      name="Performance"
-                      dataKey="value"
-                      stroke="hsl(var(--primary))"
-                      fill="hsl(var(--primary))"
-                      fillOpacity={0.3}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-[280px] text-muted-foreground">
-                Aucune donnée disponible
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* TODAY KPIs - PREMIUM STYLE */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <PremiumKPI
-          title="Tâches"
-          value={`${completionRate}%`}
-          subtitle={`${todayStats?.tasks_completed || 0}/${todayStats?.tasks_planned || 0} complétées`}
-          icon={CheckCircle2}
-          progress={completionRate}
-          trend={completionRate >= 80 ? 'up' : completionRate < 50 ? 'down' : 'stable'}
-          link="/kanban"
-          gradient="from-primary/10 via-primary/5 to-background"
-        />
-
-        <PremiumKPI
-          title="Habitudes"
-          value={`${habitRate}%`}
-          subtitle={`${todayStats?.habits_completed || 0}/${todayStats?.habits_total || 0} validées`}
-          icon={Flame}
-          progress={habitRate}
-          trend={habitRate >= 80 ? 'up' : habitRate < 50 ? 'down' : 'stable'}
-          link="/behavior-hub"
-          gradient="from-accent/10 via-accent/5 to-background"
-        />
-
-        <PremiumKPI
-          title="Focus"
-          value={`${todayStats?.focus_minutes || 0} min`}
-          subtitle="Deep work aujourd'hui"
-          icon={Clock}
-          progress={Math.min(100, ((todayStats?.focus_minutes || 0) / 240) * 100)}
-          trend={(todayStats?.focus_minutes || 0) >= 240 ? 'up' : (todayStats?.focus_minutes || 0) < 120 ? 'down' : 'stable'}
-          link="/focus"
-          gradient="from-chart-2/10 via-chart-2/5 to-background"
-        />
-
-        <Card 
-          className={cn(
-            "cursor-pointer hover:border-primary/50 transition-all duration-300 hover:shadow-lg bg-gradient-to-br",
-            (todayStats?.overload_index || 0) > 1 
-              ? "from-destructive/10 via-destructive/5 to-background border-destructive/30" 
-              : "from-muted/30 via-muted/10 to-background"
-          )}
-          onClick={() => navigate('/ai-interventions')}
-        >
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-muted/50">
-                  <AlertTriangle className={cn(
-                    "h-5 w-5",
-                    (todayStats?.overload_index || 0) > 1 ? 'text-destructive' : 'text-primary'
-                  )} />
-                </div>
-                <span className="font-medium text-sm">Overload Index</span>
-              </div>
-              {(todayStats?.overload_index || 0) > 1 && (
-                <Badge variant="destructive" className="gap-1">
-                  <Zap className="h-3 w-3" />
-                  Alerte
-                </Badge>
               )}
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-baseline gap-2">
-                <span className={cn(
-                  "text-3xl font-bold",
-                  (todayStats?.overload_index || 0) > 1 && 'text-destructive'
-                )}>
-                  {((todayStats?.overload_index || 0) * 100).toFixed(0)}%
-                </span>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <Progress 
-                value={Math.min(100, (todayStats?.overload_index || 0) * 100)} 
-                className={cn("h-1.5", (todayStats?.overload_index || 0) > 1 ? 'bg-destructive/20' : undefined)}
-              />
-              <p className="text-xs text-muted-foreground">
-                {(todayStats?.overload_index || 0) > 1 ? '⚠️ Surcharge détectée — IA intervient' : '✓ Charge normale'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </Card>
+        </div>
 
-      {/* CHARTS - IMPROVED LAYOUT */}
-      {chartData.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-primary" />
-                    Performance Hebdomadaire
-                  </CardTitle>
-                  <CardDescription>Taux de completion et adhérence</CardDescription>
+        {/* Programme actif + Mission */}
+        {program ? (
+          <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="text-4xl">{program.programs?.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-primary font-medium uppercase tracking-wider">Programme en cours</p>
+                    <h3 className="text-lg font-semibold truncate">{program.programs?.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="secondary">Jour {program.current_day}/{program.programs?.duration_days}</Badge>
+                      <Progress value={program.progress || 0} className="h-1.5 w-20" />
+                      <span className="text-xs text-muted-foreground">{program.progress || 0}%</span>
+                    </div>
+                  </div>
                 </div>
-                <Badge variant="outline">7 jours</Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <defs>
-                      <linearGradient id="colorCompletion" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
-                      </linearGradient>
-                      <linearGradient id="colorHabits" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1}/>
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <YAxis domain={[0, 100]} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <Tooltip 
-                      labelFormatter={(label) => chartData.find(d => d.date === label)?.fullDate || label}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="completion" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={2}
-                      name="Tâches (%)"
-                      dot={{ fill: 'hsl(var(--primary))' }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="habits" 
-                      stroke="hsl(var(--chart-2))" 
-                      strokeWidth={2}
-                      name="Habitudes (%)"
-                      dot={{ fill: 'hsl(var(--chart-2))' }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                
+                {program.todayMission && (
+                  <div className="flex-1 lg:border-l lg:pl-6">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-background/50">
+                      <Target className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-primary font-medium">Mission du jour</p>
+                        <p className="font-medium truncate">{program.todayMission.title}</p>
+                        {program.todayMission.sage_tip && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            💡 {program.todayMission.sage_tip}
+                          </p>
+                        )}
+                      </div>
+                      <Button 
+                        size="sm" 
+                        onClick={() => completeMission.mutate({
+                          userProgramId: program.id,
+                          programDayId: program.todayMission!.id,
+                          xpReward: program.todayMission!.xp_reward,
+                        })}
+                        disabled={completeMission.isPending}
+                      >
+                        Fait !
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
+        ) : (
+          <Card className="p-8 text-center border-dashed">
+            <div className="space-y-4">
+              <Brain className="h-12 w-12 text-muted-foreground/50 mx-auto" />
+              <h3 className="font-semibold">Aucun programme actif</h3>
+              <p className="text-sm text-muted-foreground">
+                Choisis un programme pour structurer ta transformation
+              </p>
+              <Button asChild>
+                <Link to="/program">Choisir un programme</Link>
+              </Button>
+            </div>
+          </Card>
+        )}
 
+        {/* Grille : Tâches + Habitudes + Journal */}
+        <div className="grid md:grid-cols-3 gap-4">
+          {/* Tâches du jour */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-primary" />
-                    Focus Time Evolution
-                  </CardTitle>
-                  <CardDescription>Minutes de deep work quotidiennes</CardDescription>
-                </div>
-                <Badge variant="outline">7 jours</Badge>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  Tâches du jour
+                </CardTitle>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/tasks">Voir tout <ChevronRight className="h-3 w-3 ml-1" /></Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {todayTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Aucune tâche pour aujourd'hui 🎉
+                </p>
+              ) : (
+                todayTasks.map(task => (
+                  <div 
+                    key={task.id}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => completeTask.mutate(task.id)}
+                  >
+                    <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm truncate flex-1">{task.title}</span>
+                    {(task as any).created_from_program && (
+                      <Target className="h-3 w-3 text-primary flex-shrink-0" />
+                    )}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Habitudes */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-accent" />
+                  Habitudes
+                </CardTitle>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/habits">Voir tout <ChevronRight className="h-3 w-3 ml-1" /></Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {pendingHabits.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Toutes tes habitudes sont faites ! ✨
+                </p>
+              ) : (
+                pendingHabits.map(habit => (
+                  <div 
+                    key={habit.id}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => toggleHabit.mutate(habit.id)}
+                  >
+                    <Circle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm truncate flex-1">{habit.name}</span>
+                    {(habit.streak as any)?.current > 0 && (
+                      <Badge variant="secondary" className="text-[10px] gap-0.5">
+                        <Flame className="h-2.5 w-2.5" />
+                        {(habit.streak as any)?.current}
+                      </Badge>
+                    )}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Journal */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-info" />
+                  Journal
+                </CardTitle>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/journal">Écrire <ChevronRight className="h-3 w-3 ml-1" /></Link>
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <defs>
-                      <linearGradient id="colorFocus" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--chart-3))" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="hsl(var(--chart-3))" stopOpacity={0.05}/>
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <YAxis tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <Tooltip 
-                      labelFormatter={(label) => chartData.find(d => d.date === label)?.fullDate || label}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="focus"
-                      stroke="hsl(var(--chart-3))"
-                      fill="url(#colorFocus)"
-                      strokeWidth={2}
-                      name="Focus (min)"
-                    />
-                    {/* Reference line for 240 min goal */}
-                    <Line 
-                      type="monotone" 
-                      dataKey={() => 240} 
-                      stroke="hsl(var(--muted-foreground))" 
-                      strokeWidth={1}
-                      strokeDasharray="5 5"
-                      dot={false}
-                      name="Objectif"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              {lastJournalEntry ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">
+                      {lastJournalEntry.mood === 'good' ? '😊' : lastJournalEntry.mood === 'bad' ? '😔' : '😐'}
+                    </span>
+                    <Badge variant="outline" className="text-[10px]">
+                      {format(parseISO(lastJournalEntry.date || lastJournalEntry.created_at), 'd MMM', { locale: fr })}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground line-clamp-3">
+                    {lastJournalEntry.reflections || 'Entrée du jour'}
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-4 space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Pas encore d'entrée aujourd'hui
+                  </p>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link to="/journal">Écrire maintenant</Link>
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
-      )}
 
-      {/* WEEK SUMMARY + INSIGHTS */}
-      {weekAvg && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Moyennes Semaine
-              </CardTitle>
-              <CardDescription>Performance moyenne sur 7 jours</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-muted/50 text-center">
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Completion Rate
+        {/* Gamification rapide */}
+        {gamification && (
+          <Card className="bg-gradient-to-r from-warning/5 to-transparent">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center">
+                    <Flame className="h-6 w-6 text-warning" />
                   </div>
-                  <div className="text-2xl font-bold">
-                    {(weekAvg.completionRate * 100).toFixed(0)}%
+                  <div>
+                    <p className="font-semibold">Streak : {gamification.current_streak} jours</p>
+                    <p className="text-sm text-muted-foreground">
+                      Record : {gamification.longest_streak} jours
+                    </p>
                   </div>
                 </div>
-
-                <div className="p-4 rounded-lg bg-muted/50 text-center">
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
-                    <Flame className="h-4 w-4" />
-                    Habit Adherence
-                  </div>
-                  <div className="text-2xl font-bold">
-                    {(weekAvg.habitAdherence * 100).toFixed(0)}%
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-muted/50 text-center">
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
-                    <Clock className="h-4 w-4" />
-                    Focus Moyen/Jour
-                  </div>
-                  <div className="text-2xl font-bold">
-                    {weekAvg.avgFocusMinutes.toFixed(0)} min
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-lg bg-muted/50 text-center">
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-1">
-                    <AlertTriangle className={cn(
-                      "h-4 w-4",
-                      weekAvg.avgOverload > 1 ? "text-destructive" : "text-muted-foreground"
-                    )} />
-                    Overload Moyen
-                  </div>
-                  <div className={cn(
-                    "text-2xl font-bold",
-                    weekAvg.avgOverload > 1 ? "text-destructive" : "text-foreground"
-                  )}>
-                    {(weekAvg.avgOverload * 100).toFixed(0)}%
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-primary" />
-                Clarity Score
-              </CardTitle>
-              <CardDescription>Qualité de votre planification</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-4xl font-bold">
-                    {((todayStats?.clarity_score || 0) * 100).toFixed(0)}%
-                  </div>
-                  <div className={cn(
-                    "p-3 rounded-full",
-                    (todayStats?.clarity_score || 0) >= 0.8 ? "bg-chart-2/10" : "bg-muted/50"
-                  )}>
-                    <Target className={cn(
-                      "h-6 w-6",
-                      (todayStats?.clarity_score || 0) >= 0.8 ? "text-chart-2" : "text-muted-foreground"
-                    )} />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">
-                    Mesure la proportion de tâches avec estimation de temps ET échéance claire
-                  </p>
-
-                  <div className="p-3 rounded-lg bg-muted/30 text-xs font-mono">
-                    clarity_score = tasks_with(estimate + due_date) / total_tasks
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-3">
-                    <div className={cn(
-                      "h-2 w-2 rounded-full",
-                      (todayStats?.clarity_score || 0) >= 0.8 ? "bg-chart-2" : "bg-chart-4"
-                    )} />
-                    <span className="text-sm">
-                      {(todayStats?.clarity_score || 0) >= 0.8 
-                        ? "Excellente clarté — Vous êtes bien organisé" 
-                        : "Clarté améliorable — Ajoutez estimations et échéances"}
-                    </span>
-                  </div>
-                </div>
-
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => navigate('/kanban')}
-                >
-                  Améliorer mes tâches
-                  <ArrowRight className="h-4 w-4 ml-2" />
+                
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/achievements">
+                    Voir mes succès
+                    <ChevronRight className="h-3 w-3 ml-1" />
+                  </Link>
                 </Button>
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
-
-      {/* QUICK ACTIONS */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" />
-            Actions Rapides
-          </CardTitle>
-          <CardDescription>Explorez vos données en profondeur</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button 
-              variant="outline" 
-              className="h-auto py-4 flex-col gap-2 hover:bg-primary/5"
-              onClick={() => navigate('/bi/executive')}
-            >
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                <span className="font-medium">Vue Exécutive</span>
-              </div>
-              <span className="text-xs text-muted-foreground">Dashboard BI complet</span>
-            </Button>
-
-            <Button 
-              variant="outline" 
-              className="h-auto py-4 flex-col gap-2 hover:bg-primary/5"
-              onClick={() => navigate('/bi/behavior-trends')}
-            >
-              <div className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
-                <span className="font-medium">Tendances</span>
-              </div>
-              <span className="text-xs text-muted-foreground">Analyse comportement</span>
-            </Button>
-
-            <Button 
-              variant="outline" 
-              className="h-auto py-4 flex-col gap-2 hover:bg-primary/5"
-              onClick={() => navigate('/')}
-            >
-              <div className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-primary" />
-                <span className="font-medium">Identity</span>
-              </div>
-              <span className="text-xs text-muted-foreground">Qui je deviens</span>
-            </Button>
-
-            <Button 
-              variant="outline" 
-              className="h-auto py-4 flex-col gap-2 hover:bg-primary/5"
-              onClick={() => navigate('/ai-interventions')}
-            >
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <span className="font-medium">Interventions IA</span>
-              </div>
-              <span className="text-xs text-muted-foreground">Actions automatiques</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* NO DATA STATE */}
-      {!todayStats && !weekStats?.length && (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center space-y-4">
-              <div className="p-4 rounded-full bg-muted/50 w-fit mx-auto">
-                <BarChart3 className="h-12 w-12 text-muted-foreground" />
-              </div>
-              <h3 className="text-xl font-semibold">Aucune donnée disponible</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Commencez à utiliser l'application pour voir vos statistiques.
-                Les données sont calculées automatiquement chaque nuit.
-              </p>
-              <Button onClick={() => navigate('/kanban')}>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Créer mes premières tâches
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        )}
+      </div>
+    </AppLayout>
   );
 }
