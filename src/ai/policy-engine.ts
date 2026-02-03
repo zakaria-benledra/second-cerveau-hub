@@ -2,18 +2,11 @@
 // POLICY ENGINE — Contextual Bandit
 // ========================================
 
-export const ACTIONS = [
-  'nudge',           // Message d'encouragement léger
-  'create_task',     // Suggérer une tâche
-  'reduce_load',     // Proposer de réduire la charge
-  'suggest_reflection', // Inviter à la réflexion (journal)
-  'schedule_break',  // Suggérer une pause
-  'weekly_review',   // Proposer une revue hebdo
-  'celebrate',       // Célébrer un accomplissement
-  'silent',          // Ne rien faire (important!)
-] as const;
+import { SAGE_ACTIONS, type SageAction } from './shared-types';
 
-export type ActionType = typeof ACTIONS[number];
+export const ACTIONS = SAGE_ACTIONS;
+
+export type ActionType = SageAction;
 
 export interface PolicyWeights {
   [action: string]: number[];

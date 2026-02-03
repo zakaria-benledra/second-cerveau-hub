@@ -37,7 +37,6 @@ const routeLabels: Record<string, string> = {
   '/coach': 'Coach IA',
   '/intelligence': 'Intelligence',
   '/auth': 'Connexion',
-  '/notifications': 'Notifications',
 };
 
 export function Header({ onMenuClick }: HeaderProps) {
