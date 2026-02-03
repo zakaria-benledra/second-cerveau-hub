@@ -307,29 +307,64 @@ serve(async (req) => {
       if (!error && createdHabit) {
         createdHabits.push(createdHabit);
 
-        // Créer l'entrée Wiki détaillée
-        await supabase.from('program_elements_wiki').insert({
+        // ===== CRÉATION WIKI AVEC VALIDATION =====
+        console.log(`[BootstrapAI] Creating wiki for habit: ${habit.name}`);
+        
+        // Valider et transformer les données avec fallbacks
+        const safeHowToSteps = Array.isArray(habit.how_to_steps) 
+          ? habit.how_to_steps.map((step: string, i: number) => ({ 
+              step: i + 1, 
+              description: typeof step === 'string' ? step : String(step) 
+            }))
+          : [{ step: 1, description: 'Pratique cette habitude chaque jour.' }];
+
+        const wikiData = {
           program_id: programId,
           user_id: userId,
           element_type: 'habit',
           linked_item_id: createdHabit.id,
-          title: habit.name,
-          short_description: habit.description,
-          why_this_practice: habit.why_important,
-          scientific_basis: habit.scientific_basis,
-          methodology_source: habit.methodology_source,
-          how_to_guide: habit.how_to_steps.map((step, i) => ({ step: i + 1, description: step })),
-          best_practices: habit.best_practices,
-          common_mistakes: habit.common_mistakes,
-          immediate_benefits: habit.immediate_benefits,
-          long_term_benefits: habit.long_term_benefits,
-          personalized_tips: [habit.personalized_tip],
-          recommended_time: habit.recommended_time,
-          duration_minutes: habit.duration_minutes,
-          frequency: habit.frequency,
-          difficulty_level: habit.difficulty_level,
-          xp_reward: habit.xp_reward,
-        });
+          title: habit.name || 'Habitude',
+          short_description: habit.description || '',
+          why_this_practice: habit.why_important || `Cette habitude développe ta discipline et améliore ton bien-être quotidien.`,
+          scientific_basis: habit.scientific_basis || `Basé sur les recherches en neurosciences comportementales et les principes des habitudes atomiques (James Clear).`,
+          methodology_source: habit.methodology_source || 'Atomic Habits - James Clear',
+          how_to_guide: safeHowToSteps,
+          best_practices: Array.isArray(habit.best_practices) && habit.best_practices.length > 0 
+            ? habit.best_practices 
+            : ['Commence petit', 'Sois régulier', 'Associe à une habitude existante'],
+          common_mistakes: Array.isArray(habit.common_mistakes) && habit.common_mistakes.length > 0
+            ? habit.common_mistakes 
+            : ['Vouloir trop en faire au début', 'Sauter des jours', 'Se décourager après un échec'],
+          immediate_benefits: Array.isArray(habit.immediate_benefits) && habit.immediate_benefits.length > 0
+            ? habit.immediate_benefits 
+            : ['Sentiment d\'accomplissement', 'Début de routine'],
+          long_term_benefits: Array.isArray(habit.long_term_benefits) && habit.long_term_benefits.length > 0
+            ? habit.long_term_benefits 
+            : ['Transformation durable', 'Nouvelle identité', 'Automatisation du comportement'],
+          personalized_tips: habit.personalized_tip 
+            ? [habit.personalized_tip] 
+            : [`Adapte cette pratique à ton rythme, ${firstName}`],
+          recommended_time: habit.recommended_time || 'morning',
+          duration_minutes: typeof habit.duration_minutes === 'number' ? habit.duration_minutes : 10,
+          frequency: habit.frequency || 'daily',
+          difficulty_level: typeof habit.difficulty_level === 'number' ? habit.difficulty_level : 2,
+          xp_reward: typeof habit.xp_reward === 'number' ? habit.xp_reward : 15,
+        };
+
+        console.log(`[BootstrapAI] Wiki data prepared:`, JSON.stringify(wikiData).substring(0, 200));
+        
+        const { data: wikiResult, error: wikiError } = await supabase
+          .from('program_elements_wiki')
+          .insert(wikiData)
+          .select()
+          .single();
+        
+        if (wikiError) {
+          console.error(`[BootstrapAI] ❌ WIKI INSERT ERROR for "${habit.name}":`, JSON.stringify(wikiError));
+          // On continue quand même, l'habitude est créée
+        } else {
+          console.log(`[BootstrapAI] ✅ Wiki created for "${habit.name}", id: ${wikiResult?.id}`);
+        }
       }
     }
 
@@ -358,6 +393,44 @@ serve(async (req) => {
 
       if (!error && createdTask) {
         createdTasks.push(createdTask);
+
+        // ===== CRÉATION WIKI POUR TÂCHE =====
+        console.log(`[BootstrapAI] Creating wiki for task: ${task.title}`);
+        
+        const taskWikiData = {
+          program_id: programId,
+          user_id: userId,
+          element_type: 'task',
+          linked_item_id: createdTask.id,
+          title: task.title,
+          short_description: task.description || '',
+          why_this_practice: task.why_now || `Cette tâche est essentielle pour progresser dans ton programme.`,
+          scientific_basis: `La méthode GTD (Getting Things Done) montre que capturer et exécuter les tâches réduit la charge mentale de 40%.`,
+          methodology_source: 'Getting Things Done - David Allen',
+          how_to_guide: task.how_to_complete 
+            ? [{ step: 1, description: task.how_to_complete }]
+            : [{ step: 1, description: 'Réserve du temps dédié sans distractions.' }, { step: 2, description: 'Divise en sous-étapes si nécessaire.' }],
+          best_practices: ['Bloque du temps dans ton calendrier', 'Élimine les distractions', 'Commence par la partie la plus difficile'],
+          common_mistakes: ['Procrastiner', 'Multitâcher', 'Viser la perfection'],
+          immediate_benefits: ['Avancer sur ton programme', 'Réduire le stress'],
+          long_term_benefits: ['Atteindre tes objectifs', 'Construire ta discipline'],
+          personalized_tips: [`Cette tâche est prévue pour le jour ${task.day_offset + 1} de ton programme, ${firstName}`],
+          recommended_time: 'morning',
+          duration_minutes: typeof task.estimated_minutes === 'number' ? task.estimated_minutes : 30,
+          frequency: 'once',
+          difficulty_level: task.priority === 'high' ? 3 : 2,
+          xp_reward: 20,
+        };
+
+        const { error: taskWikiError } = await supabase
+          .from('program_elements_wiki')
+          .insert(taskWikiData);
+        
+        if (taskWikiError) {
+          console.error(`[BootstrapAI] ❌ TASK WIKI ERROR for "${task.title}":`, JSON.stringify(taskWikiError));
+        } else {
+          console.log(`[BootstrapAI] ✅ Wiki created for task "${task.title}"`);
+        }
       }
     }
 
