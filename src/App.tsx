@@ -19,7 +19,7 @@ import TasksPage from "./pages/TasksPage";
 import HabitsPage from "./pages/HabitsPage";
 import JournalPage from "./pages/JournalPageSimplified";
 import ProgramPage from "./pages/ProgramPage";
-import FinancePage from "./pages/FinancePage";
+import FinancePage from "./pages/FinancePageSimplified";
 import AchievementsPage from "./pages/AchievementsPage";
 import SettingsPage from "./pages/SettingsPage";
 import LandingPage from "./pages/LandingPage";
