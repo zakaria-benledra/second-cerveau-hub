@@ -385,82 +385,86 @@ export default function HabitsPage() {
                 </CardContent>
               </Card>
             ) : (
-              incompleteHabits.map((habit) => (
-                <Card
-                  key={habit.id}
-                  className={cn(
-                    "group glass-hover cursor-pointer transition-all",
-                    "hover:border-primary/30 hover:-translate-y-0.5"
-                  )}
-                  onClick={() => setSelectedHabit(habit)}
-                >
-                  <CardContent className="py-4">
-                    <div className="flex items-center gap-4">
-                      <Checkbox
-                        checked={false}
-                        disabled={toggleHabit.isPending}
-                        className="h-6 w-6 rounded-lg"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleHabit.mutate(habit.id, {
-                            onSuccess: () => celebrate('habit_complete', habit.name)
-                          });
-                        }}
-                      />
-                      <span className="text-2xl">{habit.icon || '✨'}</span>
-                      <div className="flex-1">
-                        <p className="font-medium">{habit.name}</p>
-                        <div className="flex gap-2 mt-1 flex-wrap">
-                          {habit.streak && habit.streak.current_streak > 0 && (
-                            <Badge className="bg-warning/15 text-warning border-0 text-xs">
-                              <Flame className="h-3 w-3 mr-1" />
-                              {habit.streak.current_streak} jours
-                            </Badge>
-                          )}
-                          {(habit.streak_freezes_available ?? 0) > 0 && (
-                            <Badge className="bg-primary/15 text-primary border-0 text-xs" title="Freeze disponible">
-                              <Snowflake className="h-3 w-3 mr-1" />
-                              {habit.streak_freezes_available} freeze
-                            </Badge>
-                          )}
-                          {(habit as { created_from_program?: string }).created_from_program && (
-                            <Badge className="bg-accent/15 text-accent border-0 text-xs">
-                              <BookOpen className="h-3 w-3 mr-1" />
-                              Wiki
-                            </Badge>
-                          )}
+              <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1 scrollbar-thin">
+                {incompleteHabits.map((habit) => (
+                  <Card
+                    key={habit.id}
+                    className={cn(
+                      "group glass-hover cursor-pointer transition-all",
+                      "hover:border-primary/30 hover:-translate-y-0.5"
+                    )}
+                    onClick={() => setSelectedHabit(habit)}
+                  >
+                    <CardContent className="py-4">
+                      <div className="flex items-center gap-4">
+                        <Checkbox
+                          checked={false}
+                          disabled={toggleHabit.isPending}
+                          className="h-6 w-6 rounded-lg"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleHabit.mutate(habit.id, {
+                              onSuccess: () => celebrate('habit_complete', habit.name)
+                            });
+                          }}
+                        />
+                        <span className="text-2xl">{habit.icon || '✨'}</span>
+                        <div className="flex-1">
+                          <p className="font-medium">{habit.name}</p>
+                          <div className="flex gap-2 mt-1 flex-wrap">
+                            {habit.streak && habit.streak.current_streak > 0 && (
+                              <Badge className="bg-warning/15 text-warning border-0 text-xs">
+                                <Flame className="h-3 w-3 mr-1" />
+                                {habit.streak.current_streak} jours
+                              </Badge>
+                            )}
+                            {(habit.streak_freezes_available ?? 0) > 0 && (
+                              <Badge className="bg-primary/15 text-primary border-0 text-xs" title="Freeze disponible">
+                                <Snowflake className="h-3 w-3 mr-1" />
+                                {habit.streak_freezes_available} freeze
+                              </Badge>
+                            )}
+                            {(habit as { created_from_program?: string }).created_from_program && (
+                              <Badge className="bg-accent/15 text-accent border-0 text-xs">
+                                <BookOpen className="h-3 w-3 mr-1" />
+                                Wiki
+                              </Badge>
+                            )}
+                          </div>
                         </div>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
 
             {/* Completed habits */}
             {completedHabits.length > 0 && (
               <div className="space-y-2 pt-4">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Complétées</p>
-                {completedHabits.map((habit) => (
-                  <Card
-                    key={habit.id}
-                    className="glass-hover cursor-pointer opacity-60"
-                    onClick={() => toggleHabit.mutate(habit.id)}
-                  >
-                    <CardContent className="py-3">
-                      <div className="flex items-center gap-4">
-                        <Checkbox
-                          checked={true}
-                          disabled={toggleHabit.isPending}
-                          className="h-5 w-5 rounded-lg"
-                        />
-                        <span className="text-xl">{habit.icon || '✨'}</span>
-                        <p className="font-medium line-through text-muted-foreground">{habit.name}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                <div className="max-h-[30vh] overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+                  {completedHabits.map((habit) => (
+                    <Card
+                      key={habit.id}
+                      className="glass-hover cursor-pointer opacity-60"
+                      onClick={() => toggleHabit.mutate(habit.id)}
+                    >
+                      <CardContent className="py-3">
+                        <div className="flex items-center gap-4">
+                          <Checkbox
+                            checked={true}
+                            disabled={toggleHabit.isPending}
+                            className="h-5 w-5 rounded-lg"
+                          />
+                          <span className="text-xl">{habit.icon || '✨'}</span>
+                          <p className="font-medium line-through text-muted-foreground">{habit.name}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
             )}
           </TabsContent>
