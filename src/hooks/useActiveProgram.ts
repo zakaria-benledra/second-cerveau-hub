@@ -125,8 +125,15 @@ export function useJoinProgram() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      // Appeler l'Edge Function de bootstrap
-      const response = await supabase.functions.invoke('bootstrap-program', {
+      // Toast de chargement
+      toast({
+        title: '🧠 Sage génère ton programme...',
+        description: 'Création de ton programme personnalisé avec explications scientifiques',
+        duration: 60000,
+      });
+      
+      // Appeler la NOUVELLE Edge Function avec IA
+      const response = await supabase.functions.invoke('bootstrap-program-ai', {
         body: { programId, userId: user.id },
       });
       
@@ -137,7 +144,9 @@ export function useJoinProgram() {
         userProgramId: string;
         programName: string;
         itemsCreated: number;
-        details: { habits: number; tasks: number; goals: number };
+        details: { habits: number; tasks: number; goals: number; wikiEntries: number };
+        personalization: { level: string; interests: string[]; userName: string; tone: string };
+        generatedContent: { title: string; subtitle: string; methodology: string; expectedOutcomes: string[] };
         archivedPrevious: boolean;
       };
     },
@@ -149,22 +158,20 @@ export function useJoinProgram() {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       queryClient.invalidateQueries({ queryKey: ['gamification-profile'] });
-      queryClient.invalidateQueries({ queryKey: ['user-badges'] });
-      queryClient.invalidateQueries({ queryKey: ['current-identity'] });
+      queryClient.invalidateQueries({ queryKey: ['program-wikis'] });
       
-      // Célébration
       fire('fireworks');
       
       toast({
-        title: `🚀 Programme "${data.programName}" lancé !`,
-        description: `${data.itemsCreated} éléments créés automatiquement`,
-        duration: 5000,
+        title: `🎉 "${data.programName}" créé !`,
+        description: `${data.details.habits} habitudes, ${data.details.tasks} tâches avec explications scientifiques complètes`,
+        duration: 8000,
       });
     },
     onError: (error: Error) => {
       toast({
-        title: 'Erreur',
-        description: error.message || 'Impossible de démarrer le programme',
+        title: 'Erreur de création',
+        description: error.message,
         variant: 'destructive',
       });
     },
