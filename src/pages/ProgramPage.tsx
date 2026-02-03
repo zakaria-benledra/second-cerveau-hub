@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,7 +10,8 @@ import {
   Target, Calendar, Trophy, Sparkles, CheckCircle2, 
   ChevronRight, Play
 } from 'lucide-react';
-import { useActiveProgram, useAvailablePrograms, useJoinProgram, useCompleteMission } from '@/hooks/useActiveProgram';
+import { useActiveProgram, useAvailablePrograms, useCompleteMission, Program } from '@/hooks/useActiveProgram';
+import { ProgramStartDialog } from '@/components/program/ProgramStartDialog';
 import { cn } from '@/lib/utils';
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -27,9 +29,9 @@ const DIFFICULTY_LABELS: Record<string, string> = {
 };
 
 export default function ProgramPage() {
+  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const { data: activeProgram, isLoading: loadingActive } = useActiveProgram();
   const { data: programs = [], isLoading: loadingPrograms } = useAvailablePrograms();
-  const joinProgram = useJoinProgram();
   const completeMission = useCompleteMission();
   
   const handleCompleteMission = () => {
@@ -229,8 +231,8 @@ export default function ProgramPage() {
                       <Button
                         className="w-full"
                         variant={isActive ? "secondary" : "default"}
-                        onClick={() => !isActive && joinProgram.mutate(program.id)}
-                        disabled={isActive || joinProgram.isPending}
+                        onClick={() => !isActive && setSelectedProgram(program)}
+                        disabled={isActive}
                       >
                         {isActive ? (
                           <>En cours</>
@@ -250,6 +252,14 @@ export default function ProgramPage() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {selectedProgram && (
+        <ProgramStartDialog
+          program={selectedProgram}
+          open={!!selectedProgram}
+          onOpenChange={(open) => !open && setSelectedProgram(null)}
+        />
+      )}
     </AppLayout>
   );
 }

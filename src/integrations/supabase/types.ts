@@ -2089,6 +2089,7 @@ export type Database = {
       goals: {
         Row: {
           created_at: string
+          created_from_program: string | null
           deleted_at: string | null
           description: string | null
           end_date: string | null
@@ -2105,6 +2106,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_from_program?: string | null
           deleted_at?: string | null
           description?: string | null
           end_date?: string | null
@@ -2121,6 +2123,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_from_program?: string | null
           deleted_at?: string | null
           description?: string | null
           end_date?: string | null
@@ -2136,6 +2139,13 @@ export type Database = {
           workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "goals_created_from_program_fkey"
+            columns: ["created_from_program"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "goals_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -2328,6 +2338,7 @@ export type Database = {
         Row: {
           color: string | null
           created_at: string
+          created_from_program: string | null
           deleted_at: string | null
           description: string | null
           icon: string | null
@@ -2345,6 +2356,7 @@ export type Database = {
         Insert: {
           color?: string | null
           created_at?: string
+          created_from_program?: string | null
           deleted_at?: string | null
           description?: string | null
           icon?: string | null
@@ -2362,6 +2374,7 @@ export type Database = {
         Update: {
           color?: string | null
           created_at?: string
+          created_from_program?: string | null
           deleted_at?: string | null
           description?: string | null
           icon?: string | null
@@ -2377,6 +2390,13 @@ export type Database = {
           workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "habits_created_from_program_fkey"
+            columns: ["created_from_program"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "habits_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -2659,6 +2679,7 @@ export type Database = {
         Row: {
           challenges: string[] | null
           created_at: string
+          created_from_program: string | null
           date: string
           energy_level: string | null
           gratitude: string[] | null
@@ -2674,6 +2695,7 @@ export type Database = {
         Insert: {
           challenges?: string[] | null
           created_at?: string
+          created_from_program?: string | null
           date?: string
           energy_level?: string | null
           gratitude?: string[] | null
@@ -2689,6 +2711,7 @@ export type Database = {
         Update: {
           challenges?: string[] | null
           created_at?: string
+          created_from_program?: string | null
           date?: string
           energy_level?: string | null
           gratitude?: string[] | null
@@ -2702,6 +2725,13 @@ export type Database = {
           workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "journal_entries_created_from_program_fkey"
+            columns: ["created_from_program"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "journal_entries_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -3118,6 +3148,139 @@ export type Database = {
         }
         Relationships: []
       }
+      program_archives: {
+        Row: {
+          ai_analysis: Json | null
+          completion_rate: number | null
+          created_at: string | null
+          created_goals: Json | null
+          created_habits: Json | null
+          created_tasks: Json | null
+          days_completed: number | null
+          ended_at: string | null
+          final_status: string | null
+          id: string
+          original_user_program_id: string | null
+          performance_data: Json | null
+          program_id: string
+          started_at: string
+          total_xp_earned: number | null
+          user_feedback: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          completion_rate?: number | null
+          created_at?: string | null
+          created_goals?: Json | null
+          created_habits?: Json | null
+          created_tasks?: Json | null
+          days_completed?: number | null
+          ended_at?: string | null
+          final_status?: string | null
+          id?: string
+          original_user_program_id?: string | null
+          performance_data?: Json | null
+          program_id: string
+          started_at: string
+          total_xp_earned?: number | null
+          user_feedback?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          completion_rate?: number | null
+          created_at?: string | null
+          created_goals?: Json | null
+          created_habits?: Json | null
+          created_tasks?: Json | null
+          days_completed?: number | null
+          ended_at?: string | null
+          final_status?: string | null
+          id?: string
+          original_user_program_id?: string | null
+          performance_data?: Json | null
+          program_id?: string
+          started_at?: string
+          total_xp_earned?: number | null
+          user_feedback?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_archives_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_archives_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_created_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_id: string
+          item_type: string
+          template_id: string | null
+          user_id: string
+          user_program_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_id: string
+          item_type: string
+          template_id?: string | null
+          user_id: string
+          user_program_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          item_type?: string
+          template_id?: string | null
+          user_id?: string
+          user_program_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_created_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "program_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_created_items_user_program_id_fkey"
+            columns: ["user_program_id"]
+            isOneToOne: false
+            referencedRelation: "user_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_created_items_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       program_days: {
         Row: {
           bonus_mission: Json | null
@@ -3161,6 +3324,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "program_days_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_templates: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          day_to_create: number | null
+          description: string | null
+          difficulty: string | null
+          frequency: string | null
+          id: string
+          is_required: boolean | null
+          metadata: Json | null
+          personalization_tags: string[] | null
+          priority: string | null
+          program_id: string
+          target_value: number | null
+          template_type: string
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          day_to_create?: number | null
+          description?: string | null
+          difficulty?: string | null
+          frequency?: string | null
+          id?: string
+          is_required?: boolean | null
+          metadata?: Json | null
+          personalization_tags?: string[] | null
+          priority?: string | null
+          program_id: string
+          target_value?: number | null
+          template_type: string
+          title: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          day_to_create?: number | null
+          description?: string | null
+          difficulty?: string | null
+          frequency?: string | null
+          id?: string
+          is_required?: boolean | null
+          metadata?: Json | null
+          personalization_tags?: string[] | null
+          priority?: string | null
+          program_id?: string
+          target_value?: number | null
+          template_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_templates_program_id_fkey"
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "programs"
@@ -4759,6 +4984,7 @@ export type Database = {
           archived_at: string | null
           completed_at: string | null
           created_at: string
+          created_from_program: string | null
           deleted_at: string | null
           description: string | null
           due_date: string | null
@@ -4784,6 +5010,7 @@ export type Database = {
           archived_at?: string | null
           completed_at?: string | null
           created_at?: string
+          created_from_program?: string | null
           deleted_at?: string | null
           description?: string | null
           due_date?: string | null
@@ -4809,6 +5036,7 @@ export type Database = {
           archived_at?: string | null
           completed_at?: string | null
           created_at?: string
+          created_from_program?: string | null
           deleted_at?: string | null
           description?: string | null
           due_date?: string | null
@@ -4830,6 +5058,13 @@ export type Database = {
           workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_created_from_program_fkey"
+            columns: ["created_from_program"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_goal_id_fkey"
             columns: ["goal_id"]
