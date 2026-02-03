@@ -3409,6 +3409,45 @@ export type Database = {
           },
         ]
       }
+      rewards: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          preview_url: string | null
+          rarity: string | null
+          reward_type: string | null
+          xp_cost: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          preview_url?: string | null
+          rarity?: string | null
+          reward_type?: string | null
+          xp_cost: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          preview_url?: string | null
+          rarity?: string | null
+          reward_type?: string | null
+          xp_cost?: number
+        }
+        Relationships: []
+      }
       routine_logs: {
         Row: {
           completed: boolean
@@ -5368,6 +5407,51 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      user_rewards: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_equipped: boolean | null
+          reward_id: string
+          unlocked_at: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_equipped?: boolean | null
+          reward_id: string
+          unlocked_at?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_equipped?: boolean | null
+          reward_id?: string
+          unlocked_at?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_rewards_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
