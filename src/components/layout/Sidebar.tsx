@@ -52,6 +52,7 @@ const navGroups = [
     items: [
       { icon: TrendingUp, label: 'Progression', path: '/scores' },
       { icon: Target, label: 'Objectifs', path: '/goals' },
+      { icon: Target, label: 'Programme', path: '/program' },
       { icon: BookOpen, label: 'Journal', path: '/journal' },
       { icon: Trophy, label: 'Achievements', path: '/achievements' },
     ],
