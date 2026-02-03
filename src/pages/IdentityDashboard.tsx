@@ -4,6 +4,7 @@ import { useCurrentIdentity } from '@/hooks/useCurrentIdentity';
 import { useScoreHistory } from '@/hooks/useScores';
 import { useTodayTasks } from '@/hooks/useTasks';
 import { IdentityComparison } from '@/components/identity/IdentityComparison';
+import { ActiveProgramCard } from '@/components/program/ActiveProgramCard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -187,6 +188,11 @@ export default function IdentityDashboard() {
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 px-1 py-2 md:py-4">
+        
+        {/* PROGRAMME ACTIF */}
+        <AnimatedContainer delay={0}>
+          <ActiveProgramCard variant="compact" />
+        </AnimatedContainer>
         
         {/* 4 METRICS GRID */}
         <AnimatedContainer delay={50}>

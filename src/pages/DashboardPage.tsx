@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import { fetchWeekStats, fetchTodayStats } from '@/lib/api/stats';
 import { useTodayScore } from '@/hooks/useScores';
+import { ActiveProgramCard } from '@/components/program/ActiveProgramCard';
 import { 
   Loader2, 
   TrendingUp, 
@@ -198,6 +199,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* PROGRAMME ACTIF - Compact */}
+      <ActiveProgramCard variant="compact" />
+
       {/* HEADER PREMIUM */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
