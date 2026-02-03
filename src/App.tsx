@@ -73,6 +73,7 @@ function AppContent() {
           <Route path="/today" element={<Navigate to="/dashboard" replace />} />
           <Route path="/kanban" element={<Navigate to="/tasks" replace />} />
           <Route path="/goals" element={<Navigate to="/program" replace />} />
+          <Route path="/ai-coach" element={<Navigate to="/dashboard" replace />} />
           <Route path="/scores" element={<Navigate to="/achievements" replace />} />
           
           <Route path="*" element={<NotFound />} />

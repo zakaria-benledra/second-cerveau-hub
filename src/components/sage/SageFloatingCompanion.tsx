@@ -30,7 +30,7 @@ const moodColors = {
 };
 
 export function SageFloatingCompanion() {
-  const [state, setState] = useState<SageState>('minimized');
+  const [state, setState] = useState<SageState>('expanded');
   const [showPulse, setShowPulse] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -227,7 +227,7 @@ export function SageFloatingCompanion() {
                   size="sm"
                   variant="default"
                   className="flex-1 text-xs"
-                  onClick={() => navigate('/ai-coach')}
+                  onClick={() => navigate('/dashboard')}
                 >
                   <MessageCircle className="h-3 w-3 mr-1" />
                   Parler à Sage
