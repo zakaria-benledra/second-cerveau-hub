@@ -3118,6 +3118,115 @@ export type Database = {
         }
         Relationships: []
       }
+      program_days: {
+        Row: {
+          bonus_mission: Json | null
+          created_at: string | null
+          day_number: number
+          description: string | null
+          id: string
+          mission_target: Json
+          mission_type: string
+          program_id: string
+          sage_tip: string | null
+          title: string
+          xp_reward: number | null
+        }
+        Insert: {
+          bonus_mission?: Json | null
+          created_at?: string | null
+          day_number: number
+          description?: string | null
+          id?: string
+          mission_target?: Json
+          mission_type: string
+          program_id: string
+          sage_tip?: string | null
+          title: string
+          xp_reward?: number | null
+        }
+        Update: {
+          bonus_mission?: Json | null
+          created_at?: string | null
+          day_number?: number
+          description?: string | null
+          id?: string
+          mission_target?: Json
+          mission_type?: string
+          program_id?: string
+          sage_tip?: string | null
+          title?: string
+          xp_reward?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_days_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programs: {
+        Row: {
+          badge_reward_id: string | null
+          cover_color: string | null
+          created_at: string | null
+          description: string | null
+          difficulty: string | null
+          duration_days: number
+          focus_domain: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          requirements: Json | null
+          slug: string
+          xp_reward: number | null
+        }
+        Insert: {
+          badge_reward_id?: string | null
+          cover_color?: string | null
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string | null
+          duration_days: number
+          focus_domain?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          requirements?: Json | null
+          slug: string
+          xp_reward?: number | null
+        }
+        Update: {
+          badge_reward_id?: string | null
+          cover_color?: string | null
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string | null
+          duration_days?: number
+          focus_domain?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          requirements?: Json | null
+          slug?: string
+          xp_reward?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programs_badge_reward_id_fkey"
+            columns: ["badge_reward_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           color: string | null
@@ -3730,6 +3839,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "sage_memory_patterns_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sage_page_visits: {
+        Row: {
+          context_data: Json | null
+          id: string
+          page_path: string
+          user_id: string
+          visited_at: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          context_data?: Json | null
+          id?: string
+          page_path: string
+          user_id: string
+          visited_at?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          context_data?: Json | null
+          id?: string
+          page_path?: string
+          user_id?: string
+          visited_at?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sage_page_visits_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -5407,6 +5551,130 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      user_program_progress: {
+        Row: {
+          bonus_completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          day_date: string
+          id: string
+          main_mission_completed: boolean | null
+          program_day_id: string
+          user_id: string
+          user_program_id: string
+          workspace_id: string | null
+          xp_earned: number | null
+        }
+        Insert: {
+          bonus_completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          day_date?: string
+          id?: string
+          main_mission_completed?: boolean | null
+          program_day_id: string
+          user_id: string
+          user_program_id: string
+          workspace_id?: string | null
+          xp_earned?: number | null
+        }
+        Update: {
+          bonus_completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          day_date?: string
+          id?: string
+          main_mission_completed?: boolean | null
+          program_day_id?: string
+          user_id?: string
+          user_program_id?: string
+          workspace_id?: string | null
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_program_progress_program_day_id_fkey"
+            columns: ["program_day_id"]
+            isOneToOne: false
+            referencedRelation: "program_days"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_program_progress_user_program_id_fkey"
+            columns: ["user_program_id"]
+            isOneToOne: false
+            referencedRelation: "user_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_program_progress_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_programs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          current_day: number | null
+          id: string
+          notes: string | null
+          program_id: string
+          started_at: string | null
+          status: string | null
+          streak_days: number | null
+          total_xp_earned: number | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_day?: number | null
+          id?: string
+          notes?: string | null
+          program_id: string
+          started_at?: string | null
+          status?: string | null
+          streak_days?: number | null
+          total_xp_earned?: number | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_day?: number | null
+          id?: string
+          notes?: string | null
+          program_id?: string
+          started_at?: string | null
+          status?: string | null
+          streak_days?: number | null
+          total_xp_earned?: number | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_programs_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_programs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_rewards: {
         Row: {

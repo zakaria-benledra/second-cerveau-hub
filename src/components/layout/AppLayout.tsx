@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { QuickActionFab } from './QuickActionFab';
+import { SageFloatingCompanion } from '@/components/sage/SageFloatingCompanion';
 import { useAppStore } from '@/stores/useAppStore';
 import { useRealtimeInterventions } from '@/hooks/useRealtimeInterventions';
 import { cn } from '@/lib/utils';
@@ -63,6 +64,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </main>
       </div>
       <QuickActionFab />
+      <SageFloatingCompanion />
     </div>
   );
 }

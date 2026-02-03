@@ -48,6 +48,7 @@ import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
 import PricingPage from "./pages/PricingPage";
 import AchievementsPage from "./pages/AchievementsPage";
+import ProgramPage from "./pages/ProgramPage";
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { OfflineIndicator } from '@/components/pwa/OfflineIndicator';
 
@@ -123,6 +124,7 @@ function AppContent() {
           <Route path="/ai-interventions" element={<ProtectedRoute><AIInterventionsPage /></ProtectedRoute>} />
           <Route path="/behavior-hub" element={<ProtectedRoute><BehaviorHubPage /></ProtectedRoute>} />
           <Route path="/achievements" element={<ProtectedRoute><AchievementsPage /></ProtectedRoute>} />
+          <Route path="/program" element={<ProtectedRoute><ProgramPage /></ProtectedRoute>} />
           <Route path="/admin/analytics" element={<AdminRoute><AdminAnalyticsPage /></AdminRoute>} />
           <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
