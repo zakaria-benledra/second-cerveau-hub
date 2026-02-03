@@ -2490,6 +2490,7 @@ export type Database = {
           created_from_program: string | null
           deleted_at: string | null
           description: string | null
+          goal_id: string | null
           icon: string | null
           id: string
           is_active: boolean
@@ -2508,6 +2509,7 @@ export type Database = {
           created_from_program?: string | null
           deleted_at?: string | null
           description?: string | null
+          goal_id?: string | null
           icon?: string | null
           id?: string
           is_active?: boolean
@@ -2526,6 +2528,7 @@ export type Database = {
           created_from_program?: string | null
           deleted_at?: string | null
           description?: string | null
+          goal_id?: string | null
           icon?: string | null
           id?: string
           is_active?: boolean
@@ -2544,6 +2547,13 @@ export type Database = {
             columns: ["created_from_program"]
             isOneToOne: false
             referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "habits_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
             referencedColumns: ["id"]
           },
           {
