@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { 
   Target, Calendar, Trophy, Sparkles, CheckCircle2, 
   Circle, Lock, ChevronRight, Play, Clock, Flame,
-  ListChecks, BookOpen, Brain, ArrowRight, Star
+  ListChecks, BookOpen, Brain, ArrowRight, Star, Wand2
 } from 'lucide-react';
 import { 
   useActiveProgram, 
@@ -21,9 +21,16 @@ import {
   useProgramDays,
   type Program
 } from '@/hooks/useActiveProgram';
+import { 
+  useActiveAIProgram, 
+  useGenerateProgram,
+  useProgramWiki,
+  type GenerationConfig 
+} from '@/hooks/useAIProgram';
 import { useAllTasks } from '@/hooks/useTasks';
 import { useHabitsWithLogs } from '@/hooks/useHabits';
 import { ProgramStartDialog } from '@/components/program/ProgramStartDialog';
+import { AIGenerateDialog } from '@/components/program/AIGenerateDialog';
 import { cn } from '@/lib/utils';
 import { format, addDays, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -37,14 +44,21 @@ const DIFFICULTY_CONFIG = {
 
 export default function ProgramPage() {
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
+  const [showAIDialog, setShowAIDialog] = useState(false);
   
   const { data: activeProgram, isLoading: loadingActive } = useActiveProgram();
+  const { data: aiProgram, isLoading: loadingAI } = useActiveAIProgram();
   const { data: programs = [], isLoading: loadingPrograms } = useAvailablePrograms();
   const { data: programDays = [] } = useProgramDays(activeProgram?.program_id);
+  const { data: wikiElements = [] } = useProgramWiki(aiProgram?.id);
   const { data: tasks = [] } = useAllTasks();
   const { data: habits = [] } = useHabitsWithLogs();
   
   const completeMission = useCompleteMission();
+  const generateProgram = useGenerateProgram();
+
+  // Utiliser le programme AI ou le programme classique
+  const hasAnyProgram = activeProgram || aiProgram;
 
   // Tâches et habitudes créées par le programme actif
   const programTasks = useMemo(() => {
@@ -482,58 +496,118 @@ export default function ProgramPage() {
         ) : (
           // === PAS DE PROGRAMME ACTIF ===
           <div className="space-y-8">
-            <Card className="border-dashed">
-              <CardContent className="pt-6 text-center">
-                <Target className="h-16 w-16 mx-auto text-primary/50 mb-4" />
-                <h2 className="text-2xl font-bold">Commence ta transformation</h2>
-                <p className="text-muted-foreground mt-2 max-w-md mx-auto">
-                  Choisis un programme adapté à tes objectifs. Sage t'accompagnera 
-                  chaque jour avec des missions personnalisées.
-                </p>
+            {/* CTA pour génération IA */}
+            <Card className="border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardContent className="pt-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex items-start gap-4">
+                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                      <Brain className="h-8 w-8 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                        Programme 100% personnalisé par IA
+                      </h2>
+                      <p className="text-muted-foreground mt-1 max-w-lg">
+                        Sage analyse ton profil et génère un programme sur-mesure avec des habitudes 
+                        expliquées scientifiquement, des tâches contextualisées et un planning adapté.
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    size="lg" 
+                    className="gap-2 text-lg px-8"
+                    onClick={() => setShowAIDialog(true)}
+                  >
+                    <Wand2 className="h-5 w-5" />
+                    Générer mon programme
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {programs.map(program => (
-                <Card 
-                  key={program.id}
-                  className="cursor-pointer transition-all hover:shadow-lg hover:border-primary/50"
-                  onClick={() => setSelectedProgram(program)}
-                >
-                  <CardHeader>
-                    <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-2xl border-2 border-border mb-2">
-                      {program.icon}
-                    </div>
-                    <CardTitle>{program.name}</CardTitle>
-                    <CardDescription>{program.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-2 flex-wrap mb-4">
-                      <Badge variant="outline" className="text-xs">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {program.duration_days} jours
-                      </Badge>
-                      <Badge className={cn("text-xs", DIFFICULTY_CONFIG[program.difficulty as keyof typeof DIFFICULTY_CONFIG]?.color)}>
-                        {DIFFICULTY_CONFIG[program.difficulty as keyof typeof DIFFICULTY_CONFIG]?.label}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        <Trophy className="h-3 w-3 mr-1" />
-                        {program.xp_reward} XP
-                      </Badge>
-                    </div>
-                    <Button className="w-full">
-                      <Play className="h-4 w-4 mr-2" />
-                      Commencer
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+            {/* Programmes prédéfinis */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-muted-foreground" />
+                Ou choisis un programme prédéfini
+              </h3>
+              
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {programs.map(program => (
+                  <Card 
+                    key={program.id}
+                    className="cursor-pointer transition-all hover:shadow-lg hover:border-primary/50"
+                    onClick={() => setSelectedProgram(program)}
+                  >
+                    <CardHeader>
+                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-2xl border-2 border-border mb-2">
+                        {program.icon}
+                      </div>
+                      <CardTitle>{program.name}</CardTitle>
+                      <CardDescription>{program.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-2 flex-wrap mb-4">
+                        <Badge variant="outline" className="text-xs">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {program.duration_days} jours
+                        </Badge>
+                        <Badge className={cn("text-xs", DIFFICULTY_CONFIG[program.difficulty as keyof typeof DIFFICULTY_CONFIG]?.color)}>
+                          {DIFFICULTY_CONFIG[program.difficulty as keyof typeof DIFFICULTY_CONFIG]?.label}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          <Trophy className="h-3 w-3 mr-1" />
+                          {program.xp_reward} XP
+                        </Badge>
+                      </div>
+                      <Button className="w-full" variant="outline">
+                        <Play className="h-4 w-4 mr-2" />
+                        Commencer
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
+
+            {/* Affichage du programme AI actif */}
+            {aiProgram && (
+              <Card className="border-success/30 bg-success/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success" />
+                    Programme IA en cours : {aiProgram.title}
+                  </CardTitle>
+                  <CardDescription>
+                    Jour {aiProgram.current_day} sur {aiProgram.duration_days}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Progress 
+                    value={(aiProgram.current_day / aiProgram.duration_days) * 100} 
+                    className="h-2 mb-4" 
+                  />
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {aiProgram.description}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="default" asChild>
+                      <Link to="/habits">Voir mes habitudes</Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <Link to="/tasks">Voir mes tâches</Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </div>
 
-      {/* Dialog de démarrage */}
+      {/* Dialog de démarrage programme prédéfini */}
       {selectedProgram && (
         <ProgramStartDialog
           program={selectedProgram}
@@ -541,6 +615,17 @@ export default function ProgramPage() {
           onOpenChange={(open) => !open && setSelectedProgram(null)}
         />
       )}
+
+      {/* Dialog de génération IA */}
+      <AIGenerateDialog
+        open={showAIDialog}
+        onOpenChange={setShowAIDialog}
+        onGenerate={async (config: GenerationConfig) => {
+          await generateProgram.mutateAsync(config);
+          setShowAIDialog(false);
+        }}
+        isGenerating={generateProgram.isPending}
+      />
     </AppLayout>
   );
 }
