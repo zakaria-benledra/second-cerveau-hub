@@ -3554,7 +3554,7 @@ export type Database = {
           streak_bonus_xp: number | null
           title: string
           user_id: string
-          why_this_practice: string
+          why_this_practice: string | null
           xp_reward: number | null
         }
         Insert: {
@@ -3584,7 +3584,7 @@ export type Database = {
           streak_bonus_xp?: number | null
           title: string
           user_id: string
-          why_this_practice: string
+          why_this_practice?: string | null
           xp_reward?: number | null
         }
         Update: {
@@ -3614,7 +3614,7 @@ export type Database = {
           streak_bonus_xp?: number | null
           title?: string
           user_id?: string
-          why_this_practice?: string
+          why_this_practice?: string | null
           xp_reward?: number | null
         }
         Relationships: [
