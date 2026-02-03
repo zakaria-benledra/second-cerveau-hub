@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAppStore } from '@/stores/useAppStore';
+
 import { useState, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useUnreadCount } from '@/hooks/useNotifications';
@@ -25,34 +25,22 @@ interface HeaderProps {
 
 // Breadcrumb mapping
 const routeLabels: Record<string, string> = {
-  '/': 'Aujourd\'hui',
-  '/today': 'Aujourd\'hui',
-  '/tasks': 'Tâches',
-  '/kanban': 'Kanban',
-  '/habits': 'Habitudes',
-  '/routines': 'Routines',
-  '/inbox': 'Inbox',
+  '/': 'Accueil',
   '/dashboard': 'Tableau de bord',
-  '/projects': 'Projets',
-  '/goals': 'Objectifs',
-  '/focus': 'Focus',
-  '/calendar': 'Calendrier',
-  '/learning': 'Apprentissage',
+  '/tasks': 'Tâches',
+  '/habits': 'Habitudes',
   '/journal': 'Journal',
+  '/program': 'Programme',
   '/finance': 'Finances',
-  '/scores': 'Scores',
-  '/intelligence': 'Intelligence Hub',
-  '/history': 'Historique',
-  '/automation': 'Automatisation',
-  '/agent': 'Agent',
-  '/ai-coach': 'AI Coach',
+  '/achievements': 'Succès',
   '/settings': 'Paramètres',
+  '/coach': 'Coach IA',
+  '/intelligence': 'Intelligence',
+  '/auth': 'Connexion',
   '/notifications': 'Notifications',
-  '/product-intelligence': 'Product Intel',
 };
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const { inboxItems } = useAppStore();
   const [isDark, setIsDark] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();

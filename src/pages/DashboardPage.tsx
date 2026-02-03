@@ -18,6 +18,7 @@ import { useHabitsWithLogs, useToggleHabitLog } from '@/hooks/useHabits';
 import { useJournalEntries } from '@/hooks/useJournal';
 import { useTodayScore } from '@/hooks/useScores';
 import { useGamificationProfile } from '@/hooks/useGamification';
+import { BehavioralDNACard } from '@/components/dashboard/BehavioralDNACard';
 import { cn } from '@/lib/utils';
 import { format, isToday, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -299,33 +300,38 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Gamification rapide */}
-        {gamification && (
-          <Card className="bg-gradient-to-r from-warning/5 to-transparent">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center">
-                    <Flame className="h-6 w-6 text-warning" />
+        {/* Behavioral DNA Card */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <BehavioralDNACard />
+          
+          {/* Gamification rapide */}
+          {gamification && (
+            <Card className="bg-gradient-to-r from-warning/5 to-transparent">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-full bg-warning/10 flex items-center justify-center">
+                      <Flame className="h-6 w-6 text-warning" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Streak : {gamification.current_streak} jours</p>
+                      <p className="text-sm text-muted-foreground">
+                        Record : {gamification.longest_streak} jours
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold">Streak : {gamification.current_streak} jours</p>
-                    <p className="text-sm text-muted-foreground">
-                      Record : {gamification.longest_streak} jours
-                    </p>
-                  </div>
+                  
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/achievements">
+                      Voir mes succès
+                      <ChevronRight className="h-3 w-3 ml-1" />
+                    </Link>
+                  </Button>
                 </div>
-                
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/achievements">
-                    Voir mes succès
-                    <ChevronRight className="h-3 w-3 ml-1" />
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </AppLayout>
   );

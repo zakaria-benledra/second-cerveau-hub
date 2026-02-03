@@ -14,7 +14,7 @@ export function useRealtimeInterventions() {
       action: {
         label: 'Voir',
         onClick: () => {
-          window.location.href = '/today';
+          window.location.href = '/dashboard';
         }
       }
     });

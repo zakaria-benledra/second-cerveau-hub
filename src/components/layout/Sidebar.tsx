@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Brain,
+  LineChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,7 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-// Navigation simplifiée - 8 items seulement
+// Navigation simplifiée - 10 items
 const navItems = [
   { icon: Home, label: 'Accueil', path: '/dashboard', description: 'Vue d\'ensemble' },
   { icon: CheckSquare, label: 'Tâches', path: '/tasks', description: 'Gérer mes tâches' },
@@ -32,6 +33,8 @@ const navItems = [
   { icon: Target, label: 'Programme', path: '/program', description: 'Mon parcours', showBadge: true },
   { icon: Wallet, label: 'Finances', path: '/finance', description: 'Gérer mon budget' },
   { icon: Trophy, label: 'Succès', path: '/achievements', description: 'Mes récompenses' },
+  { icon: Brain, label: 'Coach IA', path: '/coach', description: 'Ton coach personnel' },
+  { icon: LineChart, label: 'Intelligence', path: '/intelligence', description: 'Hub comportemental' },
 ];
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
