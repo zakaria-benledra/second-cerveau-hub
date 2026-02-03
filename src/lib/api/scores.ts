@@ -37,14 +37,50 @@ export interface WeeklyScore {
 export async function fetchTodayScore(): Promise<DailyScore | null> {
   const today = new Date().toISOString().split('T')[0];
   
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
   const { data, error } = await supabase
     .from('scores_daily')
     .select('*')
+    .eq('user_id', user.id)
     .eq('date', today)
     .maybeSingle();
 
   if (error) throw error;
-  return data as DailyScore | null;
+  
+  // Si pas de score pour aujourd'hui, créer une entrée par défaut
+  if (!data) {
+    const { data: newScore, error: insertError } = await supabase
+      .from('scores_daily')
+      .insert({
+        user_id: user.id,
+        date: today,
+        global_score: 0,
+        habits_score: 0,
+        tasks_score: 0,
+        finance_score: 0,
+        health_score: 0,
+        momentum_index: 0,
+        burnout_index: 0,
+        consistency_factor: 1,
+        financial_discipline_score: 0,
+        budget_adherence: 0,
+        impulsive_spending: 0,
+        savings_rate: 0,
+      })
+      .select()
+      .single();
+    
+    if (insertError) {
+      console.error('Error creating default score:', insertError);
+      return null;
+    }
+    
+    return newScore as DailyScore;
+  }
+
+  return data as DailyScore;
 }
 
 export async function fetchScoreHistory(days: number = 30): Promise<DailyScore[]> {
