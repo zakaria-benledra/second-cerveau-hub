@@ -1,58 +1,58 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Brain, Menu, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { label: 'Comment ça marche', id: 'how-it-works' },
-  { label: 'Fonctionnalités', id: 'features' },
-  { label: 'Tarifs', id: 'pricing' },
-  { label: 'Témoignages', id: 'testimonials' },
-];
-
 export function Header() {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setIsMobileMenuOpen(false);
-    }
+    setIsMobileMenuOpen(false);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const navItems = [
+    { label: 'Fonctionnalités', id: 'features' },
+    { label: 'Comment ça marche', id: 'how-it-works' },
+    { label: 'Tarifs', id: 'pricing' },
+  ];
 
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
-          ? 'bg-background/95 backdrop-blur-xl border-b border-border/40 shadow-lg shadow-black/5'
-          : 'bg-transparent'
+          ? "bg-background/95 backdrop-blur-xl border-b border-border/40 shadow-lg shadow-background/5"
+          : "bg-transparent"
       )}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
+
           {/* Logo */}
-          <button
-            onClick={() => scrollToSection('hero')}
-            className="flex items-center gap-2 group"
+          <motion.button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="flex items-center gap-2.5 group"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <div className="h-9 w-9 rounded-xl gradient-primary flex items-center justify-center group-hover:scale-105 transition-transform">
+            <div className="h-9 w-9 rounded-xl gradient-primary flex items-center justify-center group-hover:shadow-lg group-hover:shadow-primary/30 transition-shadow">
               <Brain className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="font-bold text-xl">Minded</span>
-          </button>
+          </motion.button>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
@@ -67,13 +67,13 @@ export function Header() {
             ))}
           </nav>
 
-          {/* CTA Buttons - Desktop */}
+          {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
             <Button
               variant="ghost"
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/auth?mode=login')}
             >
-              Connexion
+              Se connecter
             </Button>
             <Button
               className="gradient-primary"
@@ -99,39 +99,41 @@ export function Header() {
         </div>
 
         {/* Mobile Menu */}
-        <div
-          className={cn(
-            'md:hidden overflow-hidden transition-all duration-300',
-            isMobileMenuOpen ? 'max-h-[400px] pb-6' : 'max-h-0'
-          )}
-        >
-          <nav className="flex flex-col gap-1 pt-4 border-t border-border/40">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => scrollToSection(item.id)}
-                className="text-left px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
-              >
-                {item.label}
-              </button>
-            ))}
-            <div className="flex flex-col gap-2 mt-4 px-4">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate('/auth')}
-              >
-                Connexion
-              </Button>
-              <Button
-                className="w-full gradient-primary"
-                onClick={() => navigate('/auth?mode=signup')}
-              >
-                Commencer gratuitement
-              </Button>
-            </div>
-          </nav>
-        </div>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden border-t border-border/40 py-4"
+          >
+            <nav className="flex flex-col gap-1">
+              {navItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
+                  className="text-left py-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {item.label}
+                </button>
+              ))}
+              <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-border/40">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate('/auth?mode=login')}
+                >
+                  Se connecter
+                </Button>
+                <Button
+                  className="w-full gradient-primary"
+                  onClick={() => navigate('/auth?mode=signup')}
+                >
+                  Commencer gratuitement
+                </Button>
+              </div>
+            </nav>
+          </motion.div>
+        )}
       </div>
     </header>
   );
