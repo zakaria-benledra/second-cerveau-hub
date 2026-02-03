@@ -2,13 +2,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { 
-  Brain, BookOpen, Target, CheckCircle2, AlertTriangle, 
-  Lightbulb, Clock, Star, Sparkles, Flame, Play, Info,
-  Calendar, User, Zap
+  Brain, BookOpen, Target, CheckCircle2, 
+  Sparkles, Flame, Play, Info,
+  Calendar, User, Star
 } from 'lucide-react';
 import { useElementWiki } from '@/hooks/useElementWiki';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { cn } from '@/lib/utils';
 
 interface HabitWithLog {
@@ -35,222 +35,173 @@ interface HabitDetailModalProps {
   isCompleting?: boolean;
 }
 
-// Section component for consistent styling
-function Section({ 
-  icon: Icon, 
+// Template Section component matching the exact visual format
+function TemplateSection({ 
+  emoji,
   title, 
-  children, 
-  variant = 'default' 
+  children,
+  isFirst = false,
+  isLast = false,
 }: { 
-  icon: React.ElementType; 
+  emoji: string;
   title: string; 
   children: React.ReactNode;
-  variant?: 'default' | 'success' | 'primary' | 'warning' | 'accent';
+  isFirst?: boolean;
+  isLast?: boolean;
 }) {
-  const variantStyles = {
-    default: 'border-border/50 bg-muted/30',
-    success: 'border-success/30 bg-success/5',
-    primary: 'border-primary/30 bg-primary/5',
-    warning: 'border-warning/30 bg-warning/5',
-    accent: 'border-accent/30 bg-accent/5',
-  };
-
-  const iconStyles = {
-    default: 'text-foreground',
-    success: 'text-success',
-    primary: 'text-primary',
-    warning: 'text-warning',
-    accent: 'text-accent',
-  };
-
   return (
-    <div className={cn("rounded-lg border p-4", variantStyles[variant])}>
-      <div className="flex items-center gap-2 mb-3">
-        <Icon className={cn("h-4 w-4", iconStyles[variant])} />
-        <h4 className="font-semibold text-sm">{title}</h4>
+    <div className={cn(
+      "border-x-2 border-primary/30 px-4 py-3",
+      isFirst && "border-t-2 rounded-t-lg pt-4",
+      isLast && "border-b-2 rounded-b-lg pb-4",
+      !isFirst && "border-t border-primary/20"
+    )}>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-base">{emoji}</span>
+        <h4 className="font-bold text-sm uppercase tracking-wide text-primary">{title}</h4>
       </div>
-      {children}
+      <div className="text-sm text-muted-foreground leading-relaxed pl-6">
+        {children}
+      </div>
     </div>
   );
 }
 
 export function HabitDetailModal({ habit, open, onOpenChange, onComplete, isCompleting }: HabitDetailModalProps) {
   const { data: wiki, isLoading: wikiLoading } = useElementWiki(habit?.id);
+  const { data: profile } = useUserProfile();
 
   if (!habit) return null;
 
   const hasWiki = !!wiki;
   const isCompleted = habit.todayLog?.completed;
+  const userName = profile?.display_name || 'toi';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 overflow-hidden">
-        {/* Header with icon and title */}
-        <div className="p-6 pb-4 bg-gradient-to-b from-primary/10 to-transparent">
-          <DialogHeader>
-            <div className="flex items-start gap-4">
-              <div className="text-4xl p-3 rounded-xl bg-background/80 backdrop-blur shadow-sm">
-                {habit.icon || '✨'}
+        {/* Header Card - Title Section */}
+        <div className="p-4 bg-gradient-to-b from-primary/10 to-transparent">
+          <div className="border-2 border-primary/30 rounded-lg p-4 bg-background/50 backdrop-blur">
+            <DialogHeader>
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{habit.icon || '📚'}</span>
+                <div className="flex-1">
+                  <DialogTitle className="text-lg font-bold">
+                    {habit.name}
+                  </DialogTitle>
+                  {habit.description && (
+                    <DialogDescription className="text-xs mt-0.5">
+                      {habit.description}
+                    </DialogDescription>
+                  )}
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="text-xl leading-tight">{habit.name}</DialogTitle>
-                {habit.description && (
-                  <DialogDescription className="mt-1.5 line-clamp-2">
-                    {habit.description}
-                  </DialogDescription>
-                )}
-              </div>
+            </DialogHeader>
+            
+            {/* Badges */}
+            <div className="flex flex-wrap gap-1.5 mt-3 pl-10">
+              {habit.streak && habit.streak.current_streak > 0 && (
+                <Badge className="bg-warning/15 text-warning border-warning/30 text-xs">
+                  <Flame className="h-3 w-3 mr-1" />
+                  {habit.streak.current_streak}j
+                </Badge>
+              )}
+              {habit.streak && habit.streak.max_streak > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  <Star className="h-3 w-3 mr-1" />
+                  Max: {habit.streak.max_streak}
+                </Badge>
+              )}
+              <Badge variant="outline" className="text-xs">
+                <Calendar className="h-3 w-3 mr-1" />
+                {habit.target_frequency === 'daily' ? 'Quotidien' : 'Hebdo'}
+              </Badge>
+              {habit.created_from_program && (
+                <Badge className="bg-primary/15 text-primary border-primary/30 text-xs">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  IA
+                </Badge>
+              )}
+              {isCompleted && (
+                <Badge className="bg-success/15 text-success border-success/30 text-xs">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Fait
+                </Badge>
+              )}
             </div>
-          </DialogHeader>
-          
-          {/* Badges */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            {habit.streak && habit.streak.current_streak > 0 && (
-              <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/20">
-                <Flame className="h-3 w-3 mr-1" />
-                {habit.streak.current_streak} jours
-              </Badge>
-            )}
-            {habit.streak && habit.streak.max_streak > 0 && (
-              <Badge variant="outline">
-                <Star className="h-3 w-3 mr-1" />
-                Record: {habit.streak.max_streak}
-              </Badge>
-            )}
-            <Badge variant="outline">
-              <Calendar className="h-3 w-3 mr-1" />
-              {habit.target_frequency === 'daily' ? 'Quotidienne' : 'Hebdomadaire'}
-            </Badge>
-            {habit.created_from_program && (
-              <Badge className="bg-primary/15 text-primary border-primary/30">
-                <Sparkles className="h-3 w-3 mr-1" />
-                Programme
-              </Badge>
-            )}
-            {isCompleted && (
-              <Badge className="bg-success/15 text-success border-success/30">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Fait aujourd'hui
-              </Badge>
-            )}
           </div>
         </div>
 
-        <ScrollArea className="flex-1 px-6">
-          <div className="space-y-4 pb-4">
+        <ScrollArea className="flex-1 px-4">
+          <div className="pb-4">
             {hasWiki ? (
-              <>
+              <div className="space-y-0">
                 {/* 🧠 POURQUOI CETTE PRATIQUE ? */}
                 {wiki.why_this_practice && (
-                  <Section icon={Brain} title="🧠 Pourquoi cette pratique ?" variant="primary">
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {wiki.why_this_practice}
-                    </p>
-                  </Section>
+                  <TemplateSection emoji="🧠" title="Pourquoi cette pratique ?" isFirst>
+                    <p>{wiki.why_this_practice}</p>
+                  </TemplateSection>
                 )}
 
                 {/* 📖 BASE SCIENTIFIQUE */}
                 {wiki.scientific_basis && (
-                  <Section icon={BookOpen} title="📖 Base scientifique" variant="default">
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {wiki.scientific_basis}
-                    </p>
+                  <TemplateSection 
+                    emoji="📖" 
+                    title="Base scientifique"
+                    isFirst={!wiki.why_this_practice}
+                  >
+                    <p>{wiki.scientific_basis}</p>
                     {wiki.methodology_source && (
-                      <p className="text-xs text-muted-foreground/70 mt-2 italic flex items-center gap-1">
-                        <span>📚</span> Source : {wiki.methodology_source}
+                      <p className="mt-2 text-xs italic opacity-70">
+                        Source : {wiki.methodology_source}
                       </p>
                     )}
-                  </Section>
+                  </TemplateSection>
                 )}
 
                 {/* ✅ COMMENT FAIRE */}
                 {wiki.how_to_guide && wiki.how_to_guide.length > 0 && (
-                  <Section icon={Target} title="✅ Comment faire" variant="success">
-                    <ol className="space-y-2">
+                  <TemplateSection 
+                    emoji="✅" 
+                    title="Comment faire"
+                    isFirst={!wiki.why_this_practice && !wiki.scientific_basis}
+                  >
+                    <ol className="space-y-1.5">
                       {wiki.how_to_guide.map((step, i) => (
-                        <li key={i} className="flex items-start gap-3">
-                          <span className="flex items-center justify-center h-6 w-6 rounded-full bg-success/20 text-success text-xs font-bold shrink-0">
-                            {step.step || i + 1}
-                          </span>
-                          <p className="text-sm text-muted-foreground pt-0.5">{step.description}</p>
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="font-bold text-primary">{step.step || i + 1}.</span>
+                          <span>{step.description}</span>
                         </li>
                       ))}
                     </ol>
-                  </Section>
+                  </TemplateSection>
                 )}
-
-                {/* Bénéfices */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {wiki.immediate_benefits && wiki.immediate_benefits.length > 0 && (
-                    <Section icon={Zap} title="⚡ Bénéfices immédiats" variant="success">
-                      <ul className="space-y-1.5">
-                        {wiki.immediate_benefits.map((b, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-success mt-0.5 shrink-0" />
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </Section>
-                  )}
-                  {wiki.long_term_benefits && wiki.long_term_benefits.length > 0 && (
-                    <Section icon={Target} title="🎯 Long terme" variant="primary">
-                      <ul className="space-y-1.5">
-                        {wiki.long_term_benefits.map((b, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <Target className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </Section>
-                  )}
-                </div>
 
                 {/* 🎯 CONSEIL PERSONNALISÉ */}
-                {wiki.personalized_tips && wiki.personalized_tips.length > 0 && (
-                  <Section icon={User} title="🎯 Conseil personnalisé pour toi" variant="accent">
-                    <div className="space-y-2">
-                      {wiki.personalized_tips.map((tip, i) => (
-                        <p key={i} className="text-sm text-muted-foreground">
-                          {tip}
-                        </p>
-                      ))}
-                    </div>
-                  </Section>
+                {wiki.personalized_tips && wiki.personalized_tips.length > 0 ? (
+                  <TemplateSection 
+                    emoji="🎯" 
+                    title={`Conseil personnalisé pour ${userName}`}
+                    isLast
+                  >
+                    {wiki.personalized_tips.map((tip, i) => (
+                      <p key={i}>{tip}</p>
+                    ))}
+                  </TemplateSection>
+                ) : (
+                  <TemplateSection 
+                    emoji="🎯" 
+                    title={`Conseil personnalisé pour ${userName}`}
+                    isLast
+                  >
+                    <p>
+                      Continue ainsi ! Chaque répétition renforce les connexions neuronales
+                      et t'approche de ton objectif.
+                    </p>
+                  </TemplateSection>
                 )}
-
-                {/* Bonnes pratiques & Erreurs */}
-                {((wiki.best_practices && wiki.best_practices.length > 0) || 
-                  (wiki.common_mistakes && wiki.common_mistakes.length > 0)) && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {wiki.best_practices && wiki.best_practices.length > 0 && (
-                      <Section icon={Lightbulb} title="💡 Bonnes pratiques" variant="warning">
-                        <ul className="space-y-1.5">
-                          {wiki.best_practices.map((tip, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <span>✓</span>
-                              <span>{tip}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </Section>
-                    )}
-                    {wiki.common_mistakes && wiki.common_mistakes.length > 0 && (
-                      <Section icon={AlertTriangle} title="❌ Erreurs à éviter" variant="default">
-                        <ul className="space-y-1.5">
-                          {wiki.common_mistakes.map((mistake, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <span className="text-destructive">✗</span>
-                              <span>{mistake}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </Section>
-                    )}
-                  </div>
-                )}
-              </>
+              </div>
             ) : wikiLoading ? (
               <div className="py-12 text-center">
                 <div className="animate-pulse space-y-3">
@@ -260,23 +211,52 @@ export function HabitDetailModal({ habit, open, onOpenChange, onComplete, isComp
                 <p className="text-sm text-muted-foreground mt-4">Chargement des explications...</p>
               </div>
             ) : (
-              /* No wiki - show encouragement message */
-              <div className="py-8 text-center space-y-4">
-                <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
-                  <Info className="h-8 w-8 text-muted-foreground/50" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Habitude personnelle</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Cette habitude a été créée manuellement.
+              /* No wiki - manual habit with template structure */
+              <div className="space-y-0">
+                <TemplateSection emoji="🧠" title="Pourquoi cette pratique ?" isFirst>
+                  <p>
+                    Cette habitude personnelle contribue à ta progression quotidienne.
+                    La régularité crée des connexions neuronales durables.
                   </p>
-                </div>
-                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 text-left">
-                  <p className="text-xs text-muted-foreground">
-                    💡 <strong>Astuce :</strong> Les programmes générés par l'IA incluent des explications scientifiques 
-                    détaillées pour chaque habitude recommandée.
+                </TemplateSection>
+
+                <TemplateSection emoji="📖" title="Base scientifique">
+                  <p>
+                    La répétition régulière d'une action renforce les circuits neuronaux 
+                    associés (neuroplasticité). Après 21-66 jours, l'habitude devient automatique.
                   </p>
-                </div>
+                  <p className="mt-2 text-xs italic opacity-70">
+                    Source : European Journal of Social Psychology, Phillippa Lally (2009)
+                  </p>
+                </TemplateSection>
+
+                <TemplateSection emoji="✅" title="Comment faire">
+                  <ol className="space-y-1.5">
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-primary">1.</span>
+                      <span>Choisis un moment fixe dans ta journée</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-primary">2.</span>
+                      <span>Associe-la à une habitude existante (habit stacking)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-primary">3.</span>
+                      <span>Commence petit, augmente progressivement</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold text-primary">4.</span>
+                      <span>Célèbre chaque accomplissement</span>
+                    </li>
+                  </ol>
+                </TemplateSection>
+
+                <TemplateSection emoji="🎯" title={`Conseil personnalisé pour ${userName}`} isLast>
+                  <p>
+                    Les programmes IA génèrent des conseils personnalisés basés sur 
+                    ton profil et tes objectifs. Lance un programme pour débloquer cette fonctionnalité !
+                  </p>
+                </TemplateSection>
               </div>
             )}
           </div>
