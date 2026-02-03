@@ -132,20 +132,54 @@ Deno.serve(async (req) => {
         .eq('id', existingProgram.id);
     }
 
-    // 3. Créer le nouveau programme utilisateur
-    const { data: newUserProgram, error: programError } = await supabase
+    // 3. Créer ou réactiver le programme utilisateur
+    // On vérifie d'abord si l'utilisateur a déjà un enregistrement pour ce programme
+    const { data: existingUserProgram } = await supabase
       .from('user_programs')
-      .insert({
-        user_id: userId,
-        workspace_id: workspaceId,
-        program_id: programId,
-        status: 'active',
-        current_day: 1,
-      })
-      .select('*, programs(*)')
-      .single();
+      .select('id')
+      .eq('user_id', userId)
+      .eq('program_id', programId)
+      .maybeSingle();
 
-    if (programError) throw programError;
+    let newUserProgram;
+    
+    if (existingUserProgram) {
+      // Réactiver et réinitialiser le programme existant
+      const { data, error: updateError } = await supabase
+        .from('user_programs')
+        .update({
+          status: 'active',
+          current_day: 1,
+          started_at: new Date().toISOString(),
+          completed_at: null,
+          total_xp_earned: 0,
+          streak_days: 0,
+        })
+        .eq('id', existingUserProgram.id)
+        .select('*, programs(*)')
+        .single();
+      
+      if (updateError) throw updateError;
+      newUserProgram = data;
+      console.log(`[Bootstrap] Reactivated existing user program: ${newUserProgram.id}`);
+    } else {
+      // Créer un nouveau programme utilisateur
+      const { data, error: programError } = await supabase
+        .from('user_programs')
+        .insert({
+          user_id: userId,
+          workspace_id: workspaceId,
+          program_id: programId,
+          status: 'active',
+          current_day: 1,
+        })
+        .select('*, programs(*)')
+        .single();
+
+      if (programError) throw programError;
+      newUserProgram = data;
+      console.log(`[Bootstrap] Created new user program: ${newUserProgram.id}`);
+    }
 
     console.log(`[Bootstrap] Created user program: ${newUserProgram.id}`);
 
@@ -216,12 +250,10 @@ Deno.serve(async (req) => {
             .insert({
               user_id: userId,
               workspace_id: workspaceId,
-              title: template.title,
+              name: template.title,
               description: template.description,
-              category: template.category || 'general',
-              frequency: template.frequency || 'daily',
+              target_frequency: template.frequency || 'daily',
               is_active: true,
-              streak: 0,
               created_from_program: programId,
             })
             .select()
@@ -230,8 +262,10 @@ Deno.serve(async (req) => {
           if (!error && habit) {
             itemId = habit.id;
             console.log(`[Bootstrap] Created habit: ${template.title}`);
+          } else if (error) {
+            console.error(`[Bootstrap] Habit error: ${JSON.stringify(error)}`);
           }
-        } 
+        }
         else if (template.template_type === 'task') {
           // Créer la tâche (programmée pour le jour approprié)
           const dueDate = new Date();
@@ -259,8 +293,9 @@ Deno.serve(async (req) => {
         }
         else if (template.template_type === 'goal') {
           // Créer l'objectif
-          const targetDate = new Date();
-          targetDate.setDate(targetDate.getDate() + (newUserProgram.programs?.duration_days || 30));
+          const startDate = new Date();
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + (newUserProgram.programs?.duration_days || 30));
 
           const { data: goal, error } = await supabase
             .from('goals')
@@ -269,10 +304,11 @@ Deno.serve(async (req) => {
               workspace_id: workspaceId,
               title: template.title,
               description: template.description,
-              target_value: template.target_value || 100,
-              current_value: 0,
-              target_date: targetDate.toISOString().split('T')[0],
-              status: 'in_progress',
+              target: template.target_value || 100,
+              unit: 'count',
+              start_date: startDate.toISOString().split('T')[0],
+              end_date: endDate.toISOString().split('T')[0],
+              status: 'active',
               created_from_program: programId,
             })
             .select()
@@ -281,6 +317,8 @@ Deno.serve(async (req) => {
           if (!error && goal) {
             itemId = goal.id;
             console.log(`[Bootstrap] Created goal: ${template.title}`);
+          } else if (error) {
+            console.error(`[Bootstrap] Goal error: ${JSON.stringify(error)}`);
           }
         }
 
