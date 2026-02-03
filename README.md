@@ -260,21 +260,43 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 npm run test
 ```
 
-### E2E Tests
+### E2E Tests (Playwright)
 
 ```bash
+# Run all tests
 npx playwright test
+
+# Run specific suite
+npx playwright test e2e/gamification.spec.ts
+npx playwright test e2e/journal.spec.ts
+npx playwright test e2e/settings.spec.ts
+npx playwright test e2e/pwa.spec.ts
+npx playwright test e2e/ai-cache.spec.ts
+
+# Interactive mode
+npx playwright test --ui
+
+# HTML report
+npx playwright test --reporter=html
 ```
 
 ### Test Coverage
 
-| Suite | Tests | Coverage |
-|-------|-------|----------|
-| AI Feedback | 15 | Feedback loop, Personalization |
-| Core CRUD | 20+ | Tasks, Habits, Journal |
-| Auth | 5 | Login, Logout, Protected routes |
-| Navigation | 10 | All routes accessible |
-| Responsive | 5 | 4 viewport sizes |
+| Suite | File | Tests | Coverage |
+|-------|------|-------|----------|
+| 🎮 **Gamification** | `gamification.spec.ts` | 10 | XP, Badges, Streaks, Tabs |
+| 📓 **Journal V40** | `journal.spec.ts` | 12 | Date picker, Mood, Templates IA |
+| ⚙️ **Settings V40** | `settings.spec.ts` | 14 | Personnalisation, RGPD, Profil |
+| 📱 **PWA** | `pwa.spec.ts` | 5 | Service Worker, IndexedDB, Offline |
+| 🤖 **AI Cache** | `ai-cache.spec.ts` | 3 | Cache perf, Suggestions |
+| 🔐 **Auth** | `auth.spec.ts` | 5 | Login, Logout, Protected routes |
+| 🧭 **Navigation** | `navigation.spec.ts` | 10 | All routes accessible |
+| 📊 **Core CRUD** | `core-crud.spec.ts` | 20+ | Tasks, Habits, Journal |
+| 📐 **Responsive** | `responsive.spec.ts` | 5 | 4 viewport sizes |
+| 👑 **Admin** | `admin.spec.ts` | 8 | RBAC, Dashboard admin |
+| 💬 **AI Feedback** | `ai-feedback.spec.ts` | 15 | Feedback loop, Personalization |
+
+**Total: 100+ E2E tests**
 
 ---
 
