@@ -3531,7 +3531,6 @@ export type Database = {
           adaptation_suggestions: string | null
           best_practices: string[] | null
           common_mistakes: string[] | null
-          completed_at: string | null
           created_at: string | null
           difficulty_level: number | null
           duration_minutes: number | null
@@ -3540,7 +3539,6 @@ export type Database = {
           how_to_guide: Json | null
           id: string
           immediate_benefits: string[] | null
-          is_completed: boolean | null
           linked_item_id: string | null
           long_term_benefits: string[] | null
           medium_term_benefits: string[] | null
@@ -3548,11 +3546,11 @@ export type Database = {
           personalized_tips: string[] | null
           program_id: string
           recommended_time: string | null
-          scheduled_day: number | null
           scientific_basis: string | null
           short_description: string | null
           streak_bonus_xp: number | null
           title: string
+          updated_at: string | null
           user_id: string
           why_this_practice: string | null
           xp_reward: number | null
@@ -3561,37 +3559,6 @@ export type Database = {
           adaptation_suggestions?: string | null
           best_practices?: string[] | null
           common_mistakes?: string[] | null
-          completed_at?: string | null
-          created_at?: string | null
-          difficulty_level?: number | null
-          duration_minutes?: number | null
-          element_type: string
-          frequency?: string | null
-          how_to_guide?: Json | null
-          id?: string
-          immediate_benefits?: string[] | null
-          is_completed?: boolean | null
-          linked_item_id?: string | null
-          long_term_benefits?: string[] | null
-          medium_term_benefits?: string[] | null
-          methodology_source?: string | null
-          personalized_tips?: string[] | null
-          program_id: string
-          recommended_time?: string | null
-          scheduled_day?: number | null
-          scientific_basis?: string | null
-          short_description?: string | null
-          streak_bonus_xp?: number | null
-          title: string
-          user_id: string
-          why_this_practice?: string | null
-          xp_reward?: number | null
-        }
-        Update: {
-          adaptation_suggestions?: string | null
-          best_practices?: string[] | null
-          common_mistakes?: string[] | null
-          completed_at?: string | null
           created_at?: string | null
           difficulty_level?: number | null
           duration_minutes?: number | null
@@ -3600,7 +3567,34 @@ export type Database = {
           how_to_guide?: Json | null
           id?: string
           immediate_benefits?: string[] | null
-          is_completed?: boolean | null
+          linked_item_id?: string | null
+          long_term_benefits?: string[] | null
+          medium_term_benefits?: string[] | null
+          methodology_source?: string | null
+          personalized_tips?: string[] | null
+          program_id: string
+          recommended_time?: string | null
+          scientific_basis?: string | null
+          short_description?: string | null
+          streak_bonus_xp?: number | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+          why_this_practice?: string | null
+          xp_reward?: number | null
+        }
+        Update: {
+          adaptation_suggestions?: string | null
+          best_practices?: string[] | null
+          common_mistakes?: string[] | null
+          created_at?: string | null
+          difficulty_level?: number | null
+          duration_minutes?: number | null
+          element_type?: string
+          frequency?: string | null
+          how_to_guide?: Json | null
+          id?: string
+          immediate_benefits?: string[] | null
           linked_item_id?: string | null
           long_term_benefits?: string[] | null
           medium_term_benefits?: string[] | null
@@ -3608,24 +3602,16 @@ export type Database = {
           personalized_tips?: string[] | null
           program_id?: string
           recommended_time?: string | null
-          scheduled_day?: number | null
           scientific_basis?: string | null
           short_description?: string | null
           streak_bonus_xp?: number | null
           title?: string
+          updated_at?: string | null
           user_id?: string
           why_this_practice?: string | null
           xp_reward?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "program_elements_wiki_program_id_fkey"
-            columns: ["program_id"]
-            isOneToOne: false
-            referencedRelation: "ai_generated_programs"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       program_templates: {
         Row: {
