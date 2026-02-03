@@ -13,10 +13,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, useCompleteTask } from '@/hooks/useTasks';
 import { useActiveProgram } from '@/hooks/useActiveProgram';
 import { TaskDialog } from '@/components/tasks/TaskDialog';
+import { TaskDetailModal } from '@/components/tasks/TaskDetailModal';
 import { 
   Plus, Clock, Trash2, CheckCircle2, Circle, 
   List, Columns, CalendarDays, Target,
-  MoreVertical, Pencil, ChevronDown
+  MoreVertical, Pencil, ChevronDown, ChevronRight
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -47,6 +48,7 @@ export default function TasksPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   
   const { data: tasks = [], isLoading } = useTasks();
@@ -110,15 +112,19 @@ export default function TasksPage() {
     const isFromProgram = !!(task as any).created_from_program;
 
     return (
-      <div className={cn(
-        "flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors group",
-        task.status === 'done' && "opacity-60",
-        isOverdue && "border-destructive/50 bg-destructive/5"
-      )}>
+      <div 
+        className={cn(
+          "flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors group cursor-pointer",
+          task.status === 'done' && "opacity-60",
+          isOverdue && "border-destructive/50 bg-destructive/5"
+        )}
+        onClick={() => setSelectedTask(task)}
+      >
         <Checkbox
           checked={task.status === 'done'}
           onCheckedChange={() => handleComplete(task)}
           className="h-5 w-5"
+          onClick={(e) => e.stopPropagation()}
         />
         
         <div className="flex-1 min-w-0">
@@ -154,8 +160,11 @@ export default function TasksPage() {
           {task.priority}
         </Badge>
 
+        <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+
+
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
             <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
               <MoreVertical className="h-4 w-4" />
             </Button>
@@ -423,6 +432,21 @@ export default function TasksPage() {
           }
         }}
         isPending={updateTask.isPending}
+      />
+
+      {/* Modal détail tâche */}
+      <TaskDetailModal
+        task={selectedTask}
+        open={!!selectedTask}
+        onOpenChange={(open) => !open && setSelectedTask(null)}
+        onComplete={() => {
+          if (selectedTask) {
+            completeTask.mutate(selectedTask.id, {
+              onSuccess: () => setSelectedTask(null)
+            });
+          }
+        }}
+        isCompleting={completeTask.isPending}
       />
     </AppLayout>
   );
