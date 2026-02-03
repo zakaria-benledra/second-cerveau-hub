@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   CheckCircle2, Clock, Calendar, Flag, Sparkles, 
-  AlertTriangle, BookOpen, Play, Target, Brain, Lightbulb, Info
+  AlertTriangle, BookOpen, Play
 } from 'lucide-react';
 import { format, parseISO, isToday, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -29,50 +29,10 @@ interface TaskDetailModalProps {
 }
 
 const priorityConfig = {
-  high: { label: 'Haute', color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30' },
-  urgent: { label: 'Urgente', color: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30' },
-  medium: { label: 'Moyenne', color: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/30' },
-  low: { label: 'Basse', color: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border' },
+  high: { label: 'Haute', color: 'text-destructive', bg: 'bg-destructive/10' },
+  medium: { label: 'Moyenne', color: 'text-warning', bg: 'bg-warning/10' },
+  low: { label: 'Basse', color: 'text-muted-foreground', bg: 'bg-muted' },
 };
-
-// Section component for consistent styling
-function Section({ 
-  icon: Icon, 
-  title, 
-  children, 
-  variant = 'default' 
-}: { 
-  icon: React.ElementType; 
-  title: string; 
-  children: React.ReactNode;
-  variant?: 'default' | 'success' | 'primary' | 'warning' | 'destructive';
-}) {
-  const variantStyles = {
-    default: 'border-border/50 bg-muted/30',
-    success: 'border-success/30 bg-success/5',
-    primary: 'border-primary/30 bg-primary/5',
-    warning: 'border-warning/30 bg-warning/5',
-    destructive: 'border-destructive/30 bg-destructive/5',
-  };
-
-  const iconStyles = {
-    default: 'text-foreground',
-    success: 'text-success',
-    primary: 'text-primary',
-    warning: 'text-warning',
-    destructive: 'text-destructive',
-  };
-
-  return (
-    <div className={cn("rounded-lg border p-4", variantStyles[variant])}>
-      <div className="flex items-center gap-2 mb-3">
-        <Icon className={cn("h-4 w-4", iconStyles[variant])} />
-        <h4 className="font-semibold text-sm">{title}</h4>
-      </div>
-      {children}
-    </div>
-  );
-}
 
 export function TaskDetailModal({ task, open, onOpenChange, onComplete, isCompleting }: TaskDetailModalProps) {
   if (!task) return null;
@@ -85,158 +45,108 @@ export function TaskDetailModal({ task, open, onOpenChange, onComplete, isComple
   // Parser la description enrichie (si elle contient les sections Pourquoi/Comment)
   const descriptionParts = task.description?.split('\n\n') || [];
   const mainDescription = descriptionParts[0] || '';
-  const whySection = descriptionParts.find(p => p.startsWith('📖 Pourquoi') || p.includes('Pourquoi'));
-  const howSection = descriptionParts.find(p => p.startsWith('✅ Comment') || p.includes('Comment faire'));
-
-  const hasEnrichedContent = whySection || howSection || task.created_from_program;
+  const whySection = descriptionParts.find(p => p.startsWith('📖 Pourquoi'));
+  const howSection = descriptionParts.find(p => p.startsWith('✅ Comment'));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 overflow-hidden">
-        {/* Header */}
-        <div className="p-6 pb-4 bg-gradient-to-b from-primary/10 to-transparent">
-          <DialogHeader>
-            <div className="flex items-start gap-4">
-              <div className="text-3xl p-3 rounded-xl bg-background/80 backdrop-blur shadow-sm">
-                📋
-              </div>
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="text-xl leading-tight">{task.title}</DialogTitle>
-                {mainDescription && !hasEnrichedContent && (
-                  <DialogDescription className="mt-1.5 line-clamp-2">
-                    {mainDescription}
-                  </DialogDescription>
-                )}
-              </div>
-            </div>
-          </DialogHeader>
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-lg pr-8">{task.title}</DialogTitle>
           
           {/* Badges */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            <Badge className={cn(priority.bg, priority.color, priority.border, "border")}>
+          <div className="flex flex-wrap gap-2 mt-3">
+            <Badge className={cn(priority.bg, priority.color, "border-0")}>
               <Flag className="h-3 w-3 mr-1" />
               {priority.label}
             </Badge>
             
             {task.due_date && (
-              <Badge 
-                variant={isOverdue ? "destructive" : "outline"}
-                className={cn(isDueToday && "bg-primary/15 text-primary border-primary/30")}
-              >
+              <Badge variant={isOverdue ? "destructive" : isDueToday ? "default" : "outline"}>
                 <Calendar className="h-3 w-3 mr-1" />
                 {isOverdue ? 'En retard' : isDueToday ? "Aujourd'hui" : format(parseISO(task.due_date), 'd MMM', { locale: fr })}
               </Badge>
             )}
             
             {task.created_from_program && (
-              <Badge className="bg-primary/15 text-primary border-primary/30 border">
+              <Badge className="bg-primary/15 text-primary border-0">
                 <Sparkles className="h-3 w-3 mr-1" />
                 Programme
               </Badge>
             )}
             
             {isCompleted && (
-              <Badge className="bg-success/15 text-success border-success/30 border">
+              <Badge className="bg-success/15 text-success border-0">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
                 Terminée
               </Badge>
             )}
           </div>
-        </div>
+        </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6">
-          <div className="space-y-4 pb-4">
-            {hasEnrichedContent ? (
-              <>
-                {/* Description principale */}
-                {mainDescription && (
-                  <Section icon={Target} title="📋 Description" variant="default">
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {mainDescription}
-                    </p>
-                  </Section>
-                )}
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          <div className="space-y-4 py-2">
+            {/* Description principale */}
+            {mainDescription && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {mainDescription}
+                </p>
+              </div>
+            )}
 
-                {/* 🧠 POURQUOI CETTE TÂCHE ? */}
-                {whySection && (
-                  <Section icon={Brain} title="🧠 Pourquoi maintenant ?" variant="primary">
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {whySection.replace(/📖 Pourquoi.*?:/, '').replace(/Pourquoi.*?:/, '').trim()}
-                    </p>
-                  </Section>
-                )}
-
-                {/* ✅ COMMENT FAIRE */}
-                {howSection && (
-                  <Section icon={CheckCircle2} title="✅ Comment faire" variant="success">
-                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                      {howSection.replace(/✅ Comment.*?:/, '').replace(/Comment faire.*?:/, '').trim()}
-                    </p>
-                  </Section>
-                )}
-
-                {/* Conseil si vient d'un programme */}
-                {task.created_from_program && !whySection && !howSection && (
-                  <Section icon={Lightbulb} title="💡 Conseil" variant="warning">
-                    <p className="text-sm text-muted-foreground">
-                      Cette tâche fait partie de ton programme de transformation. 
-                      Complète-la pour maintenir ta dynamique et progresser vers tes objectifs.
-                    </p>
-                  </Section>
-                )}
-              </>
-            ) : (
-              /* Tâche manuelle simple */
-              <div className="py-8 text-center space-y-4">
-                <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
-                  <Info className="h-8 w-8 text-muted-foreground/50" />
+            {/* Section Pourquoi (si vient du programme) */}
+            {whySection && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  <h4 className="font-semibold text-sm">Pourquoi maintenant ?</h4>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">Tâche personnelle</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Créée manuellement
-                  </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {whySection.replace('📖 Pourquoi maintenant:', '').trim()}
+                </p>
+              </div>
+            )}
+
+            {/* Section Comment (si vient du programme) */}
+            {howSection && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  <h4 className="font-semibold text-sm">Comment faire</h4>
                 </div>
-                {mainDescription && (
-                  <div className="p-4 rounded-lg bg-muted/30 text-left">
-                    <p className="text-sm text-muted-foreground">
-                      {mainDescription}
-                    </p>
-                  </div>
-                )}
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {howSection.replace('✅ Comment faire:', '').trim()}
+                </p>
               </div>
             )}
 
             {/* Alerte si en retard */}
             {isOverdue && !isCompleted && (
-              <Section icon={AlertTriangle} title="⚠️ Attention" variant="destructive">
-                <p className="text-sm text-muted-foreground">
-                  Cette tâche est en retard de{' '}
-                  <strong className="text-destructive">
-                    {Math.abs(Math.floor((new Date().getTime() - parseISO(task.due_date!).getTime()) / (1000 * 60 * 60 * 24)))} jour(s)
-                  </strong>
-                </p>
-              </Section>
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
+                  <p className="text-sm text-destructive">
+                    Cette tâche est en retard de {Math.abs(Math.floor((new Date().getTime() - parseISO(task.due_date!).getTime()) / (1000 * 60 * 60 * 24)))} jour(s)
+                  </p>
+                </div>
+              </div>
             )}
           </div>
         </ScrollArea>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-2 p-4 border-t bg-muted/30">
+        {/* Footer avec bouton compléter */}
+        <div className="flex justify-end gap-2 pt-4 border-t mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Fermer
           </Button>
           {!isCompleted && (
-            <Button 
-              onClick={onComplete} 
-              disabled={isCompleting} 
-              className="bg-success hover:bg-success/90 text-success-foreground"
-            >
+            <Button onClick={onComplete} disabled={isCompleting} className="bg-success hover:bg-success/90">
               {isCompleting ? (
                 <>Enregistrement...</>
               ) : (
                 <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  <Play className="h-4 w-4 mr-2" />
                   Terminer
                 </>
               )}

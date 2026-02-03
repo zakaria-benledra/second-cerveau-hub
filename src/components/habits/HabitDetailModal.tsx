@@ -2,11 +2,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Brain, BookOpen, Target, CheckCircle2, AlertTriangle, 
   Lightbulb, Clock, Star, Sparkles, Flame, Play, Info,
-  Calendar, User, Zap
+  Calendar
 } from 'lucide-react';
 import { useElementWiki } from '@/hooks/useElementWiki';
 import { cn } from '@/lib/utils';
@@ -35,45 +35,6 @@ interface HabitDetailModalProps {
   isCompleting?: boolean;
 }
 
-// Section component for consistent styling
-function Section({ 
-  icon: Icon, 
-  title, 
-  children, 
-  variant = 'default' 
-}: { 
-  icon: React.ElementType; 
-  title: string; 
-  children: React.ReactNode;
-  variant?: 'default' | 'success' | 'primary' | 'warning' | 'accent';
-}) {
-  const variantStyles = {
-    default: 'border-border/50 bg-muted/30',
-    success: 'border-success/30 bg-success/5',
-    primary: 'border-primary/30 bg-primary/5',
-    warning: 'border-warning/30 bg-warning/5',
-    accent: 'border-accent/30 bg-accent/5',
-  };
-
-  const iconStyles = {
-    default: 'text-foreground',
-    success: 'text-success',
-    primary: 'text-primary',
-    warning: 'text-warning',
-    accent: 'text-accent',
-  };
-
-  return (
-    <div className={cn("rounded-lg border p-4", variantStyles[variant])}>
-      <div className="flex items-center gap-2 mb-3">
-        <Icon className={cn("h-4 w-4", iconStyles[variant])} />
-        <h4 className="font-semibold text-sm">{title}</h4>
-      </div>
-      {children}
-    </div>
-  );
-}
-
 export function HabitDetailModal({ habit, open, onOpenChange, onComplete, isCompleting }: HabitDetailModalProps) {
   const { data: wiki, isLoading: wikiLoading } = useElementWiki(habit?.id);
 
@@ -84,37 +45,29 @@ export function HabitDetailModal({ habit, open, onOpenChange, onComplete, isComp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 overflow-hidden">
-        {/* Header with icon and title */}
-        <div className="p-6 pb-4 bg-gradient-to-b from-primary/10 to-transparent">
-          <DialogHeader>
-            <div className="flex items-start gap-4">
-              <div className="text-4xl p-3 rounded-xl bg-background/80 backdrop-blur shadow-sm">
-                {habit.icon || '✨'}
-              </div>
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="text-xl leading-tight">{habit.name}</DialogTitle>
-                {habit.description && (
-                  <DialogDescription className="mt-1.5 line-clamp-2">
-                    {habit.description}
-                  </DialogDescription>
-                )}
-              </div>
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+        <DialogHeader className="pb-2">
+          <div className="flex items-start gap-3">
+            <span className="text-3xl">{habit.icon || '✨'}</span>
+            <div className="flex-1">
+              <DialogTitle className="text-lg">{habit.name}</DialogTitle>
+              {habit.description && (
+                <DialogDescription className="mt-1">{habit.description}</DialogDescription>
+              )}
             </div>
-          </DialogHeader>
+          </div>
           
           {/* Badges */}
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="flex flex-wrap gap-2 mt-3">
             {habit.streak && habit.streak.current_streak > 0 && (
-              <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/20">
+              <Badge variant="secondary" className="bg-warning/15 text-warning border-0">
                 <Flame className="h-3 w-3 mr-1" />
-                {habit.streak.current_streak} jours
+                Streak: {habit.streak.current_streak} jours
               </Badge>
             )}
             {habit.streak && habit.streak.max_streak > 0 && (
               <Badge variant="outline">
-                <Star className="h-3 w-3 mr-1" />
-                Record: {habit.streak.max_streak}
+                Record: {habit.streak.max_streak} jours
               </Badge>
             )}
             <Badge variant="outline">
@@ -122,177 +75,193 @@ export function HabitDetailModal({ habit, open, onOpenChange, onComplete, isComp
               {habit.target_frequency === 'daily' ? 'Quotidienne' : 'Hebdomadaire'}
             </Badge>
             {habit.created_from_program && (
-              <Badge className="bg-primary/15 text-primary border-primary/30">
+              <Badge className="bg-primary/15 text-primary border-0">
                 <Sparkles className="h-3 w-3 mr-1" />
                 Programme
               </Badge>
             )}
-            {isCompleted && (
-              <Badge className="bg-success/15 text-success border-success/30">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Fait aujourd'hui
-              </Badge>
-            )}
           </div>
-        </div>
+        </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6">
-          <div className="space-y-4 pb-4">
-            {hasWiki ? (
-              <>
-                {/* 🧠 POURQUOI CETTE PRATIQUE ? */}
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          {hasWiki ? (
+            <Tabs defaultValue="why" className="w-full">
+              <TabsList className="w-full mb-4">
+                <TabsTrigger value="why" className="flex-1 gap-1.5">
+                  <Brain className="h-3.5 w-3.5" />
+                  Explications
+                </TabsTrigger>
+                <TabsTrigger value="how" className="flex-1 gap-1.5">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Guide
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="why" className="space-y-4 mt-0">
+                {/* Pourquoi */}
                 {wiki.why_this_practice && (
-                  <Section icon={Brain} title="🧠 Pourquoi cette pratique ?" variant="primary">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-primary" />
+                      <h4 className="font-semibold text-sm">Pourquoi cette pratique ?</h4>
+                    </div>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {wiki.why_this_practice}
                     </p>
-                  </Section>
+                  </div>
                 )}
 
-                {/* 📖 BASE SCIENTIFIQUE */}
+                {/* Base scientifique */}
                 {wiki.scientific_basis && (
-                  <Section icon={BookOpen} title="📖 Base scientifique" variant="default">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-4 w-4 text-primary" />
+                      <h4 className="font-semibold text-sm">Base scientifique</h4>
+                    </div>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {wiki.scientific_basis}
                     </p>
                     {wiki.methodology_source && (
-                      <p className="text-xs text-muted-foreground/70 mt-2 italic flex items-center gap-1">
-                        <span>📚</span> Source : {wiki.methodology_source}
+                      <p className="text-xs text-muted-foreground/70 italic">
+                        📚 {wiki.methodology_source}
                       </p>
-                    )}
-                  </Section>
-                )}
-
-                {/* ✅ COMMENT FAIRE */}
-                {wiki.how_to_guide && wiki.how_to_guide.length > 0 && (
-                  <Section icon={Target} title="✅ Comment faire" variant="success">
-                    <ol className="space-y-2">
-                      {wiki.how_to_guide.map((step, i) => (
-                        <li key={i} className="flex items-start gap-3">
-                          <span className="flex items-center justify-center h-6 w-6 rounded-full bg-success/20 text-success text-xs font-bold shrink-0">
-                            {step.step || i + 1}
-                          </span>
-                          <p className="text-sm text-muted-foreground pt-0.5">{step.description}</p>
-                        </li>
-                      ))}
-                    </ol>
-                  </Section>
-                )}
-
-                {/* Bénéfices */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {wiki.immediate_benefits && wiki.immediate_benefits.length > 0 && (
-                    <Section icon={Zap} title="⚡ Bénéfices immédiats" variant="success">
-                      <ul className="space-y-1.5">
-                        {wiki.immediate_benefits.map((b, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-success mt-0.5 shrink-0" />
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </Section>
-                  )}
-                  {wiki.long_term_benefits && wiki.long_term_benefits.length > 0 && (
-                    <Section icon={Target} title="🎯 Long terme" variant="primary">
-                      <ul className="space-y-1.5">
-                        {wiki.long_term_benefits.map((b, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <Target className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-                            <span>{b}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </Section>
-                  )}
-                </div>
-
-                {/* 🎯 CONSEIL PERSONNALISÉ */}
-                {wiki.personalized_tips && wiki.personalized_tips.length > 0 && (
-                  <Section icon={User} title="🎯 Conseil personnalisé pour toi" variant="accent">
-                    <div className="space-y-2">
-                      {wiki.personalized_tips.map((tip, i) => (
-                        <p key={i} className="text-sm text-muted-foreground">
-                          {tip}
-                        </p>
-                      ))}
-                    </div>
-                  </Section>
-                )}
-
-                {/* Bonnes pratiques & Erreurs */}
-                {((wiki.best_practices && wiki.best_practices.length > 0) || 
-                  (wiki.common_mistakes && wiki.common_mistakes.length > 0)) && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {wiki.best_practices && wiki.best_practices.length > 0 && (
-                      <Section icon={Lightbulb} title="💡 Bonnes pratiques" variant="warning">
-                        <ul className="space-y-1.5">
-                          {wiki.best_practices.map((tip, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <span>✓</span>
-                              <span>{tip}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </Section>
-                    )}
-                    {wiki.common_mistakes && wiki.common_mistakes.length > 0 && (
-                      <Section icon={AlertTriangle} title="❌ Erreurs à éviter" variant="default">
-                        <ul className="space-y-1.5">
-                          {wiki.common_mistakes.map((mistake, i) => (
-                            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                              <span className="text-destructive">✗</span>
-                              <span>{mistake}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </Section>
                     )}
                   </div>
                 )}
-              </>
-            ) : wikiLoading ? (
-              <div className="py-12 text-center">
-                <div className="animate-pulse space-y-3">
-                  <div className="h-4 bg-muted rounded w-3/4 mx-auto" />
-                  <div className="h-4 bg-muted rounded w-1/2 mx-auto" />
+
+                {/* Bénéfices */}
+                <div className="grid gap-3">
+                  {wiki.immediate_benefits && wiki.immediate_benefits.length > 0 && (
+                    <div className="p-3 rounded-lg bg-success/5 border border-success/20">
+                      <h5 className="font-medium text-sm mb-2">⚡ Bénéfices immédiats</h5>
+                      <ul className="space-y-1">
+                        {wiki.immediate_benefits.map((b, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <CheckCircle2 className="h-3 w-3 text-success mt-0.5 shrink-0" />
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {wiki.long_term_benefits && wiki.long_term_benefits.length > 0 && (
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                      <h5 className="font-medium text-sm mb-2">🎯 Long terme</h5>
+                      <ul className="space-y-1">
+                        {wiki.long_term_benefits.map((b, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <Target className="h-3 w-3 text-primary mt-0.5 shrink-0" />
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
-                <p className="text-sm text-muted-foreground mt-4">Chargement des explications...</p>
-              </div>
-            ) : (
-              /* No wiki - show encouragement message */
-              <div className="py-8 text-center space-y-4">
-                <div className="mx-auto w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center">
-                  <Info className="h-8 w-8 text-muted-foreground/50" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Habitude personnelle</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Cette habitude a été créée manuellement.
-                  </p>
-                </div>
-                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 text-left">
-                  <p className="text-xs text-muted-foreground">
-                    💡 <strong>Astuce :</strong> Les programmes générés par l'IA incluent des explications scientifiques 
-                    détaillées pour chaque habitude recommandée.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+
+                {/* Conseils personnalisés */}
+                {wiki.personalized_tips && wiki.personalized_tips.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-accent" />
+                      <h4 className="font-semibold text-sm">Conseils pour toi</h4>
+                    </div>
+                    <div className="space-y-2">
+                      {wiki.personalized_tips.map((tip, i) => (
+                        <div key={i} className="flex items-start gap-2 p-2 rounded bg-accent/5 text-xs">
+                          <span>🎯</span>
+                          <span>{tip}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="how" className="space-y-4 mt-0">
+                {/* Guide pas à pas */}
+                {wiki.how_to_guide && wiki.how_to_guide.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                      <h4 className="font-semibold text-sm">Comment faire</h4>
+                    </div>
+                    <div className="space-y-2">
+                      {wiki.how_to_guide.map((step, i) => (
+                        <div key={i} className="flex items-start gap-3 p-2 rounded bg-muted/50">
+                          <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
+                            {step.step || i + 1}
+                          </span>
+                          <p className="text-sm text-muted-foreground">{step.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Bonnes pratiques */}
+                {wiki.best_practices && wiki.best_practices.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-warning" />
+                      <h4 className="font-semibold text-sm">Bonnes pratiques</h4>
+                    </div>
+                    <div className="space-y-1">
+                      {wiki.best_practices.map((tip, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                          <span>💡</span>
+                          <span>{tip}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Erreurs */}
+                {wiki.common_mistakes && wiki.common_mistakes.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      <h4 className="font-semibold text-sm">Erreurs à éviter</h4>
+                    </div>
+                    <div className="space-y-1">
+                      {wiki.common_mistakes.map((mistake, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                          <span>❌</span>
+                          <span>{mistake}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          ) : wikiLoading ? (
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              Chargement des explications...
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <Info className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">
+                Pas d'explications détaillées pour cette habitude.
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Les habitudes créées par un programme ont des explications scientifiques.
+              </p>
+            </div>
+          )}
         </ScrollArea>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-2 p-4 border-t bg-muted/30">
+        {/* Footer avec bouton compléter */}
+        <div className="flex justify-end gap-2 pt-4 border-t mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Fermer
           </Button>
           <Button 
             onClick={onComplete}
             disabled={isCompleting || isCompleted}
-            className={cn(
-              isCompleted && "bg-success hover:bg-success/90 text-success-foreground"
-            )}
+            className={cn(isCompleted && "bg-success hover:bg-success")}
           >
             {isCompleting ? (
               <>Enregistrement...</>
