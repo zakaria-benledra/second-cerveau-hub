@@ -3,6 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useConfetti } from './useConfetti';
 
+export interface GenerationConfig {
+  programType: 'discipline' | 'mental' | 'finance' | 'balanced' | 'custom';
+  durationDays: number;
+  intensity: 'light' | 'moderate' | 'intense';
+  focusAreas: string[];
+  customGoal: string;
+}
+
 export interface AIGeneratedProgram {
   id: string;
   user_id: string;
@@ -290,6 +298,47 @@ export function useArchiveProgram() {
       toast({
         title: 'Programme archivé',
         description: 'Tu peux maintenant créer un nouveau programme.',
+      });
+    },
+  });
+}
+
+// Generate a new AI program
+export function useGenerateProgram() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { fire } = useConfetti();
+  
+  return useMutation({
+    mutationFn: async (config: GenerationConfig) => {
+      const { data, error } = await supabase.functions.invoke('generate-ai-program', {
+        body: { request: config },
+      });
+      
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['active-ai-program'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['program-wiki'] });
+      
+      fire('fireworks');
+      
+      toast({
+        title: `🚀 Programme "${data.program.title}" créé !`,
+        description: `${data.program.habits_created} habitudes et ${data.program.tasks_created} tâches générées`,
+        duration: 5000,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur de génération',
+        description: error.message || 'Impossible de générer le programme',
+        variant: 'destructive',
       });
     },
   });
