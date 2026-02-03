@@ -4,6 +4,7 @@ import { XPProgressBar } from '@/components/gamification/XPProgressBar';
 import { BadgesGrid } from '@/components/gamification/BadgesGrid';
 import { ChallengesCard } from '@/components/gamification/ChallengesCard';
 import { LeaderboardCard } from '@/components/gamification/LeaderboardCard';
+import { RewardsShopCard } from '@/components/gamification/RewardsShopCard';
 import { useGamification } from '@/hooks/useGamification';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -54,6 +55,9 @@ export default function AchievementsPage() {
           <ChallengesCard />
           <LeaderboardCard />
         </div>
+
+        {/* Boutique de récompenses */}
+        <RewardsShopCard />
 
         {/* Badges par catégorie */}
         <Tabs defaultValue="all" className="space-y-4">
