@@ -83,7 +83,7 @@ export function HabitDetailModal({ habit, open, onOpenChange, onComplete, isComp
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6 max-h-[50vh]">
+        <ScrollArea className="flex-1 -mx-6 px-6">
           {hasWiki ? (
             <Tabs defaultValue="why" className="w-full">
               <TabsList className="w-full mb-4">
