@@ -2,19 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Brain, 
-  Target, 
-  Eye, 
-  Rocket, 
-  ChevronRight, 
-  ChevronLeft,
-  Sparkles,
-  LineChart,
-  Shield,
-  Heart
+  Brain, Target, Rocket, ChevronRight, ChevronLeft,
+  Sparkles, LineChart, Shield, Heart, BookOpen, Compass, Map
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import { useCompleteOnboarding } from '@/hooks/useOnboarding';
@@ -26,9 +17,11 @@ interface TransformationWizardProps {
 const steps = [
   { id: 'welcome', title: 'Bienvenue' },
   { id: 'goals', title: 'Tes Objectifs' },
-  { id: 'observe', title: 'Observation' },
+  { id: 'path', title: 'Ton Parcours' },
   { id: 'ready', title: 'Prêt' },
 ];
+
+type PathChoice = 'program' | 'explore' | null;
 
 export function TransformationWizard({ onComplete }: TransformationWizardProps) {
   const navigate = useNavigate();
@@ -38,6 +31,7 @@ export function TransformationWizard({ onComplete }: TransformationWizardProps) 
     financialStability: 50,
     mentalBalance: 50,
   });
+  const [pathChoice, setPathChoice] = useState<PathChoice>(null);
 
   const completeOnboarding = useCompleteOnboarding();
 
@@ -53,25 +47,39 @@ export function TransformationWizard({ onComplete }: TransformationWizardProps) 
     }
   };
 
+  const canProceed = () => {
+    if (currentStep === 2) return pathChoice !== null;
+    return true;
+  };
+
   const handleComplete = async () => {
     await completeOnboarding.mutateAsync(goals);
     onComplete();
-    navigate('/');
+    
+    // Rediriger selon le choix
+    if (pathChoice === 'program') {
+      navigate('/program');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-xl flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
+    <div className="min-h-[80vh] flex flex-col items-center justify-center p-6">
+      <motion.div 
+        className="w-full max-w-lg"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         {/* Progress Indicator */}
         <div className="flex justify-center gap-2 mb-8">
           {steps.map((step, index) => (
             <div
               key={step.id}
               className={cn(
-                "h-1.5 rounded-full transition-all duration-500",
-                index <= currentStep 
-                  ? "w-12 bg-gradient-to-r from-primary to-accent" 
-                  : "w-6 bg-muted"
+                "h-2 rounded-full transition-all duration-300",
+                index === currentStep ? "w-8 bg-primary" : 
+                index < currentStep ? "w-2 bg-primary/60" : "w-2 bg-muted"
               )}
             />
           ))}
@@ -85,12 +93,11 @@ export function TransformationWizard({ onComplete }: TransformationWizardProps) 
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
-            className="glass-strong rounded-3xl p-8 md:p-12"
           >
             {currentStep === 0 && <WelcomeStep />}
             {currentStep === 1 && <GoalsStep goals={goals} setGoals={setGoals} />}
-            {currentStep === 2 && <ObserveStep />}
-            {currentStep === 3 && <ReadyStep />}
+            {currentStep === 2 && <PathStep pathChoice={pathChoice} setPathChoice={setPathChoice} />}
+            {currentStep === 3 && <ReadyStep pathChoice={pathChoice} />}
           </motion.div>
         </AnimatePresence>
 
@@ -100,81 +107,80 @@ export function TransformationWizard({ onComplete }: TransformationWizardProps) 
             variant="ghost"
             onClick={handleBack}
             disabled={currentStep === 0}
-            className={cn(currentStep === 0 && 'invisible')}
+            className={cn(currentStep === 0 && "invisible")}
           >
-            <ChevronLeft className="h-4 w-4 mr-2" />
+            <ChevronLeft className="h-4 w-4 mr-1" />
             Retour
           </Button>
 
           {currentStep < steps.length - 1 ? (
-            <Button onClick={handleNext} className="gap-2">
+            <Button onClick={handleNext} disabled={!canProceed()}>
               Continuer
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
-            <Button 
-              onClick={handleComplete}
-              disabled={completeOnboarding.isPending}
-              className="gap-2 bg-gradient-to-r from-primary to-accent hover:opacity-90"
-            >
-              <Rocket className="h-4 w-4" />
-              Commencer Ma Transformation
+            <Button onClick={handleComplete} disabled={completeOnboarding.isPending}>
+              <Rocket className="h-4 w-4 mr-2" />
+              {pathChoice === 'program' ? 'Choisir mon programme' : 'Explorer Minded'}
             </Button>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
 
+// ===== STEP 1: WELCOME =====
 function WelcomeStep() {
   return (
     <div className="text-center space-y-6">
-      <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 mb-4">
-        <Brain className="h-10 w-10 text-primary" />
+      <div className="w-20 h-20 mx-auto rounded-2xl gradient-primary flex items-center justify-center">
+        <Brain className="h-10 w-10 text-primary-foreground" />
       </div>
       
-      <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+      <h1 className="text-3xl font-bold">
         Bienvenue sur Minded
       </h1>
       
-      <div className="space-y-4 text-muted-foreground max-w-lg mx-auto">
+      <div className="space-y-2 text-muted-foreground">
         <p className="text-lg">
-          <span className="text-foreground font-semibold">Ceci n'est pas une app de productivité.</span>
+          Ton système d'intelligence personnelle.
         </p>
         <p>
-          C'est un <span className="text-primary font-medium">système d'intelligence décisionnelle</span> qui 
-          observe tes comportements, mesure ta progression et te guide vers 
-          la personne que tu veux devenir.
+          Minded combine <span className="text-primary font-medium">productivité</span>, 
+          <span className="text-success font-medium"> bien-être</span> et 
+          <span className="text-accent font-medium"> finances</span> avec une IA 
+          qui apprend de toi et te guide vers la meilleure version de toi-même.
         </p>
       </div>
 
-      <div className="flex items-center justify-center gap-6 pt-6">
-        <div className="flex flex-col items-center gap-2 text-sm">
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <Eye className="h-5 w-5 text-primary" />
+      <div className="flex justify-center gap-4 pt-4">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Target className="h-6 w-6 text-primary" />
           </div>
-          <span className="text-muted-foreground">Observer</span>
+          <span className="text-xs text-muted-foreground">Habitudes</span>
         </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
-        <div className="flex flex-col items-center gap-2 text-sm">
-          <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center">
-            <LineChart className="h-5 w-5 text-accent" />
+        
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
+            <LineChart className="h-6 w-6 text-success" />
           </div>
-          <span className="text-muted-foreground">Mesurer</span>
+          <span className="text-xs text-muted-foreground">Scores</span>
         </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
-        <div className="flex flex-col items-center gap-2 text-sm">
-          <div className="w-12 h-12 rounded-2xl bg-success/10 flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-success" />
+        
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+            <Sparkles className="h-6 w-6 text-accent" />
           </div>
-          <span className="text-muted-foreground">Transformer</span>
+          <span className="text-xs text-muted-foreground">Transformation</span>
         </div>
       </div>
     </div>
   );
 }
 
+// ===== STEP 2: GOALS =====
 interface GoalsStepProps {
   goals: { discipline: number; financialStability: number; mentalBalance: number };
   setGoals: React.Dispatch<React.SetStateAction<{ discipline: number; financialStability: number; mentalBalance: number }>>;
@@ -183,23 +189,23 @@ interface GoalsStepProps {
 function GoalsStep({ goals, setGoals }: GoalsStepProps) {
   return (
     <div className="space-y-8">
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-warning/20 to-accent/20 mb-2">
-          <Target className="h-8 w-8 text-warning" />
+      <div className="text-center space-y-2">
+        <div className="w-16 h-16 mx-auto rounded-xl bg-primary/10 flex items-center justify-center">
+          <Target className="h-8 w-8 text-primary" />
         </div>
-        <h2 className="text-2xl md:text-3xl font-bold">
+        <h2 className="text-2xl font-bold">
           Qui veux-tu devenir ?
         </h2>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          Indique tes priorités de transformation. Le système s'adaptera pour t'aider à atteindre ces objectifs.
+        <p className="text-muted-foreground">
+          Définis tes priorités. Sage, ton coach IA, s'adaptera pour t'aider à les atteindre.
         </p>
       </div>
 
-      <div className="space-y-8 max-w-md mx-auto">
+      <div className="space-y-6">
         <GoalSlider
           icon={<Shield className="h-5 w-5" />}
           label="Discipline"
-          description="Constance dans tes habitudes et engagements"
+          description="Habitudes, routines, productivité"
           value={goals.discipline}
           onChange={(value) => setGoals(prev => ({ ...prev, discipline: value }))}
           color="text-primary"
@@ -209,7 +215,7 @@ function GoalsStep({ goals, setGoals }: GoalsStepProps) {
         <GoalSlider
           icon={<LineChart className="h-5 w-5" />}
           label="Stabilité Financière"
-          description="Maîtrise de tes finances et épargne"
+          description="Budget, épargne, investissements"
           value={goals.financialStability}
           onChange={(value) => setGoals(prev => ({ ...prev, financialStability: value }))}
           color="text-success"
@@ -219,7 +225,7 @@ function GoalsStep({ goals, setGoals }: GoalsStepProps) {
         <GoalSlider
           icon={<Heart className="h-5 w-5" />}
           label="Équilibre Mental"
-          description="Bien-être émotionnel et clarté mentale"
+          description="Bien-être, journal, gratitude"
           value={goals.mentalBalance}
           onChange={(value) => setGoals(prev => ({ ...prev, mentalBalance: value }))}
           color="text-accent"
@@ -242,43 +248,31 @@ interface GoalSliderProps {
 
 function GoalSlider({ icon, label, description, value, onChange, color, bgColor }: GoalSliderProps) {
   const getLevel = (val: number) => {
-    if (val < 33) return 'Faible priorité';
-    if (val < 66) return 'Priorité moyenne';
-    return 'Haute priorité';
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const parsed = parseInt(e.target.value) || 0;
-    onChange(Math.min(100, Math.max(0, parsed)));
+    if (val < 33) return 'Faible';
+    if (val < 66) return 'Moyenne';
+    return 'Haute';
   };
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", bgColor, color)}>
+          <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", bgColor, color)}>
             {icon}
           </div>
           <div>
-            <h3 className="font-semibold">{label}</h3>
+            <p className="font-medium">{label}</p>
             <p className="text-xs text-muted-foreground">{description}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={cn("text-xs font-medium hidden sm:inline", color)}>{getLevel(value)}</span>
-          <Input
-            type="number"
-            min={0}
-            max={100}
-            value={value}
-            onChange={handleInputChange}
-            className="w-14 h-7 text-center text-sm px-1"
-          />
+        <div className="text-right">
+          <span className={cn("text-sm font-medium", color)}>{getLevel(value)}</span>
+          <span className="text-xs text-muted-foreground ml-1">{value}%</span>
         </div>
       </div>
       <Slider
         value={[value]}
-        onValueChange={([v]) => onChange(v)}
+        onValueChange={(v) => onChange(v[0])}
         max={100}
         step={5}
         className="py-2"
@@ -287,88 +281,156 @@ function GoalSlider({ icon, label, description, value, onChange, color, bgColor 
   );
 }
 
-function ObserveStep() {
+// ===== STEP 3: PATH CHOICE =====
+interface PathStepProps {
+  pathChoice: PathChoice;
+  setPathChoice: (choice: PathChoice) => void;
+}
+
+function PathStep({ pathChoice, setPathChoice }: PathStepProps) {
   return (
-    <div className="text-center space-y-6">
-      <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-info/20 to-primary/20 mb-4">
-        <Eye className="h-10 w-10 text-info" />
-      </div>
-      
-      <h2 className="text-2xl md:text-3xl font-bold">
-        Le Système Va T'Observer
-      </h2>
-      
-      <div className="space-y-4 text-muted-foreground max-w-lg mx-auto">
-        <p className="text-lg">
-          Pendant les <span className="text-foreground font-semibold">7 prochains jours</span>, agis normalement.
-        </p>
-        <p>
-          Le système collectera silencieusement des données sur tes habitudes, 
-          tes tâches et ton comportement pour établir une <span className="text-primary font-medium">baseline personnalisée</span>.
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <div className="w-16 h-16 mx-auto rounded-xl bg-accent/10 flex items-center justify-center">
+          <Compass className="h-8 w-8 text-accent" />
+        </div>
+        <h2 className="text-2xl font-bold">
+          Comment veux-tu commencer ?
+        </h2>
+        <p className="text-muted-foreground">
+          Tu pourras toujours changer d'avis plus tard.
         </p>
       </div>
 
-      <div className="glass-hover rounded-2xl p-6 max-w-md mx-auto mt-8 text-left">
-        <h3 className="font-semibold mb-4 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-warning" />
-          Ce que nous mesurons
-        </h3>
-        <ul className="space-y-3 text-sm text-muted-foreground">
-          <li className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-primary" />
-            <span>Ta constance dans les habitudes quotidiennes</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-success" />
-            <span>Tes patterns de dépenses et d'épargne</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            <span>Tes fluctuations d'humeur et d'énergie</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-warning" />
-            <span>Ton rythme d'exécution des tâches</span>
-          </li>
-        </ul>
+      <div className="space-y-4">
+        {/* Option Programme */}
+        <button
+          onClick={() => setPathChoice('program')}
+          className={cn(
+            "w-full p-6 rounded-2xl border-2 text-left transition-all",
+            pathChoice === 'program'
+              ? "border-primary bg-primary/5 shadow-lg shadow-primary/20"
+              : "border-border hover:border-primary/50 hover:bg-muted/50"
+          )}
+        >
+          <div className="flex items-start gap-4">
+            <div className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+              pathChoice === 'program' ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+            )}>
+              <Map className="h-6 w-6" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-lg">Programme Guidé</p>
+              <p className="text-xs text-primary font-medium">Recommandé</p>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">
+            Choisis un programme de 21-30 jours. L'IA génère des habitudes et tâches 
+            personnalisées avec explications scientifiques.
+          </p>
+          <div className="flex gap-2 mt-3">
+            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">Habitudes IA</span>
+            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">Wiki complet</span>
+          </div>
+        </button>
+
+        {/* Option Exploration */}
+        <button
+          onClick={() => setPathChoice('explore')}
+          className={cn(
+            "w-full p-6 rounded-2xl border-2 text-left transition-all",
+            pathChoice === 'explore'
+              ? "border-accent bg-accent/5 shadow-lg shadow-accent/20"
+              : "border-border hover:border-accent/50 hover:bg-muted/50"
+          )}
+        >
+          <div className="flex items-start gap-4">
+            <div className={cn(
+              "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+              pathChoice === 'explore' ? "bg-accent text-accent-foreground" : "bg-accent/10 text-accent"
+            )}>
+              <BookOpen className="h-6 w-6" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-lg">Exploration Libre</p>
+              <p className="text-xs text-accent font-medium">Pour les curieux</p>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">
+            Découvre l'app à ton rythme. Crée tes propres habitudes et tâches. 
+            Tu pourras activer un programme plus tard.
+          </p>
+          <div className="flex gap-2 mt-3">
+            <span className="text-xs px-2 py-1 rounded-full bg-accent/10 text-accent">Liberté totale</span>
+            <span className="text-xs px-2 py-1 rounded-full bg-accent/10 text-accent">Ton rythme</span>
+          </div>
+        </button>
       </div>
     </div>
   );
 }
 
-function ReadyStep() {
+// ===== STEP 4: READY =====
+interface ReadyStepProps {
+  pathChoice: PathChoice;
+}
+
+function ReadyStep({ pathChoice }: ReadyStepProps) {
   return (
     <div className="text-center space-y-6">
-      <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-success/20 to-accent/20 mb-4 animate-pulse">
-        <Rocket className="h-10 w-10 text-success" />
+      <div className="w-20 h-20 mx-auto rounded-2xl gradient-primary flex items-center justify-center">
+        <Rocket className="h-10 w-10 text-primary-foreground" />
       </div>
       
-      <h2 className="text-2xl md:text-3xl font-bold">
-        Prêt à Commencer ?
-      </h2>
+      <h1 className="text-2xl font-bold">
+        {pathChoice === 'program' ? 'Prêt à te transformer ?' : 'Prêt à explorer ?'}
+      </h1>
       
-      <div className="space-y-4 text-muted-foreground max-w-lg mx-auto">
-        <p>
-          Tu vas maintenant accéder à ton <span className="text-foreground font-semibold">tableau de bord d'identité</span>.
-        </p>
-        <p>
-          C'est ici que tu verras ta transformation prendre forme, 
-          jour après jour, décision après décision.
-        </p>
+      <div className="space-y-3 text-muted-foreground">
+        {pathChoice === 'program' ? (
+          <>
+            <p>
+              Tu vas maintenant choisir ton programme de transformation.
+            </p>
+            <p className="text-sm">
+              L'IA Sage va générer des habitudes et tâches personnalisées avec 
+              explications scientifiques, guides pratiques et conseils adaptés à ton profil.
+            </p>
+          </>
+        ) : (
+          <>
+            <p>
+              Tu vas accéder à ton tableau de bord.
+            </p>
+            <p className="text-sm">
+              Explore les fonctionnalités, crée tes premières habitudes et 
+              découvre comment Minded peut t'aider au quotidien.
+            </p>
+          </>
+        )}
       </div>
 
-      <div className="flex items-center justify-center gap-4 pt-4">
-        <div className="glass-hover rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-primary">7</div>
-          <div className="text-xs text-muted-foreground">Jours d'observation</div>
+      <div className="flex justify-center gap-4 pt-4">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+            <span className="text-xl">{pathChoice === 'program' ? '🎯' : '🧭'}</span>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {pathChoice === 'program' ? 'Programme' : 'Dashboard'}
+          </span>
         </div>
-        <div className="glass-hover rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-success">∞</div>
-          <div className="text-xs text-muted-foreground">Potentiel de croissance</div>
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+            <span className="text-xl">🧠</span>
+          </div>
+          <span className="text-xs text-muted-foreground">Sage IA</span>
         </div>
-        <div className="glass-hover rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-accent">1</div>
-          <div className="text-xs text-muted-foreground">Toi, transformé</div>
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
+            <span className="text-xl">∞</span>
+          </div>
+          <span className="text-xs text-muted-foreground">Potentiel</span>
         </div>
       </div>
     </div>
