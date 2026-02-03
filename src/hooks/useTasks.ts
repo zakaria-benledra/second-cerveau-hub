@@ -13,6 +13,10 @@ import {
 } from '@/lib/api/tasks';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { addUndoAction } from '@/components/shared/UndoButton';
+
+// Variable pour stocker temporairement les données de la tâche supprimée
+let lastDeletedTask: Task | null = null;
 
 export function useTodayTasks() {
   return useQuery({
@@ -116,9 +120,37 @@ export function useDeleteTask() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (id: string) => deleteTask(id),
+    mutationFn: async (id: string) => {
+      // Sauvegarder la tâche avant suppression pour permettre l'undo
+      const tasks = queryClient.getQueryData<Task[]>(['tasks', 'all']);
+      lastDeletedTask = tasks?.find(t => t.id === id) || null;
+      return deleteTask(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      
+      // Ajouter action undo si on a les données
+      if (lastDeletedTask) {
+        const taskToRestore = { ...lastDeletedTask };
+        addUndoAction({
+          type: 'task',
+          action: 'delete',
+          data: taskToRestore,
+          undo: async () => {
+            // Restaurer la tâche (sans status car CreateTaskInput ne l'inclut pas)
+            await createTask({
+              title: taskToRestore.title,
+              description: taskToRestore.description || undefined,
+              priority: taskToRestore.priority,
+              due_date: taskToRestore.due_date || undefined,
+              project_id: taskToRestore.project_id || undefined,
+              goal_id: taskToRestore.goal_id || undefined,
+            });
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+          },
+        });
+      }
+      
       toast({
         title: 'Tâche supprimée',
       });
