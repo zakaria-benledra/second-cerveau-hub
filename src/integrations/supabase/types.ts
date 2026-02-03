@@ -5708,6 +5708,21 @@ export type Database = {
         }
         Relationships: []
       }
+      leaderboard_weekly: {
+        Row: {
+          avatar_url: string | null
+          current_level: number | null
+          current_streak: number | null
+          display_name: string | null
+          longest_streak: number | null
+          rank_streak: number | null
+          rank_xp: number | null
+          total_actions: number | null
+          total_xp: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       archive_completed_tasks: { Args: never; Returns: number }
@@ -5747,6 +5762,7 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
       }
+      refresh_leaderboard: { Args: never; Returns: undefined }
       reset_weekly_streak_freezes: { Args: never; Returns: undefined }
       use_streak_freeze: {
         Args: { p_habit_id: string; p_user_id: string }
