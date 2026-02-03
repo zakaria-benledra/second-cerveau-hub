@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useGamification } from './useGamification';
+import { useConfetti } from './useConfetti';
 
 export interface Program {
   id: string;
@@ -97,36 +98,54 @@ export function useAvailablePrograms() {
 export function useJoinProgram() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { fire } = useConfetti();
   
   return useMutation({
     mutationFn: async (programId: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      // Abandonner le programme actif s'il existe
-      await supabase
-        .from('user_programs' as never)
-        .update({ status: 'abandoned' } as never)
-        .eq('user_id', user.id)
-        .eq('status', 'active');
+      // Appeler l'Edge Function de bootstrap
+      const response = await supabase.functions.invoke('bootstrap-program', {
+        body: { programId, userId: user.id },
+      });
       
-      const { data, error } = await supabase
-        .from('user_programs' as never)
-        .insert({
-          user_id: user.id,
-          program_id: programId,
-        } as never)
-        .select('*, programs(*)')
-        .single();
+      if (response.error) throw response.error;
       
-      if (error) throw error;
-      return data as unknown as UserProgram;
+      return response.data as {
+        success: boolean;
+        userProgramId: string;
+        programName: string;
+        itemsCreated: number;
+        details: { habits: number; tasks: number; goals: number };
+        archivedPrevious: boolean;
+      };
     },
     onSuccess: (data) => {
+      // Invalider TOUS les caches pertinents
       queryClient.invalidateQueries({ queryKey: ['active-program'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['gamification-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['user-badges'] });
+      queryClient.invalidateQueries({ queryKey: ['current-identity'] });
+      
+      // Célébration
+      fire('fireworks');
+      
       toast({
-        title: `${data.programs.icon} Programme démarré !`,
-        description: `${data.programs.name} - Jour 1/${data.programs.duration_days}`,
+        title: `🚀 Programme "${data.programName}" lancé !`,
+        description: `${data.itemsCreated} éléments créés automatiquement`,
+        duration: 5000,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Erreur',
+        description: error.message || 'Impossible de démarrer le programme',
+        variant: 'destructive',
       });
     },
   });
