@@ -3430,6 +3430,42 @@ export type Database = {
           },
         ]
       }
+      program_daily_messages: {
+        Row: {
+          created_at: string | null
+          daily_tip: string | null
+          day_number: number
+          evening_message: string | null
+          id: string
+          morning_message: string | null
+          program_id: string
+          reflection_prompt: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          daily_tip?: string | null
+          day_number: number
+          evening_message?: string | null
+          id?: string
+          morning_message?: string | null
+          program_id: string
+          reflection_prompt?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          daily_tip?: string | null
+          day_number?: number
+          evening_message?: string | null
+          id?: string
+          morning_message?: string | null
+          program_id?: string
+          reflection_prompt?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       program_days: {
         Row: {
           bonus_mission: Json | null

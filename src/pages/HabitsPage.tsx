@@ -25,6 +25,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { useHabitsWithLogs, useCreateHabit, useToggleHabitLog, useDeleteHabit } from '@/hooks/useHabits';
 import { useHabitHistory } from '@/hooks/useHabitsKPI';
+import { useElementWiki } from '@/hooks/useElementWiki';
+import { ElementWikiModal } from '@/components/wiki/ElementWikiModal';
 import { ScoreRing } from '@/components/today/ScoreRing';
 import { BehavioralSection } from '@/components/habits/BehavioralSection';
 import { 
@@ -40,7 +42,8 @@ import {
   CheckCircle2,
   History,
   Heart,
-  Snowflake
+  Snowflake,
+  Info
 } from 'lucide-react';
 import { HabitTimeline } from '@/components/habits/HabitTimeline';
 import type { CreateHabitInput } from '@/lib/api/habits';
@@ -68,6 +71,8 @@ export default function HabitsPage() {
     target_frequency: 'daily',
   });
   const [activeTab, setActiveTab] = useState('today');
+  const [selectedWikiId, setSelectedWikiId] = useState<string | null>(null);
+  const { data: selectedWiki } = useElementWiki(selectedWikiId || undefined);
 
   const { canAddHabit, limits } = usePlanLimits();
   const { showPaywall, PaywallComponent } = usePaywall();
@@ -418,21 +423,35 @@ export default function HabitsPage() {
                           )}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteHabit.mutate(habit.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                        {(habit as { created_from_program?: string }).created_from_program && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedWikiId(habit.id);
+                            }}
+                            title="Voir les explications scientifiques"
+                          >
+                            <Info className="h-4 w-4 text-primary" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteHabit.mutate(habit.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
             )}
 
             {/* Completed habits */}
@@ -511,6 +530,13 @@ export default function HabitsPage() {
         </Tabs>
       </div>
       <PaywallComponent />
+      {selectedWiki && (
+        <ElementWikiModal
+          wiki={selectedWiki}
+          open={!!selectedWikiId}
+          onOpenChange={(open) => !open && setSelectedWikiId(null)}
+        />
+      )}
     </AppLayout>
   );
 }
