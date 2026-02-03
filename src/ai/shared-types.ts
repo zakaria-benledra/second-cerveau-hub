@@ -10,7 +10,7 @@ export const SAGE_ACTIONS = [
   'suggest_task',    // Suggérer une tâche
   'suggest_break',   // Suggérer une pause
   'weekly_review',   // Revue hebdo
-  'silent',          // Ne rien faire
+  'silent',          // Ne rien faire (important!)
 ] as const;
 
 export type SageAction = typeof SAGE_ACTIONS[number];
