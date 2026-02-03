@@ -3,6 +3,7 @@ import { GlobalHeader } from '@/components/layout/GlobalHeader';
 import { XPProgressBar } from '@/components/gamification/XPProgressBar';
 import { BadgesGrid } from '@/components/gamification/BadgesGrid';
 import { ChallengesCard } from '@/components/gamification/ChallengesCard';
+import { LeaderboardCard } from '@/components/gamification/LeaderboardCard';
 import { useGamification } from '@/hooks/useGamification';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -48,8 +49,11 @@ export default function AchievementsPage() {
           ))}
         </div>
 
-        {/* Défis Gamification */}
-        <ChallengesCard />
+        {/* Défis & Classement */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <ChallengesCard />
+          <LeaderboardCard />
+        </div>
 
         {/* Badges par catégorie */}
         <Tabs defaultValue="all" className="space-y-4">
