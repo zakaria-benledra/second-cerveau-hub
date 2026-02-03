@@ -67,6 +67,81 @@ export type Database = {
           },
         ]
       }
+      ai_generated_programs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          current_day: number | null
+          daily_schedule: Json
+          description: string
+          duration_days: number
+          expected_outcomes: string[] | null
+          generation_prompt: string | null
+          global_explanation: string | null
+          id: string
+          methodologies: string[] | null
+          program_type: string
+          scientific_references: Json | null
+          started_at: string | null
+          status: string | null
+          subtitle: string | null
+          title: string
+          total_xp_available: number | null
+          total_xp_earned: number | null
+          updated_at: string | null
+          user_id: string
+          user_profile_snapshot: Json
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_day?: number | null
+          daily_schedule?: Json
+          description: string
+          duration_days?: number
+          expected_outcomes?: string[] | null
+          generation_prompt?: string | null
+          global_explanation?: string | null
+          id?: string
+          methodologies?: string[] | null
+          program_type: string
+          scientific_references?: Json | null
+          started_at?: string | null
+          status?: string | null
+          subtitle?: string | null
+          title: string
+          total_xp_available?: number | null
+          total_xp_earned?: number | null
+          updated_at?: string | null
+          user_id: string
+          user_profile_snapshot?: Json
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_day?: number | null
+          daily_schedule?: Json
+          description?: string
+          duration_days?: number
+          expected_outcomes?: string[] | null
+          generation_prompt?: string | null
+          global_explanation?: string | null
+          id?: string
+          methodologies?: string[] | null
+          program_type?: string
+          scientific_references?: Json | null
+          started_at?: string | null
+          status?: string | null
+          subtitle?: string | null
+          title?: string
+          total_xp_available?: number | null
+          total_xp_earned?: number | null
+          updated_at?: string | null
+          user_id?: string
+          user_profile_snapshot?: Json
+        }
+        Relationships: []
+      }
       ai_interventions: {
         Row: {
           ai_message: string
@@ -1298,6 +1373,80 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_program_progress: {
+        Row: {
+          completed_habits: Json | null
+          completed_tasks: Json | null
+          completion_rate: number | null
+          created_at: string | null
+          daily_focus: string | null
+          day_number: number
+          energy_level: string | null
+          id: string
+          mood: string | null
+          planned_habits: Json | null
+          planned_tasks: Json | null
+          program_id: string
+          progress_date: string
+          reflection_prompt: string | null
+          sage_feedback: string | null
+          sage_message_of_day: string | null
+          user_id: string
+          user_reflection: string | null
+          xp_earned: number | null
+        }
+        Insert: {
+          completed_habits?: Json | null
+          completed_tasks?: Json | null
+          completion_rate?: number | null
+          created_at?: string | null
+          daily_focus?: string | null
+          day_number: number
+          energy_level?: string | null
+          id?: string
+          mood?: string | null
+          planned_habits?: Json | null
+          planned_tasks?: Json | null
+          program_id: string
+          progress_date?: string
+          reflection_prompt?: string | null
+          sage_feedback?: string | null
+          sage_message_of_day?: string | null
+          user_id: string
+          user_reflection?: string | null
+          xp_earned?: number | null
+        }
+        Update: {
+          completed_habits?: Json | null
+          completed_tasks?: Json | null
+          completion_rate?: number | null
+          created_at?: string | null
+          daily_focus?: string | null
+          day_number?: number
+          energy_level?: string | null
+          id?: string
+          mood?: string | null
+          planned_habits?: Json | null
+          planned_tasks?: Json | null
+          program_id?: string
+          progress_date?: string
+          reflection_prompt?: string | null
+          sage_feedback?: string | null
+          sage_message_of_day?: string | null
+          user_id?: string
+          user_reflection?: string | null
+          xp_earned?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_program_progress_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "ai_generated_programs"
             referencedColumns: ["id"]
           },
         ]
@@ -3331,6 +3480,107 @@ export type Database = {
           },
         ]
       }
+      program_elements_wiki: {
+        Row: {
+          adaptation_suggestions: string | null
+          best_practices: string[] | null
+          common_mistakes: string[] | null
+          completed_at: string | null
+          created_at: string | null
+          difficulty_level: number | null
+          duration_minutes: number | null
+          element_type: string
+          frequency: string | null
+          how_to_guide: Json | null
+          id: string
+          immediate_benefits: string[] | null
+          is_completed: boolean | null
+          linked_item_id: string | null
+          long_term_benefits: string[] | null
+          medium_term_benefits: string[] | null
+          methodology_source: string | null
+          personalized_tips: string[] | null
+          program_id: string
+          recommended_time: string | null
+          scheduled_day: number | null
+          scientific_basis: string | null
+          short_description: string | null
+          streak_bonus_xp: number | null
+          title: string
+          user_id: string
+          why_this_practice: string
+          xp_reward: number | null
+        }
+        Insert: {
+          adaptation_suggestions?: string | null
+          best_practices?: string[] | null
+          common_mistakes?: string[] | null
+          completed_at?: string | null
+          created_at?: string | null
+          difficulty_level?: number | null
+          duration_minutes?: number | null
+          element_type: string
+          frequency?: string | null
+          how_to_guide?: Json | null
+          id?: string
+          immediate_benefits?: string[] | null
+          is_completed?: boolean | null
+          linked_item_id?: string | null
+          long_term_benefits?: string[] | null
+          medium_term_benefits?: string[] | null
+          methodology_source?: string | null
+          personalized_tips?: string[] | null
+          program_id: string
+          recommended_time?: string | null
+          scheduled_day?: number | null
+          scientific_basis?: string | null
+          short_description?: string | null
+          streak_bonus_xp?: number | null
+          title: string
+          user_id: string
+          why_this_practice: string
+          xp_reward?: number | null
+        }
+        Update: {
+          adaptation_suggestions?: string | null
+          best_practices?: string[] | null
+          common_mistakes?: string[] | null
+          completed_at?: string | null
+          created_at?: string | null
+          difficulty_level?: number | null
+          duration_minutes?: number | null
+          element_type?: string
+          frequency?: string | null
+          how_to_guide?: Json | null
+          id?: string
+          immediate_benefits?: string[] | null
+          is_completed?: boolean | null
+          linked_item_id?: string | null
+          long_term_benefits?: string[] | null
+          medium_term_benefits?: string[] | null
+          methodology_source?: string | null
+          personalized_tips?: string[] | null
+          program_id?: string
+          recommended_time?: string | null
+          scheduled_day?: number | null
+          scientific_basis?: string | null
+          short_description?: string | null
+          streak_bonus_xp?: number | null
+          title?: string
+          user_id?: string
+          why_this_practice?: string
+          xp_reward?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_elements_wiki_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "ai_generated_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       program_templates: {
         Row: {
           category: string | null
@@ -3882,6 +4132,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sage_contextual_messages: {
+        Row: {
+          action_suggestion: string | null
+          contextual_tip: string | null
+          created_at: string | null
+          emoji: string | null
+          energy: string | null
+          greeting: string | null
+          has_active_program: boolean | null
+          id: string
+          main_message: string
+          max_score: number | null
+          max_streak: number | null
+          min_score: number | null
+          min_streak: number | null
+          mood: string | null
+          motivation_quote: string | null
+          page_path: string
+          priority: number | null
+          sage_tone: string
+          time_of_day: string | null
+          user_state: string
+        }
+        Insert: {
+          action_suggestion?: string | null
+          contextual_tip?: string | null
+          created_at?: string | null
+          emoji?: string | null
+          energy?: string | null
+          greeting?: string | null
+          has_active_program?: boolean | null
+          id?: string
+          main_message: string
+          max_score?: number | null
+          max_streak?: number | null
+          min_score?: number | null
+          min_streak?: number | null
+          mood?: string | null
+          motivation_quote?: string | null
+          page_path: string
+          priority?: number | null
+          sage_tone: string
+          time_of_day?: string | null
+          user_state: string
+        }
+        Update: {
+          action_suggestion?: string | null
+          contextual_tip?: string | null
+          created_at?: string | null
+          emoji?: string | null
+          energy?: string | null
+          greeting?: string | null
+          has_active_program?: boolean | null
+          id?: string
+          main_message?: string
+          max_score?: number | null
+          max_streak?: number | null
+          min_score?: number | null
+          min_streak?: number | null
+          mood?: string | null
+          motivation_quote?: string | null
+          page_path?: string
+          priority?: number | null
+          sage_tone?: string
+          time_of_day?: string | null
+          user_state?: string
+        }
+        Relationships: []
       }
       sage_experiences: {
         Row: {
