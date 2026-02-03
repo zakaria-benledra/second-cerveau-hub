@@ -4,6 +4,26 @@ import { useToast } from '@/hooks/use-toast';
 import { useGamification } from './useGamification';
 import { useConfetti } from './useConfetti';
 
+// Hook to fetch all days of a program
+export function useProgramDays(programId: string | undefined) {
+  return useQuery({
+    queryKey: ['program-days', programId],
+    queryFn: async () => {
+      if (!programId) return [];
+      
+      const { data, error } = await supabase
+        .from('program_days' as never)
+        .select('*')
+        .eq('program_id', programId)
+        .order('day_number');
+      
+      if (error) throw error;
+      return data as ProgramDay[];
+    },
+    enabled: !!programId,
+  });
+}
+
 export interface Program {
   id: string;
   name: string;
