@@ -150,8 +150,8 @@ export function Header({ onMenuClick }: HeaderProps) {
           {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
-        {/* Unified Notifications Bell - Links to Notifications page */}
-        <Link to="/notifications">
+        {/* Unified Notifications Bell - Links to Dashboard */}
+        <Link to="/dashboard">
           <Button variant="ghost" size="icon" className="relative rounded-lg">
             <Bell className="h-5 w-5" />
             {totalUnread > 0 && (
