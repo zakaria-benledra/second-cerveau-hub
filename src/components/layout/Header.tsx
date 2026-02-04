@@ -1,4 +1,4 @@
-import { Menu, Bell, Search, Sun, Moon, ChevronRight, Home, ArrowLeft, User, Settings, LogOut } from 'lucide-react';
+import { Menu, Bell, Search, Sun, Moon, ChevronRight, Home, ArrowLeft, User, Settings, LogOut, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -10,14 +10,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 import { useState, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { useUnreadCount } from '@/hooks/useNotifications';
-import { useAINotifications } from '@/hooks/useAIBehavior';
+import { useAINotifications } from '@/hooks/useAINotifications';
 import { useAuth, signOut } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -45,10 +52,9 @@ export function Header({ onMenuClick }: HeaderProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  // Unified notification count: legacy + AI notifications
-  const { data: legacyUnread = 0 } = useUnreadCount();
-  const { unreadCount: aiUnread = 0 } = useAINotifications();
-  const totalUnread = legacyUnread + aiUnread;
+  // Unified AI notifications
+  const { notifications, unreadCount, isLoading: notifLoading } = useAINotifications();
+  const totalUnread = unreadCount;
   
   // Show back button only if not on home page
   const showBackButton = location.pathname !== '/';
@@ -150,20 +156,70 @@ export function Header({ onMenuClick }: HeaderProps) {
           {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
 
-        {/* Unified Notifications Bell - Links to Dashboard */}
-        <Link to="/dashboard">
-          <Button variant="ghost" size="icon" className="relative rounded-lg">
-            <Bell className="h-5 w-5" />
-            {totalUnread > 0 && (
-              <Badge
-                variant="destructive"
-                className="absolute -right-1 -top-1 h-5 min-w-5 p-0 flex items-center justify-center text-xs"
-              >
-                {totalUnread > 99 ? '99+' : totalUnread}
-              </Badge>
-            )}
-          </Button>
-        </Link>
+        {/* Unified Notifications Popover */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative rounded-lg">
+              <Bell className="h-5 w-5" />
+              {totalUnread > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="absolute -right-1 -top-1 h-5 min-w-5 p-0 flex items-center justify-center text-xs"
+                >
+                  {totalUnread > 9 ? '9+' : totalUnread}
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 p-0">
+            <div className="flex items-center justify-between p-3 border-b border-border">
+              <h4 className="font-semibold text-sm">Notifications</h4>
+              {totalUnread > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {totalUnread} non lu{totalUnread > 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
+            <ScrollArea className="h-72">
+              {notifLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Bell className="h-8 w-8 text-muted-foreground/50 mb-2" />
+                  <p className="text-sm text-muted-foreground">Aucune notification</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {notifications.slice(0, 10).map((notif) => (
+                    <div 
+                      key={notif.id} 
+                      className={cn(
+                        "p-3 hover:bg-muted/50 transition-colors cursor-pointer",
+                        !notif.read && "bg-primary/5"
+                      )}
+                      onClick={() => navigate('/dashboard')}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className={cn(
+                          "mt-1 h-2 w-2 rounded-full flex-shrink-0",
+                          notif.read ? "bg-muted-foreground/30" : "bg-primary"
+                        )} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm line-clamp-2">{notif.message}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true, locale: fr })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </PopoverContent>
+        </Popover>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
