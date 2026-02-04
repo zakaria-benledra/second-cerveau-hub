@@ -1,13 +1,16 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useTodayScore, useWeeklyScores } from '@/hooks/useScores';
+import { useAuth } from '@/hooks/useAuth';
 import { ScoreRing } from '@/components/today/ScoreRing';
+import { BehavioralDNAEngine, type BehavioralDNA } from '@/ai/behavioral-dna';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -21,7 +24,11 @@ import {
   ChevronRight,
   Sparkles,
   AlertTriangle,
-  Minus
+  Minus,
+  Sun,
+  Moon,
+  Dna,
+  Zap
 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -30,9 +37,23 @@ import { Link } from 'react-router-dom';
 
 export default function IntelligenceHubPage() {
   const [activeTab, setActiveTab] = useState('score');
+  const { user } = useAuth();
+  const [dna, setDna] = useState<BehavioralDNA | null>(null);
+  const [dnaLoading, setDnaLoading] = useState(true);
   
   const { data: todayScore, isLoading: scoreLoading } = useTodayScore();
   const { data: weeklyScores = [] } = useWeeklyScores();
+
+  // Fetch Behavioral DNA
+  useEffect(() => {
+    if (!user) return;
+    
+    const engine = new BehavioralDNAEngine(user.id);
+    engine.loadDNA().then(data => {
+      setDna(data);
+      setDnaLoading(false);
+    });
+  }, [user]);
 
   // Fetch daily stats for trends
   const { data: dailyStats = [], isLoading: statsLoading, refetch: refetchStats } = useQuery({
@@ -201,6 +222,10 @@ export default function IntelligenceHubPage() {
             <TabsTrigger value="insights" className="gap-2">
               <Brain className="h-4 w-4" />
               Insights
+            </TabsTrigger>
+            <TabsTrigger value="dna" className="gap-2">
+              <Dna className="h-4 w-4" />
+              ADN
             </TabsTrigger>
           </TabsList>
 
@@ -546,7 +571,7 @@ export default function IntelligenceHubPage() {
             <Card className="glass-subtle border-primary/20">
               <CardContent className="p-4">
                 <Link 
-                  to="/ai-coach"
+                  to="/coach"
                   className="flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-3">
@@ -564,6 +589,162 @@ export default function IntelligenceHubPage() {
                 </Link>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* DNA TAB */}
+          <TabsContent value="dna" className="space-y-6 mt-6">
+            {dnaLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : dna ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* Chronotype */}
+                <Card className="glass-strong">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      {dna.chronotype.peakHours[0] < 12 ? (
+                        <Sun className="h-5 w-5 text-warning" />
+                      ) : (
+                        <Moon className="h-5 w-5 text-accent" />
+                      )}
+                      Chronotype
+                    </CardTitle>
+                    <CardDescription>Vos heures optimales de productivité</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Heures de pic</p>
+                      <p className="text-2xl font-bold">
+                        {dna.chronotype.peakHours.slice(0, 3).map(h => `${h}h`).join(', ')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Pattern week-end</p>
+                      <Badge variant="outline">
+                        {dna.chronotype.weekendPattern === 'similar' ? 'Similaire' :
+                         dna.chronotype.weekendPattern === 'different' ? 'Différent' : 'Inversé'}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Dropout Risk */}
+                <Card className="glass-strong">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className={cn(
+                        "h-5 w-5",
+                        dna.predictions.dropoutRisk72h > 60 ? 'text-destructive' :
+                        dna.predictions.dropoutRisk72h > 30 ? 'text-warning' : 'text-success'
+                      )} />
+                      Risque de décrochage
+                    </CardTitle>
+                    <CardDescription>Probabilité dans les 72 prochaines heures</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-end gap-2">
+                      <span className={cn(
+                        "text-4xl font-bold",
+                        dna.predictions.dropoutRisk72h > 60 ? 'text-destructive' :
+                        dna.predictions.dropoutRisk72h > 30 ? 'text-warning' : 'text-success'
+                      )}>
+                        {dna.predictions.dropoutRisk72h}%
+                      </span>
+                    </div>
+                    <Progress 
+                      value={dna.predictions.dropoutRisk72h} 
+                      className={cn(
+                        "h-2",
+                        dna.predictions.dropoutRisk72h > 60 ? '[&>div]:bg-destructive' :
+                        dna.predictions.dropoutRisk72h > 30 ? '[&>div]:bg-warning' : '[&>div]:bg-success'
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Predictions */}
+                <Card className="glass-strong">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      Prédictions
+                    </CardTitle>
+                    <CardDescription>Projections basées sur votre ADN comportemental</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-4 rounded-xl bg-muted/50">
+                        <p className="text-3xl font-bold text-primary">{dna.predictions.scoreIn30Days}</p>
+                        <p className="text-xs text-muted-foreground">Score dans 30j</p>
+                      </div>
+                      <div className="text-center p-4 rounded-xl bg-muted/50">
+                        <p className="text-3xl font-bold text-accent">{dna.predictions.scoreIn90Days}</p>
+                        <p className="text-xs text-muted-foreground">Score dans 90j</p>
+                      </div>
+                      <div className="text-center p-4 rounded-xl bg-muted/50 col-span-2">
+                        <p className="text-3xl font-bold text-success">{dna.predictions.streakProbability30d}%</p>
+                        <p className="text-xs text-muted-foreground">Probabilité streak 30j</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Discipline Profile */}
+                <Card className="glass-strong">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-warning" />
+                      Profil de discipline
+                    </CardTitle>
+                    <CardDescription>Vos patterns comportementaux</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-muted-foreground">Sensibilité aux streaks</span>
+                        <span className="font-medium">{Math.round(dna.disciplineProfile.streakSensitivity * 100)}%</span>
+                      </div>
+                      <Progress value={dna.disciplineProfile.streakSensitivity * 100} className="h-2" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Capacité optimale</span>
+                      <Badge variant="secondary">{dna.disciplineProfile.optimalLoadCapacity} tâches/jour</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Récupération</span>
+                      <Badge variant="outline">{dna.disciplineProfile.recoverySpeed} jours</Badge>
+                    </div>
+                    {dna.disciplineProfile.motivationTriggers.length > 0 && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Triggers de motivation</p>
+                        <div className="flex flex-wrap gap-1">
+                          {dna.disciplineProfile.motivationTriggers.map((trigger, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs">
+                              {trigger}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Card className="glass">
+                <CardContent className="py-12 text-center">
+                  <Dna className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                  <p className="text-lg font-medium mb-2">ADN en cours de génération</p>
+                  <p className="text-muted-foreground mb-4">
+                    Continue d'utiliser Minded pendant 7 jours pour générer ton profil comportemental personnalisé.
+                  </p>
+                  <Badge variant="outline" className="gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    Fonctionnalité IA exclusive
+                  </Badge>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
