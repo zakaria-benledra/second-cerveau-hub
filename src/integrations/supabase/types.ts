@@ -67,6 +67,39 @@ export type Database = {
           },
         ]
       }
+      ai_cost_ledger: {
+        Row: {
+          cost_usd: number
+          created_at: string
+          function_name: string
+          id: string
+          input_tokens: number
+          model_name: string
+          output_tokens: number
+          user_id: string
+        }
+        Insert: {
+          cost_usd?: number
+          created_at?: string
+          function_name: string
+          id?: string
+          input_tokens?: number
+          model_name?: string
+          output_tokens?: number
+          user_id: string
+        }
+        Update: {
+          cost_usd?: number
+          created_at?: string
+          function_name?: string
+          id?: string
+          input_tokens?: number
+          model_name?: string
+          output_tokens?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_generated_programs: {
         Row: {
           completed_at: string | null
@@ -387,6 +420,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_rate_limits: {
+        Row: {
+          daily_cost_limit_usd: number | null
+          daily_cost_used_usd: number | null
+          daily_token_limit: number | null
+          daily_tokens_used: number | null
+          id: string
+          quota_reset_at: string
+          user_id: string
+        }
+        Insert: {
+          daily_cost_limit_usd?: number | null
+          daily_cost_used_usd?: number | null
+          daily_token_limit?: number | null
+          daily_tokens_used?: number | null
+          id?: string
+          quota_reset_at?: string
+          user_id: string
+        }
+        Update: {
+          daily_cost_limit_usd?: number | null
+          daily_cost_used_usd?: number | null
+          daily_token_limit?: number | null
+          daily_tokens_used?: number | null
+          id?: string
+          quota_reset_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       ai_suggestions_cache: {
         Row: {
@@ -4247,6 +4310,7 @@ export type Database = {
           metrics_before: Json | null
           policy_version: string | null
           reward: number
+          run_id: string | null
           user_id: string
           workspace_id: string | null
         }
@@ -4262,6 +4326,7 @@ export type Database = {
           metrics_before?: Json | null
           policy_version?: string | null
           reward?: number
+          run_id?: string | null
           user_id: string
           workspace_id?: string | null
         }
@@ -4277,10 +4342,18 @@ export type Database = {
           metrics_before?: Json | null
           policy_version?: string | null
           reward?: number
+          run_id?: string | null
           user_id?: string
           workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sage_experiences_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "sage_runs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sage_experiences_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -6665,6 +6738,10 @@ export type Database = {
     Functions: {
       archive_completed_tasks: { Args: never; Returns: number }
       calculate_level: { Args: { xp: number }; Returns: number }
+      check_ai_rate_limit: {
+        Args: { p_cost: number; p_tokens: number; p_user_id: string }
+        Returns: boolean
+      }
       check_feature_access: {
         Args: { _feature: string; _user_id: string }
         Returns: boolean

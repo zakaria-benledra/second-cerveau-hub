@@ -1,19 +1,16 @@
 // supabase/functions/nightly-learning/index.ts
-// Job qui traite l'apprentissage différé chaque nuit
+// Job qui traite l'apprentissage différé chaque nuit — V59 P0 Fix
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCorsOptions } from '../_shared/cors.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return handleCorsOptions(req);
   }
 
+  const corsHeaders = getCorsHeaders(req);
   const startTime = Date.now();
   const stats = {
     processed: 0,
@@ -33,7 +30,7 @@ serve(async (req) => {
 
     const { data: pendingExperiences, error: fetchError } = await supabase
       .from('sage_experiences')
-      .select('id, user_id, context_vector, action_type, metrics_before, feedback_type')
+      .select('id, user_id, context_vector, action_type, metrics_before, feedback_type, run_id')
       .is('reward', null)
       .eq('learning_enabled', true)
       .lt('created_at', cutoffTime)
@@ -50,20 +47,9 @@ serve(async (req) => {
     for (const exp of pendingExperiences || []) {
       try {
         // Vérifier consentement actuel
-        const { data: consents } = await supabase
-          .from('user_consents')
-          .select('purpose, granted')
-          .eq('user_id', exp.user_id);
-
-        const consentMap: Record<string, boolean> = {};
-        for (const c of consents || []) {
-          consentMap[c.purpose as string] = Boolean(c.granted);
-        }
-
-        const learningEnabled = consentMap['ai_profiling'] && consentMap['policy_learning'];
+        const learningEnabled = await checkConsentForLearning(supabase, exp.user_id);
 
         if (!learningEnabled) {
-          // Marquer comme skip
           await supabase.from('sage_experiences')
             .update({ learning_enabled: false })
             .eq('id', exp.id);
@@ -71,14 +57,29 @@ serve(async (req) => {
           continue;
         }
 
-        // Calculer métriques after (simplifié pour edge function)
+        // Résoudre feedback_type: priorité à sage_experiences, fallback sur sage_feedback via run_id
+        let feedbackType = exp.feedback_type;
+        if (!feedbackType && exp.run_id) {
+          const { data: fb } = await supabase
+            .from('sage_feedback')
+            .select('helpful, ignored')
+            .eq('run_id', exp.run_id)
+            .eq('user_id', exp.user_id)
+            .maybeSingle();
+          
+          if (fb) {
+            feedbackType = fb.helpful ? 'accepted' : fb.ignored ? 'ignored' : 'rejected';
+          }
+        }
+
+        // Calculer métriques after
         const metricsAfter = await fetchUserMetrics(supabase, exp.user_id);
 
         // Calculer reward
         const reward = computeReward({
-          accepted: exp.feedback_type === 'accepted',
-          rejected: exp.feedback_type === 'rejected',
-          ignored: exp.feedback_type === 'ignored',
+          accepted: feedbackType === 'accepted',
+          rejected: feedbackType === 'rejected',
+          ignored: feedbackType === 'ignored',
           metricsBefore: (exp.metrics_before as Record<string, number>) || {},
           metricsAfter: metricsAfter,
         });
@@ -88,12 +89,16 @@ serve(async (req) => {
           .update({
             metrics_after: metricsAfter,
             reward: reward,
+            feedback_type: feedbackType,
           })
           .eq('id', exp.id);
 
-        // Mettre à jour les poids
+        // Mettre à jour les poids (9D unified vector)
         const contextVec = (exp.context_vector as number[]) || [];
         await updatePolicyWeights(supabase, exp.user_id, contextVec, exp.action_type, reward);
+
+        // Log cost for this processing
+        await logCost(supabase, exp.user_id, 'nightly-learning', 0, 0, 0);
 
         stats.processed++;
         stats.totalReward += reward;
@@ -134,6 +139,20 @@ serve(async (req) => {
 });
 
 // === HELPERS ===
+
+async function checkConsentForLearning(supabase: any, userId: string): Promise<boolean> {
+  const { data: consents } = await supabase
+    .from('user_consents')
+    .select('purpose, granted')
+    .eq('user_id', userId);
+
+  const consentMap: Record<string, boolean> = {};
+  for (const c of consents || []) {
+    consentMap[c.purpose as string] = Boolean(c.granted);
+  }
+
+  return Boolean(consentMap['ai_profiling'] && consentMap['policy_learning']);
+}
 
 // deno-lint-ignore no-explicit-any
 async function fetchUserMetrics(supabase: any, userId: string) {
@@ -206,8 +225,10 @@ async function updatePolicyWeights(
 
   let weights: number[] = existing?.weights || [];
   
-  if (weights.length === 0 || weights.length < contextVector.length) {
-    weights = new Array(contextVector.length).fill(0).map(() => (Math.random() - 0.5) * 0.1);
+  // Initialize to 9D if needed (unified vector size)
+  const VECTOR_SIZE = 9;
+  if (weights.length === 0 || weights.length !== VECTOR_SIZE) {
+    weights = new Array(VECTOR_SIZE).fill(0).map(() => (Math.random() - 0.5) * 0.1);
   }
 
   for (let i = 0; i < weights.length && i < contextVector.length; i++) {
@@ -222,4 +243,27 @@ async function updatePolicyWeights(
   }, {
     onConflict: 'user_id,action_type',
   });
+}
+
+// deno-lint-ignore no-explicit-any
+async function logCost(
+  supabase: any,
+  userId: string,
+  functionName: string,
+  inputTokens: number,
+  outputTokens: number,
+  costUsd: number
+) {
+  try {
+    await supabase.from('ai_cost_ledger').insert({
+      user_id: userId,
+      function_name: functionName,
+      model_name: 'nightly-batch',
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      cost_usd: costUsd,
+    });
+  } catch (e) {
+    console.warn('[NightlyLearning] Failed to log cost:', e);
+  }
 }

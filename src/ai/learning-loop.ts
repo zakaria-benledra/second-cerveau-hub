@@ -123,11 +123,13 @@ export class LearningLoop {
         action_type: run.action_type,
       }]);
       
-      // 5. Créer l'expérience (reward sera calculé par job nightly)
+      // 5. Créer l'expérience avec run_id + feedback_type (reward sera calculé par job nightly)
       await supabase.from('sage_experiences').insert([{
         user_id: this.userId,
+        run_id: runId,
         context_vector: contextVector,
         action_type: run.action_type,
+        feedback_type: feedback,
         metrics_before: JSON.parse(JSON.stringify(metricsBefore)) as Json,
       }]);
       
