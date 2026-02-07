@@ -234,27 +234,28 @@ export async function getCanonicalMetrics(userId: string): Promise<CanonicalMetr
 
 /**
  * Convertit les métriques en vecteur numérique pour le Policy Engine
+ * UNIFIED 9D VECTOR — Must match sage-core/index.ts contextToVector()
+ * Dimensions: [habit_rate, streak_norm, task_rate, overdue_inv, momentum, dropout_risk, hour_sin, hour_cos, weekend]
  */
 export function metricsToVector(m: CanonicalMetrics): number[] {
+  const habitRate = m.habits_done_today / Math.max(m.habits_total_today, 1);
+  const streakNorm = Math.min(m.current_streak / 30, 1);
+  const taskRate = m.task_completion_rate;
+  const overdueInv = 1 - Math.min(m.task_overdue_ratio * 5, 1);
+  const momentum = m.momentum_index;
+  const dropoutRisk = m.burnout_risk;
+  const hourRad = (m.hour_of_day / 24) * 2 * Math.PI;
+  
   return [
-    m.habits_rate_7d,
-    m.habits_variance_30d,
-    m.task_overdue_ratio,
-    m.task_completion_rate,
-    m.journal_sentiment_avg,
-    m.burnout_risk,
-    m.momentum_index,
-    m.financial_health,
-    m.hour_of_day / 24,
-    m.day_of_week / 7,
+    habitRate,
+    streakNorm,
+    taskRate,
+    overdueInv,
+    momentum,
+    dropoutRisk,
+    Math.sin(hourRad),
+    Math.cos(hourRad),
     m.is_weekend ? 1 : 0,
-    Math.min(m.days_since_last_activity / 7, 1),
-    Math.min(m.pending_tasks / 20, 1),
-    Math.min(m.due_today / 10, 1),
-    m.habits_done_today / Math.max(m.habits_total_today, 1),
-    Math.min(m.current_streak / 30, 1),
-    m.last_journal_mood / 5,
-    m.data_quality,
   ];
 }
 

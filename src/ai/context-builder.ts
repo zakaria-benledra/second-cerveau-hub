@@ -380,26 +380,28 @@ export async function buildContext(userId: string): Promise<UserContext> {
 }
 
 // Normalise le contexte en vecteur numérique [0-1] pour le Policy Engine
+// UNIFIED 9D VECTOR — Must match sage-core/index.ts contextToVector()
+// Dimensions: [habit_rate, streak_norm, task_rate, overdue_inv, momentum, dropout_risk, hour_sin, hour_cos, weekend]
 export function contextToVector(ctx: UserContext): number[] {
+  const habitRate = ctx.current.habits_done_today / Math.max(ctx.current.habits_total_today, 1);
+  const streakNorm = Math.min(ctx.current.current_streak / 30, 1);
+  const taskTotal = ctx.current.pending_tasks + (ctx.metrics.task_completion_rate > 0 ? ctx.current.pending_tasks / (1 - ctx.metrics.task_completion_rate) : 0);
+  const taskRate = taskTotal > 0 ? ctx.metrics.task_completion_rate : 0;
+  const overdueInv = 1 - Math.min(ctx.metrics.task_overdue_ratio * 5, 1);
+  const momentum = ctx.metrics.momentum_index;
+  const dropoutRisk = ctx.metrics.burnout_risk;
+  const hourRad = (ctx.temporal.hour_of_day / 24) * 2 * Math.PI;
+  
   return [
-    ctx.metrics.habits_rate_7d,
-    ctx.metrics.habits_variance_30d,
-    ctx.metrics.task_overdue_ratio,
-    ctx.metrics.task_completion_rate,
-    ctx.metrics.journal_sentiment_avg,
-    ctx.metrics.burnout_risk,
-    ctx.metrics.momentum_index,
-    ctx.metrics.financial_health,
-    ctx.temporal.hour_of_day / 24,
-    ctx.temporal.day_of_week / 7,
+    habitRate,
+    streakNorm,
+    taskRate,
+    overdueInv,
+    momentum,
+    dropoutRisk,
+    Math.sin(hourRad),
+    Math.cos(hourRad),
     ctx.temporal.is_weekend ? 1 : 0,
-    Math.min(ctx.temporal.days_since_last_activity / 7, 1),
-    Math.min(ctx.current.pending_tasks / 20, 1),
-    Math.min(ctx.current.due_today / 10, 1),
-    ctx.current.habits_done_today / Math.max(ctx.current.habits_total_today, 1),
-    Math.min(ctx.current.current_streak / 30, 1),
-    ctx.current.last_journal_mood / 5,
-    ctx.data_quality,
   ];
 }
 

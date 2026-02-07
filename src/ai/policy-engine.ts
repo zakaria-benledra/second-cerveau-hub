@@ -74,7 +74,7 @@ export class PolicyEngine {
   } = {}) {
     this.learningRate = config.learningRate ?? 0.05;
     this.epsilon = config.epsilon ?? 0.1;
-    this.vectorSize = config.vectorSize ?? 18; // Taille du context vector
+    this.vectorSize = config.vectorSize ?? 9; // UNIFIED 9D context vector — matches sage-core
     this.initializeWeights();
   }
 
@@ -251,26 +251,17 @@ export class PolicyEngine {
   }
 }
 
-// Noms des features pour l'explicabilité
+// Noms des features pour l'explicabilité — UNIFIED 9D
 const FEATURE_NAMES: Record<number, string> = {
-  0: 'habits_rate_7d',
-  1: 'habits_variance',
-  2: 'task_overdue',
-  3: 'task_completion',
-  4: 'journal_sentiment',
-  5: 'burnout_risk',
-  6: 'momentum',
-  7: 'financial_health',
-  8: 'hour_of_day',
-  9: 'day_of_week',
-  10: 'is_weekend',
-  11: 'days_inactive',
-  12: 'pending_tasks',
-  13: 'due_today',
-  14: 'habits_progress',
-  15: 'streak',
-  16: 'last_mood',
-  17: 'data_quality',
+  0: 'habit_rate',
+  1: 'streak_norm',
+  2: 'task_rate',
+  3: 'overdue_inv',
+  4: 'momentum',
+  5: 'dropout_risk',
+  6: 'hour_sin',
+  7: 'hour_cos',
+  8: 'is_weekend',
 };
 
 // Export des noms de features pour usage externe
