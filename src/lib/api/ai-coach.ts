@@ -76,11 +76,25 @@ async function callAICoach(action: string, payload?: Record<string, unknown>) {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) throw new Error('Not authenticated');
 
-  const response = await supabase.functions.invoke('ai-coach', {
+  // Map old actions to new sage-core skills
+  const skillMap: Record<string, string> = {
+    'daily_briefing': 'briefing',
+    'detect_risks': 'risk-analysis',
+    'generate_proposal': 'propose',
+    'approve_proposal': 'approve',
+    'reject_proposal': 'reject',
+    'undo_action': 'undo',
+    'weekly_review': 'review',
+    'simulate_event': 'simulate',
+  };
+
+  const skill = skillMap[action] || action;
+
+  const response = await supabase.functions.invoke('minded-sage-core', {
     body: {
-      action,
+      skill,
       user_id: userData.user.id,
-      payload
+      ...payload
     }
   });
 

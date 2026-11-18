@@ -117,7 +117,7 @@ export async function recomputeScore(date?: string): Promise<DailyScore> {
 
   const targetDate = date || new Date().toISOString().split('T')[0];
 
-  const { data, error } = await supabase.functions.invoke('compute-scores', {
+  const { data, error } = await supabase.functions.invoke('minded-compute-scores', {
     body: { user_id: userData.user.id, date: targetDate },
   });
 

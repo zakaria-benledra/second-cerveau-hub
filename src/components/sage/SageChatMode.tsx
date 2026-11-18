@@ -37,7 +37,7 @@ export function SageChatMode() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('sage-core', {
+      const { data, error } = await supabase.functions.invoke('minded-sage-core', {
         body: {
           skill: 'chat',
           additionalContext: { 

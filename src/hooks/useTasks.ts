@@ -95,7 +95,7 @@ export function useCompleteTask() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       
       // Trigger real-time score recalculation
-      supabase.functions.invoke('compute-score-realtime').then(() => {
+      supabase.functions.invoke('minded-compute-scores').then(() => {
         queryClient.invalidateQueries({ queryKey: ['global-score'] });
         queryClient.invalidateQueries({ queryKey: ['scores'] });
       }).catch(() => {});

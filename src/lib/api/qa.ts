@@ -96,7 +96,7 @@ export async function computeTodayScore(): Promise<any> {
 
   const today = new Date().toISOString().split('T')[0];
   
-  const response = await supabase.functions.invoke('compute-scores', {
+  const response = await supabase.functions.invoke('minded-compute-scores', {
     body: {
       user_id: userData.user.id,
       date: today

@@ -51,7 +51,7 @@ export function useToggleHabitLog() {
       queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
       
       // Trigger real-time score recalculation
-      supabase.functions.invoke('compute-score-realtime').then(() => {
+      supabase.functions.invoke('minded-compute-scores').then(() => {
         queryClient.invalidateQueries({ queryKey: ['global-score'] });
         queryClient.invalidateQueries({ queryKey: ['scores'] });
       }).catch(() => {});
