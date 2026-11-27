@@ -139,9 +139,9 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!anthropicApiKey) {
+      throw new Error("ANTHROPIC_API_KEY is not configured");
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -210,46 +210,40 @@ serve(async (req) => {
 
     console.log("Generating program for:", profile.firstName, "Type:", request.programType);
 
-    // Call Lovable AI Gateway
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Call Anthropic Claude API
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
+        "x-api-key": anthropicApiKey,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "claude-3-haiku-20240307",
+        max_tokens: 8000,
+        system: SYSTEM_PROMPT,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: buildPrompt(profile, request) },
         ],
-        temperature: 0.7,
-        max_tokens: 8000,
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error("AI Gateway error:", aiResponse.status, errorText);
-      
+      console.error("Anthropic API error:", aiResponse.status, errorText);
+
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      
-      throw new Error(`AI Gateway error: ${aiResponse.status}`);
+
+      throw new Error(`Anthropic API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content;
+    const content = aiData.content?.[0]?.text;
 
     if (!content) {
       throw new Error("No content in AI response");
@@ -335,33 +329,53 @@ serve(async (req) => {
       await supabase.from('program_elements_wiki').insert(wikiEntries);
     }
 
-    // Create actual habits in habits table
+    // Create actual habits via minded_habits view (with INSTEAD OF trigger)
     const habitsToCreate = (programData.habits || []).map((habit: any) => ({
       user_id: user.id,
       name: habit.name,
-      description: habit.why_this_practice,
-      target_frequency: habit.frequency || 'daily',
+      description: habit.why_this_practice || habit.description || '',
+      frequency: habit.frequency || 'daily',
       is_active: true,
       icon: '🎯',
-      created_from_program: program.id,
+      source_program_id: program.id,
     }));
 
+    let habitsCreated = 0;
     if (habitsToCreate.length > 0) {
-      await supabase.from('habits').insert(habitsToCreate);
+      const { error: habitsError } = await supabase
+        .from('minded_habits')
+        .insert(habitsToCreate);
+
+      if (habitsError) {
+        console.error("Failed to create habits:", habitsError);
+      } else {
+        habitsCreated = habitsToCreate.length;
+        console.log(`Created ${habitsCreated} habits for program ${program.id}`);
+      }
     }
 
-    // Create tasks
+    // Create tasks via minded_tasks view (with INSTEAD OF trigger)
     const tasksToCreate = (programData.tasks || []).map((task: any) => ({
       user_id: user.id,
       title: task.title,
-      description: task.description,
+      description: task.description || '',
       status: 'todo',
       priority: task.priority || 'medium',
-      created_from_program: program.id,
+      source_program_id: program.id,
     }));
 
+    let tasksCreated = 0;
     if (tasksToCreate.length > 0) {
-      await supabase.from('tasks').insert(tasksToCreate);
+      const { error: tasksError } = await supabase
+        .from('minded_tasks')
+        .insert(tasksToCreate);
+
+      if (tasksError) {
+        console.error("Failed to create tasks:", tasksError);
+      } else {
+        tasksCreated = tasksToCreate.length;
+        console.log(`Created ${tasksCreated} tasks for program ${program.id}`);
+      }
     }
 
     // Create initial daily progress entry
@@ -385,8 +399,8 @@ serve(async (req) => {
         subtitle: program.subtitle,
         description: program.description,
         duration_days: program.duration_days,
-        habits_created: habitsToCreate.length,
-        tasks_created: tasksToCreate.length,
+        habits_created: habitsCreated,
+        tasks_created: tasksCreated,
         wiki_entries: wikiEntries.length,
       },
     }), {

@@ -17,6 +17,7 @@ export interface Task {
   created_at: string;
   completed_at: string | null;
   updated_at: string;
+  source_program_id?: string | null;
 }
 
 export interface CreateTaskInput {

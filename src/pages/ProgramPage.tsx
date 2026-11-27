@@ -60,16 +60,26 @@ export default function ProgramPage() {
   // Utiliser le programme AI ou le programme classique
   const hasAnyProgram = activeProgram || aiProgram;
 
-  // Tâches et habitudes créées par le programme actif
+  // Tâches et habitudes créées par le programme actif (classique ou IA)
   const programTasks = useMemo(() => {
-    if (!activeProgram) return [];
-    return tasks.filter(t => (t as any).created_from_program === activeProgram.program_id);
-  }, [tasks, activeProgram]);
+    if (aiProgram) {
+      return tasks.filter(t => (t as any).source_program_id === aiProgram.id);
+    }
+    if (activeProgram) {
+      return tasks.filter(t => (t as any).source_program_id === activeProgram.program_id);
+    }
+    return [];
+  }, [tasks, activeProgram, aiProgram]);
 
   const programHabits = useMemo(() => {
-    if (!activeProgram) return [];
-    return habits.filter(h => (h as any).created_from_program === activeProgram.program_id);
-  }, [habits, activeProgram]);
+    if (aiProgram) {
+      return habits.filter(h => (h as any).source_program_id === aiProgram.id);
+    }
+    if (activeProgram) {
+      return habits.filter(h => (h as any).source_program_id === activeProgram.program_id);
+    }
+    return [];
+  }, [habits, activeProgram, aiProgram]);
 
   // Calculer la date de chaque jour du programme
   const daysWithDates = useMemo(() => {
@@ -92,13 +102,17 @@ export default function ProgramPage() {
     });
   }, [programDays, activeProgram]);
 
-  // Stats du programme
+  // Stats du programme (classique ou IA)
   const stats = useMemo(() => {
-    const completedDays = activeProgram?.current_day ? activeProgram.current_day - 1 : 0;
-    const totalDays = activeProgram?.programs?.duration_days || 1;
+    const completedDays = aiProgram?.current_day
+      ? aiProgram.current_day - 1
+      : (activeProgram?.current_day ? activeProgram.current_day - 1 : 0);
+    const totalDays = aiProgram?.duration_days
+      || activeProgram?.programs?.duration_days
+      || 1;
     const tasksCompleted = programTasks.filter(t => t.status === 'done').length;
     const habitsToday = programHabits.filter(h => (h as any).todayLog?.completed).length;
-    
+
     return {
       completedDays,
       totalDays,
@@ -108,7 +122,7 @@ export default function ProgramPage() {
       habitsToday,
       totalHabits: programHabits.length,
     };
-  }, [activeProgram, programTasks, programHabits]);
+  }, [activeProgram, aiProgram, programTasks, programHabits]);
 
   if (loadingActive || loadingPrograms) {
     return (

@@ -11,6 +11,7 @@ export interface Habit {
   color: string | null;
   created_at: string;
   updated_at: string;
+  source_program_id?: string | null;
 }
 
 export interface HabitLog {

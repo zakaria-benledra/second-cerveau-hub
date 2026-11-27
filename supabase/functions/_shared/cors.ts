@@ -4,6 +4,7 @@
  */
 
 const ALLOWED_ORIGINS = [
+  'https://second-cerveau-hub.vercel.app',
   'https://id-preview--09ef06eb-64a5-45f4-bf3f-f933a7ff7f3c.lovable.app',
   'https://lovable.app',
   'http://localhost:5173',
