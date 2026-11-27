@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -27,21 +27,27 @@ jobs:
       - name: Build web app
         run: npm run build
         env:
-          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PROJECT_ID: 'jkeaeqroiztbcbzrchhm'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZWFlcXJvaXp0YmNienJjaGhtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMzU1MjUsImV4cCI6MjA5NjYxMTUyNX0.lFFFRkjYYj54bpEZsWCleXxJSm0N66_4I7gjCav8wII'
+          VITE_SUPABASE_URL: 'https://jkeaeqroiztbcbzrchhm.supabase.co'
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Capacitor CLI
-        run: npm install -g @capacitor/cli
+      - name: Accept Android SDK licenses
+        run: |
+          mkdir -p $ANDROID_HOME/licenses
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_HOME/licenses/android-sdk-license
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" >> $ANDROID_HOME/licenses/android-sdk-license
+          echo "d975f751698a77b662f1254ddbeed3901e976f5a" >> $ANDROID_HOME/licenses/android-sdk-license
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> $ANDROID_HOME/licenses/android-sdk-arm-dbt-license
+          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > $ANDROID_HOME/licenses/intel-android-extra-license
+          echo "d975f751698a77b662f1254ddbeed3901e976f5a" > $ANDROID_HOME/licenses/android-googletv-license
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_HOME/licenses/mips-android-sysimage-license
+          echo "e9acab5b5fbb560a72cfaecce8946896ff6aab9d" >> $ANDROID_HOME/licenses/android-sdk-preview-license
 
       - name: Add Android platform
         run: npx cap add android || true
@@ -50,9 +56,7 @@ jobs:
         run: npx cap sync android
 
       - name: Generate icons and splash
-        run: |
-          npm install @capacitor/assets --save-dev
-          npx capacitor-assets generate --iconBackgroundColor '#6366f1' --splashBackgroundColor '#1a1a2e' --android
+        run: npx capacitor-assets generate --iconBackgroundColor '#6366f1' --splashBackgroundColor '#1a1a2e' --android
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
@@ -81,23 +85,25 @@ jobs:
 
       - name: Create Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ github.run_number }}
-          name: Release v${{ github.run_number }}
+          name: Minded v${{ github.run_number }}
           body: |
-            ## Minded Mobile App
+            ## 🧠 Minded Mobile App
 
             **Build #${{ github.run_number }}**
 
-            ### Download
-            - `app-debug.apk` - Debug version for testing
-            - `app-release-unsigned.apk` - Release version (needs signing)
+            ### 📥 Download
+            - `app-debug.apk` - Version de test (recommandée)
+            - `app-release-unsigned.apk` - Version release (non signée)
 
-            ### Installation
-            1. Download `app-debug.apk` on your Android phone
-            2. Enable "Install from unknown sources" in Settings
-            3. Open the APK file to install
+            ### 📲 Installation (Android)
+            1. Télécharge `app-debug.apk` sur ton téléphone
+            2. Active **"Sources inconnues"** dans Paramètres > Sécurité
+            3. Ouvre le fichier APK téléchargé
+            4. Appuie sur **Installer**
+            5. Lance **Minded** et connecte-toi !
           files: |
             android/app/build/outputs/apk/debug/app-debug.apk
             android/app/build/outputs/apk/release/app-release-unsigned.apk

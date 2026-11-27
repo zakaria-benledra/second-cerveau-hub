@@ -135,6 +135,40 @@ level = Math.floor(Math.sqrt(totalXP / 50)) + 1
 
 ---
 
+## 📱 Mobile App
+
+### Download
+
+The mobile app is built automatically with each release. Download the latest APK from:
+
+👉 **[Releases Page](https://github.com/zakaria-benledra/second-cerveau-hub/releases)**
+
+### Installation (Android)
+
+1. Download `app-debug.apk` from the releases page
+2. On your phone, enable **"Install from unknown sources"** in Settings > Security
+3. Open the downloaded APK file
+4. Tap **Install**
+5. Open **Minded** and sign in!
+
+### Features
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| 🤖 **Android** | ✅ Available | APK download from Releases |
+| 🍎 **iOS** | 🔜 Coming Soon | Requires Apple Developer account |
+| 🌐 **PWA** | ✅ Available | Install from browser |
+
+### PWA Installation
+
+You can also install Minded as a Progressive Web App:
+
+1. Visit the web app in Chrome/Safari
+2. Tap the **"Add to Home Screen"** option
+3. Minded will appear as an app icon
+
+---
+
 ## 🏗️ Architecture
 
 ### Tech Stack
@@ -147,6 +181,7 @@ level = Math.floor(Math.sqrt(totalXP / 50)) + 1
 | **Database** | PostgreSQL (Supabase) |
 | **Auth** | Supabase Auth (Email + OAuth) |
 | **Charts** | Recharts |
+| **Mobile** | Capacitor (iOS & Android) |
 | **Testing** | Vitest (unit) + Playwright (E2E) |
 | **PWA** | Service Worker + IndexedDB |
 
