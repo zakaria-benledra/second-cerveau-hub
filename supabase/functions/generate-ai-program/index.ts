@@ -173,25 +173,14 @@ serve(async (req) => {
       intensity: 'moderate',
     };
 
-    // Fetch user profile data
+    // Fetch user profile data from minded_profiles view
     const { data: profileData } = await supabase
-      .from('user_profiles')
+      .from('minded_profiles')
       .select('*')
       .eq('id', user.id)
       .single();
 
-    const { data: prefsData } = await supabase
-      .from('preferences')
-      .select('interests, onboarding_priorities')
-      .eq('user_id', user.id)
-      .single();
-
-    const { data: gamificationData } = await supabase
-      .from('gamification_profiles')
-      .select('current_streak')
-      .eq('id', user.id)
-      .single();
-
+    // Fetch latest daily score
     const { data: scoresData } = await supabase
       .from('scores_daily')
       .select('global_score')
@@ -200,12 +189,21 @@ serve(async (req) => {
       .limit(1)
       .single();
 
+    // Fetch max streak from minded_streaks
+    const { data: streakData } = await supabase
+      .from('minded_streaks')
+      .select('current_streak')
+      .eq('user_id', user.id)
+      .order('current_streak', { ascending: false })
+      .limit(1)
+      .single();
+
     const profile: UserProfile = {
-      firstName: profileData?.first_name || profileData?.display_name?.split(' ')[0] || 'Ami',
-      interests: prefsData?.interests || [],
-      priorities: prefsData?.onboarding_priorities || { discipline: 50, finance: 50, mental: 50 },
+      firstName: profileData?.display_name?.split(' ')[0] || 'Ami',
+      interests: profileData?.values || [],
+      priorities: { discipline: 50, finance: 50, mental: 50 }, // Default priorities
       currentScore: scoresData?.global_score || 50,
-      streak: gamificationData?.current_streak || 0,
+      streak: streakData?.current_streak || 0,
     };
 
     console.log("Generating program for:", profile.firstName, "Type:", request.programType);
@@ -325,8 +323,12 @@ serve(async (req) => {
       streak_bonus_xp: 5,
     }));
 
+    // Try to create wiki entries (optional - table may not exist)
     if (wikiEntries.length > 0) {
-      await supabase.from('program_elements_wiki').insert(wikiEntries);
+      const { error: wikiError } = await supabase.from('program_elements_wiki').insert(wikiEntries);
+      if (wikiError) {
+        console.warn("Wiki entries not created (table may not exist):", wikiError.message);
+      }
     }
 
     // Create actual habits via minded_habits view (with INSTEAD OF trigger)
