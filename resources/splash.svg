@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="50%" style="stop-color:#16213e"/>
+      <stop offset="100%" style="stop-color:#0f0f23"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa"/>
+      <stop offset="100%" style="stop-color:#c4b5fd"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="2732" height="2732" fill="url(#bg)"/>
+
+  <!-- Subtle pattern circles -->
+  <circle cx="2732" cy="0" r="800" fill="url(#accent)" opacity="0.05"/>
+  <circle cx="0" cy="2732" r="600" fill="url(#accent)" opacity="0.05"/>
+
+  <!-- Main logo container -->
+  <g transform="translate(1366, 1200)">
+    <!-- Outer glow ring -->
+    <circle cx="0" cy="0" r="320" fill="none" stroke="url(#glow)" stroke-width="4" opacity="0.3"/>
+    <circle cx="0" cy="0" r="360" fill="none" stroke="url(#glow)" stroke-width="2" opacity="0.15"/>
+
+    <!-- Brain icon background -->
+    <circle cx="0" cy="0" r="240" fill="url(#accent)"/>
+
+    <!-- Brain left hemisphere -->
+    <path d="M-45,-135
+             C-135,-135 -165,-60 -165,15
+             C-165,75 -135,120 -90,135
+             C-60,144 -30,135 -15,120
+             C0,105 0,75 0,45
+             C0,15 -15,-15 -45,-45
+             C-75,-75 -45,-135 -45,-135Z"
+          fill="white" opacity="0.95"/>
+
+    <!-- Brain right hemisphere -->
+    <path d="M45,-135
+             C135,-135 165,-60 165,15
+             C165,75 135,120 90,135
+             C60,144 30,135 15,120
+             C0,105 0,75 0,45
+             C0,15 15,-15 45,-45
+             C75,-75 45,-135 45,-135Z"
+          fill="white" opacity="0.95"/>
+
+    <!-- Neural dots -->
+    <circle cx="-60" cy="-45" r="15" fill="url(#accent)"/>
+    <circle cx="60" cy="-45" r="15" fill="url(#accent)"/>
+    <circle cx="0" cy="0" r="18" fill="url(#accent)"/>
+    <circle cx="-75" cy="45" r="12" fill="url(#accent)"/>
+    <circle cx="75" cy="45" r="12" fill="url(#accent)"/>
+
+    <!-- Connections -->
+    <line x1="-60" y1="-45" x2="0" y2="0" stroke="url(#accent)" stroke-width="4"/>
+    <line x1="60" y1="-45" x2="0" y2="0" stroke="url(#accent)" stroke-width="4"/>
+
+    <!-- Sparkle -->
+    <circle cx="105" cy="-105" r="22" fill="#fbbf24"/>
+    <path d="M105,-124 L105,-86 M86,-105 L124,-105" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- App name -->
+  <text x="1366" y="1620"
+        font-family="system-ui, -apple-system, sans-serif"
+        font-size="120"
+        font-weight="700"
+        fill="white"
+        text-anchor="middle"
+        letter-spacing="8">MINDED</text>
+
+  <!-- Tagline -->
+  <text x="1366" y="1700"
+        font-family="system-ui, -apple-system, sans-serif"
+        font-size="36"
+        font-weight="400"
+        fill="url(#glow)"
+        text-anchor="middle"
+        opacity="0.8"
+        letter-spacing="4">YOUR AI PRODUCTIVITY COACH</text>
+</svg>

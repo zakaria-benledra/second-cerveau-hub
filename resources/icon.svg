@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa"/>
+      <stop offset="100%" style="stop-color:#c4b5fd"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+
+  <!-- Brain/Mind Symbol -->
+  <g transform="translate(512, 512)">
+    <!-- Outer circle (mindfulness) -->
+    <circle cx="0" cy="0" r="280" fill="none" stroke="url(#accent)" stroke-width="40" opacity="0.3"/>
+
+    <!-- Brain left hemisphere -->
+    <path d="M-60,-180
+             C-180,-180 -220,-80 -220,20
+             C-220,100 -180,160 -120,180
+             C-80,192 -40,180 -20,160
+             C0,140 0,100 0,60
+             C0,20 -20,-20 -60,-60
+             C-100,-100 -60,-180 -60,-180Z"
+          fill="white" opacity="0.95"/>
+
+    <!-- Brain right hemisphere -->
+    <path d="M60,-180
+             C180,-180 220,-80 220,20
+             C220,100 180,160 120,180
+             C80,192 40,180 20,160
+             C0,140 0,100 0,60
+             C0,20 20,-20 60,-60
+             C100,-100 60,-180 60,-180Z"
+          fill="white" opacity="0.95"/>
+
+    <!-- Neural connections -->
+    <circle cx="-80" cy="-60" r="20" fill="url(#bg)"/>
+    <circle cx="80" cy="-60" r="20" fill="url(#bg)"/>
+    <circle cx="-100" cy="60" r="16" fill="url(#bg)"/>
+    <circle cx="100" cy="60" r="16" fill="url(#bg)"/>
+    <circle cx="0" cy="0" r="24" fill="url(#bg)"/>
+
+    <!-- Connection lines -->
+    <line x1="-80" y1="-60" x2="0" y2="0" stroke="url(#bg)" stroke-width="6"/>
+    <line x1="80" y1="-60" x2="0" y2="0" stroke="url(#bg)" stroke-width="6"/>
+    <line x1="-100" y1="60" x2="0" y2="0" stroke="url(#bg)" stroke-width="4"/>
+    <line x1="100" y1="60" x2="0" y2="0" stroke="url(#bg)" stroke-width="4"/>
+
+    <!-- Sparkle/insight indicator -->
+    <circle cx="140" cy="-140" r="30" fill="#fbbf24"/>
+    <path d="M140,-165 L140,-115 M115,-140 L165,-140" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</svg>

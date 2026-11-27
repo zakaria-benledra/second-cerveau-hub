@@ -2,31 +2,52 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Minded — Système d'Intelligence Comportementale</title>
-    <meta name="description" content="Transformez vos actions en votre meilleur vous-même. Système d'intelligence comportementale pour la discipline, la consistance et les résultats." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <title>Minded — AI Productivity Coach</title>
+    <meta name="description" content="Your AI-powered coach for habits, tasks & personal growth. Transform your actions into your best self." />
     <meta name="author" content="Minded" />
 
-    <!-- PWA Meta Tags -->
+    <!-- PWA & Mobile Meta Tags -->
     <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#8b5cf6">
+    <meta name="theme-color" content="#6366f1">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Minded">
-    <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/icons/icon-192.webp">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192.webp">
+
+    <!-- iOS Splash Screens -->
+    <link rel="apple-touch-startup-image" href="/icons/apple-splash-2048-2732@2x.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/icons/apple-splash-1668-2388@2x.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/icons/apple-splash-1536-2048@2x.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/icons/apple-splash-1125-2436@3x.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+    <link rel="apple-touch-startup-image" href="/icons/apple-splash-1080-1920@3x.png" media="(device-width: 360px) and (device-height: 640px) and (-webkit-device-pixel-ratio: 3)">
+
+    <!-- Capacitor -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
 
     <!-- Open Graph -->
-    <meta property="og:title" content="Minded — Behavioral Intelligence System" />
-    <meta property="og:description" content="Transform Your Actions Into Your Best Self. Observez, mesurez, et transformez votre comportement." />
+    <meta property="og:title" content="Minded — AI Productivity Coach" />
+    <meta property="og:description" content="Your AI-powered coach for habits, tasks & personal growth." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta property="og:image" content="/icons/icon-512.webp" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@SecondCerveau" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:image" content="/icons/icon-512.webp" />
+
+    <!-- Prevent zooming on input focus (mobile) -->
+    <style>
+      input, select, textarea { font-size: 16px !important; }
+      * { -webkit-tap-highlight-color: transparent; }
+      body {
+        overscroll-behavior-y: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+    </style>
   </head>
 
   <body>

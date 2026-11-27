@@ -27,3 +27,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Capacitor native projects
+android/
+ios/
+*.keystore
+
+# Generated PWA icons (keep only public/icons)
+/icons/
